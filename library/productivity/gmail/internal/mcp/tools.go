@@ -858,7 +858,7 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 	}
 	ctx := map[string]any{
 		"api":         "gmail",
-		"description": "Mailbox cleanup that can prove itself — preview, confirm, undo, verify — from a binary that structurally cannot send email.",
+		"description": "Gmail mailbox cleanup and explicit email sending, with offline previews and account verification.",
 		"archetype":   "communication",
 		"tool_count":  20,
 		"paths":       paths,

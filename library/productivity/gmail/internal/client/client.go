@@ -37,6 +37,7 @@ type Client struct {
 	NoCache    bool
 	cacheDir   string
 	limiter    *cliutil.AdaptiveLimiter
+	sending    bool // Set only on the private copy used by SendMessage.
 }
 
 // RequestBaseURL returns the base URL used for requests.
@@ -540,10 +541,13 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 	// including dry-run and verify-mode requests — must match one of the
 	// hard-coded permitted Gmail operations. Checked FIRST, before the
 	// verify-mode gate, URL building, auth minting, and the cache, so a
-	// forged shape (send, drafts, settings, batch delete, ...) can never
-	// leave this binary under any mode. See internal/client/allowlist.go.
-	if err := checkTransportAllowlist(method, path); err != nil {
-		return nil, 0, err
+	// forged shape (drafts, settings, batch delete, ...) cannot leave this
+	// binary. SendMessage opts into exactly one extra path on a private copy.
+	// See internal/client/allowlist.go and send.go.
+	if !(c.sending && method == http.MethodPost && path == sendMessagePath) {
+		if err := checkTransportAllowlist(method, path); err != nil {
+			return nil, 0, err
+		}
 	}
 	// Verify-mode transport-layer gate. When the verifier (or any consumer
 	// that sets PRINTING_PRESS_VERIFY=1) drives a mutating verb without
@@ -605,6 +609,9 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 	}
 
 	maxRetries := clientMaxRetries()
+	if c.sending {
+		maxRetries = 0
+	}
 	var lastErr error
 	refreshedAfterUnauthorized := false
 

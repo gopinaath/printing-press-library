@@ -14,14 +14,14 @@ import (
 	"text/tabwriter"
 	"time"
 
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"github.com/mvanhorn/printing-press-library/library/productivity/gmail/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/productivity/gmail/internal/cliutil"
 	"github.com/mvanhorn/printing-press-library/library/productivity/gmail/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/productivity/gmail/internal/gauth"
 	"github.com/mvanhorn/printing-press-library/library/productivity/gmail/internal/learn"
 	"github.com/mvanhorn/printing-press-library/library/productivity/gmail/internal/store"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type rootFlags struct {
@@ -196,8 +196,8 @@ func isCobraUsageError(err error) bool {
 func newRootCmd(flags *rootFlags) *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "gmail-pp-cli",
-		Short: `Gmail CLI — Mailbox cleanup that can prove itself — preview, confirm, undo, verify — from a binary that structurally cannot send…`,
-		Long: `Gmail CLI — Mailbox cleanup that can prove itself — preview, confirm, undo, verify — from a binary that structurally cannot send email.
+		Short: `Gmail CLI — Mailbox cleanup and explicit email sending`,
+		Long: `Gmail CLI — Gmail mailbox cleanup and explicit email sending, with offline previews and account verification.
 
 Highlights (not in the official API docs):
   • unsub verify   See which senders kept mailing you after a one-click unsubscribe, with an escalation query per violator.
@@ -311,6 +311,7 @@ See README.md or the bundled SKILL.md for recipes.`,
 	}
 	rootCmd.AddCommand(newLabelsCmd(flags))
 	rootCmd.AddCommand(newMessagesCmd(flags))
+	rootCmd.AddCommand(newSendCmd(flags))
 	rootCmd.AddCommand(newThreadsCmd(flags))
 	rootCmd.AddCommand(newDoctorCmd(flags))
 	rootCmd.AddCommand(newAuthCmd(flags))
@@ -328,7 +329,7 @@ See README.md or the bundled SKILL.md for recipes.`,
 	rootCmd.AddCommand(newSearchCmd(flags))
 	rootCmd.AddCommand(newSendersCmd(flags))
 	// Cleanup engine: preview -> confirm (one-time token) -> apply
-	// (durable chunks + delta ledger) -> undo. The only mailbox-mutation
+	// (durable chunks + delta ledger) -> undo. The cleanup mailbox-mutation
 	// surface in this binary, together with labels create/rename.
 	rootCmd.AddCommand(newCleanupCmd(flags))
 	rootCmd.AddCommand(newUndoCmd(flags))
@@ -383,6 +384,7 @@ var learnHookSkipList = map[string]struct{}{
 	"doctor":        {},
 	"help":          {},
 	"sync":          {},
+	"send":          {},
 	"profile":       {},
 	"feedback":      {},
 	"which":         {},

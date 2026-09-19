@@ -24,3 +24,8 @@ install-mcp:
 	go install ./cmd/gmail-pp-mcp
 
 build-all: build build-mcp
+
+# No Google credentials: local fake servers and temporary fixture profiles only.
+.PHONY: test-send
+test-send:
+	go test ./internal/cli ./internal/client -run 'TestSend|TestTransportAllowlist' -count=1

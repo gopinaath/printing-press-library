@@ -9,7 +9,8 @@
 // The list is exactly the 19 operations the cleanup engine and its read
 // surface need. Notably absent by construction: message sending, draft
 // management, settings (filters/forwarding/vacation), permanent message
-// deletion (single or batch), and label deletion.
+// deletion (single or batch), and label deletion. SendMessage separately
+// permits one send on a private client copy; generic Post remains blocked.
 
 package client
 

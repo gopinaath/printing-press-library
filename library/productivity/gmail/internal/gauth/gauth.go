@@ -9,9 +9,8 @@
 // single scope, because in this binary the scope ladder buys nothing:
 //   - modify ⊃ read, so a separate readonly grant adds no live capability
 //     while doubling the consent surface;
-//   - send, insert, draft, and settings endpoints do not exist in this
-//     binary (pruned from the spec before generation), so send authority
-//     cannot be exercised no matter what the token allows;
+//   - this fork uses modify for explicit sending as well as cleanup;
+//     insert, draft, and settings endpoints remain unavailable;
 //   - permanent delete (single or batched) requires the full
 //     https://mail.google.com/ scope, which is never requested — trash is
 //     the destruction ceiling by scope physics.
@@ -77,8 +76,8 @@ func ConfigDir(override string) string {
 }
 
 // ScopesFor maps a role to the OAuth scopes its token holds. Every role maps
-// to the single gmail.modify scope: modify ⊃ read, send/settings endpoints
-// don't exist in this binary, and permanent delete is scope-impossible
+// to the single gmail.modify scope, which covers read, cleanup and send.
+// Settings remain unavailable, and permanent delete is scope-impossible
 // (it needs https://mail.google.com/, never requested). The role argument is
 // accepted — not validated against a closed set — so profiles.yaml written
 // for a future role-differentiated version keeps working today.

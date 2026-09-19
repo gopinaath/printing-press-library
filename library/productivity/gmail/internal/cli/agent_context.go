@@ -138,7 +138,7 @@ func buildAgentContext(rootCmd *cobra.Command) agentContext {
 		SchemaVersion: agentContextSchemaVersion,
 		CLI: agentContextCLI{
 			Name:        "gmail-pp-cli",
-			Description: "Mailbox cleanup that can prove itself — preview, confirm, undo, verify — from a binary that structurally cannot send email.",
+			Description: "Gmail mailbox cleanup and explicit email sending, with offline previews and account verification.",
 			Version:     rootCmd.Version,
 		},
 		Auth: agentContextAuth{

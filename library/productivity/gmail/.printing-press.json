@@ -9,6 +9,7 @@
     "handle": "dmarketingllm",
     "name": "Derik Parkinson"
   },
+  "contributors": [{"handle": "gopinaath", "name": "gopinaath"}],
   "owner": "dmarketingllm",
   "printer": "dmarketingllm",
   "printer_name": "Derik Parkinson",
@@ -17,7 +18,7 @@
   "spec_checksum": "sha256:64621457b966bf537f025aaba7fd72b96ea3d73645d359d55ba2be95152bf536",
   "run_id": "20260818-095450",
   "category": "productivity",
-  "description": "Mailbox cleanup that can prove itself \u2014 preview, confirm, undo, verify \u2014 from a binary that structurally cannot send email.",
+  "description": "Gmail mailbox cleanup and explicit email sending, with offline previews and account verification.",
   "mcp_binary": "gmail-pp-mcp",
   "mcp_tool_count": 14,
   "mcp_ready": "full",

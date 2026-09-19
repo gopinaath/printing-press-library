@@ -1,7 +1,7 @@
 {
   "api_name": "gmail",
   "base_url": "https://gmail.googleapis.com",
-  "description": "Mailbox cleanup that can prove itself \u2014 preview, confirm, undo, verify \u2014 from a binary that structurally cannot send email.",
+  "description": "Gmail mailbox cleanup and explicit email sending, with offline previews and account verification.",
   "mcp_ready": "full",
   "http_transport": "standard",
   "auth": {

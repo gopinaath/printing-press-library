@@ -1,6 +1,6 @@
 ---
 name: pp-gmail
-description: "Mailbox cleanup that can prove itself — preview, confirm, undo, verify — from a binary that structurally cannot send email. Trigger phrases: `clean up my inbox`, `summarize my email`, `who emails me the most`, `unsubscribe me from these`, `what's eating my Gmail storage`, `use gmail-pp-cli`, `run gmail`."
+description: "Gmail mailbox cleanup and explicit email sending, with offline previews and account verification. Trigger phrases: `clean up my inbox`, `summarize my email`, `who emails me the most`, `unsubscribe me from these`, `what's eating my Gmail storage`, `use gmail-pp-cli`, `run gmail`."
 author: "Derik Parkinson"
 license: "Apache-2.0"
 argument-hint: "<command> [args] | install cli|mcp"
@@ -16,37 +16,43 @@ metadata:
 
 ## Prerequisites: Install the CLI
 
-This skill drives the `gmail-pp-cli` binary. **You must verify the CLI is installed before invoking any command from this skill.** If it is missing, install it first:
+This fork requires a binary built from its `feat/gmail-send` checkout. The upstream
+npm installer does not include sending. From `library/productivity/gmail/`, build
+with `go build -o bin/gmail-pp-cli ./cmd/gmail-pp-cli` and use that binary. See
+[README.md](README.md#sending-fork-build-and-test-without-gmail) for setup and testing.
+Verify the chosen binary with `gmail-pp-cli send --help` before use.
 
-1. Install via the Printing Press installer. It defaults binaries to `$HOME/.local/bin` on macOS/Linux and `%LOCALAPPDATA%\Programs\PrintingPress\bin` on Windows:
-   ```bash
-   npx -y @mvanhorn/printing-press-library install gmail --cli-only
-   ```
-2. Verify: `gmail-pp-cli --version`
-3. Ensure the reported install directory is on `$PATH` for the agent/runtime that will invoke this skill.
-
-If the `npx` install fails (no Node, offline, etc.), fall back to a direct Go install (requires Go 1.26.5 or newer). This installs into `$GOPATH/bin` (default `$HOME/go/bin`), so add that directory to `$PATH` instead:
-
-```bash
-go install github.com/mvanhorn/printing-press-library/library/productivity/gmail/cmd/gmail-pp-cli@latest
-```
-
-If `--version` reports "command not found" after install, the runtime cannot see the binary directory on `$PATH`. Do not proceed with skill commands until verification succeeds.
-
-Every read and cleanup surface from the Gmail tool landscape, multi-account, with a local SQLite store underneath: sender intelligence, all-category digests, bulk trash/label with preview-confirm-undo, RFC 8058 one-click unsubscribes with a compliance ledger. Send, drafts, settings, and permanent deletion are absent from the binary by construction — Trash is the ceiling.
+Every read and cleanup surface from the Gmail tool landscape, multi-account, with a local SQLite store underneath: sender intelligence, all-category digests, bulk trash/label with preview-confirm-undo, RFC 8058 one-click unsubscribes with a compliance ledger. This fork adds a preview-first `send` command. Drafts, settings, and permanent deletion remain unavailable.
 
 ## When to Use This CLI
 
-Reach for this CLI when an agent or operator needs to understand or clean a Gmail mailbox safely: summaries across every category, sender and storage intelligence, bulk trash/label with preview and undo, and one-click unsubscribes with follow-up verification. It is the wrong tool for composing or sending anything — by design it cannot.
+Reach for this CLI when an agent or operator needs to understand or clean a Gmail mailbox safely: summaries across every category, sender and storage intelligence, bulk trash/label with preview and undo, and one-click unsubscribes with follow-up verification. This fork also composes and sends plain-text email with attachments; `send` previews locally unless `--send-now` is supplied.
 
 Do NOT use this CLI for:
 
-- **Composing, sending, replying, forwarding, or drafting email** — no send or draft surface exists in the binary.
+- **Draft management and automatic reply/forward threading** — these operations are not implemented by this fork.
 - **Permanently deleting messages or emptying Trash** — Trash is the ceiling; the gmail.modify scope cannot permanently delete.
 - **Deleting labels** — `labels create` and `labels rename` are the only label writes; there is no `labels delete`, update, or patch.
 - **Managing Gmail settings, filters, forwarding, or vacation responders** — settings endpoints do not exist in this binary.
 - **Thread-level mutations** — threads are read-only; mutations operate on messages through the cleanup engine.
 - **Sending mailto: unsubscribes** — `unsub run` executes RFC 8058 one-click HTTPS POSTs only; mailto-only senders are surfaced as a desk list, never acted on.
+
+## Sending in this fork
+
+`send` defaults to an offline JSON preview and requires no credentials. Only
+`--send-now` enables delivery; `--dry-run` always prevents it. Neither `--agent`
+nor `--yes` enables sending.
+
+```bash
+gmail-pp-cli send --from sender@example.invalid --to recipient@example.invalid --subject "Local test" --body "Preview only" --dry-run --no-learn
+```
+
+For authorized live delivery, use `--send-now` with an explicit `--account` and a
+`--from` matching that profile's verified primary email. Use `--body-file` for a
+file (`-` for stdin), repeated `--attach` for attachments, and `--cc`/`--bcc` for
+additional recipients. Sending cannot be undone and is never automatically
+retried. After an uncertain result, inspect Sent before retrying. Preview output
+includes Bcc and attachments; handle it as private message content.
 
 ## Unique Capabilities
 
@@ -109,7 +115,7 @@ These capabilities aren't available in any other tool for this API.
 
 ## Command Reference
 
-Raw modify/trash/delete subcommands do not exist. Every mailbox mutation flows through `cleanup plan` → `cleanup apply` (reversible via `undo`), `labels create`/`labels rename`, or `unsub plan` → `unsub run` — all gated by one-time plan tokens. One-click POSTs additionally require the unsubscribe URL host to share the sender's registrable domain: ESP-hosted (third-party) destinations are listed by `unsub plan` under `third_party_hosts` and are skipped by `unsub run` unless it is invoked with `--allow-third-party`.
+Raw modify/trash/delete subcommands do not exist. Cleanup mutations flow through `cleanup plan` → `cleanup apply` (reversible via `undo`), `labels create`/`labels rename`, or `unsub plan` → `unsub run` — all gated by one-time plan tokens. One-click POSTs additionally require the unsubscribe URL host to share the sender's registrable domain: ESP-hosted (third-party) destinations are listed by `unsub plan` under `third_party_hosts` and are skipped by `unsub run` unless it is invoked with `--allow-third-party`.
 
 **Mailbox engine**
 
@@ -189,7 +195,7 @@ Joins the unsubscribe ledger to fresh arrivals — violators come back with an e
 
 ## Auth Setup
 
-Installed-app OAuth with named multi-account profiles (per-profile token store, consented-account verification). The only scope ever requested is gmail.modify; send/draft/settings endpoints do not exist in this binary, and permanent deletion is impossible under this scope — Google enforces the Trash ceiling, not us.
+Installed-app OAuth with named multi-account profiles (per-profile token store, consented-account verification). The requested gmail.modify scope already permits sending, so this fork adds no OAuth scopes. Live sends require a named profile and a matching verified primary sender address. Drafts and settings remain unavailable; permanent deletion remains outside this scope.
 
 Run `gmail-pp-cli doctor` to verify setup.
 

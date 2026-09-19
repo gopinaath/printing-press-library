@@ -1,14 +1,68 @@
 # Gmail CLI
 
-**Mailbox cleanup that can prove itself — preview, confirm, undo, verify — from a binary that structurally cannot send email.**
+**Gmail mailbox cleanup and explicit email sending, with offline previews and account verification.**
 
-Every read and cleanup surface from the Gmail tool landscape, multi-account, with a local SQLite store underneath: sender intelligence, all-category digests, bulk trash/label with preview-confirm-undo, RFC 8058 one-click unsubscribes with a compliance ledger. Send, drafts, settings, and permanent deletion are absent from the binary by construction — Trash is the ceiling.
+Every read and cleanup surface from the Gmail tool landscape, multi-account, with a local SQLite store underneath: sender intelligence, all-category digests, bulk trash/label with preview-confirm-undo, RFC 8058 one-click unsubscribes with a compliance ledger. This fork adds a preview-first `send` command. Drafts, settings, and permanent deletion remain unavailable.
 
 Learn more at the [Gmail API docs](https://developers.google.com/gmail/api).
 
 Created by [@dmarketingllm](https://github.com/dmarketingllm) (Derik Parkinson).
 
-## Install
+Contributors: [@gopinaath](https://github.com/gopinaath) (gopinaath).
+
+## Sending fork: build and test without Gmail
+
+This is the `feat/gmail-send` branch of
+[gopinaath/printing-press-library](https://github.com/gopinaath/printing-press-library/tree/feat/gmail-send).
+Build from this checkout; the upstream npm installer below does **not** install this feature.
+
+From `library/productivity/gmail/` (Go 1.26.6 or automatic toolchain download):
+
+```bash
+go build -o bin/gmail-pp-cli ./cmd/gmail-pp-cli
+make test-send
+./bin/gmail-pp-cli send --from sender@example.invalid \
+  --to recipient@example.invalid --subject "Local test" \
+  --body "No email will be delivered." --dry-run --no-learn
+```
+
+`make test-send` uses loopback fake Gmail servers, temporary profiles, and dummy
+tokens. It never uses your Gmail account. The tests cover encoded email content,
+attachments, identity mismatches, preview behavior, and single-attempt delivery.
+They also prove generic API calls still cannot access the send endpoint.
+
+`send` defaults to a JSON preview containing `sent: false` and the full MIME
+message. Preview does not load config or credentials, refresh tokens, call Gmail,
+create drafts, or sync mail. No sign-in is needed. `--dry-run` overrides
+`--send-now`; `--agent` and `--yes` do not enable delivery. Add `--no-learn` to
+suppress the CLI's normal local invocation journal as well. Preview output
+includes Bcc addresses and attachment contents; treat it as the email itself.
+
+Supported inputs: repeated `--to`, `--cc`, `--bcc`, and `--attach`; `--subject`;
+and either `--body` or `--body-file` (`-` reads stdin). The body is plain-text UTF-8.
+Total body plus attachment input is limited to 25 MiB and encoded MIME to 35 MiB.
+There is no draft creation, HTML mode, alias sending, or automatic reply threading.
+
+Only this explicit form sends real mail (do not use it for offline testing):
+
+```bash
+./bin/gmail-pp-cli send --account test-account \
+  --from your-test-account@gmail.com --to another-test-address@example.com \
+  --subject "Delivery test" --body-file message.txt --send-now --no-learn
+```
+
+Live mode requires an explicit named `--account`, verifies its identity with
+Gmail, and requires `--from` to match that account's primary email. The existing
+`gmail.modify` grant permits sending; no new scope is requested. See the existing
+authentication section for profile authorization.
+
+There is no Gmail undo for this send command. It makes one send attempt and
+follows no redirects or automatic retries, including on 429/5xx. If delivery is
+uncertain, inspect Sent before manually trying again. The local mock tests prove
+request behavior; only a separate disposable Gmail account can verify real OAuth
+and delivery end to end without using your primary mailbox.
+
+## Upstream installation (without this fork's sending feature)
 
 The recommended path installs both the `gmail-pp-cli` binary and the `pp-gmail` agent skill (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, and other agents supported by the upstream [`skills`](https://github.com/vercel-labs/skills) CLI) in one shot:
 
@@ -117,7 +171,7 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 ## Authentication
 
-Installed-app OAuth with named multi-account profiles (per-profile token store, consented-account verification). The only scope ever requested is gmail.modify; send/draft/settings endpoints do not exist in this binary, and permanent deletion is impossible under this scope — Google enforces the Trash ceiling, not us.
+Installed-app OAuth with named multi-account profiles (per-profile token store, consented-account verification). The requested gmail.modify scope already permits sending, so this fork adds no OAuth scopes. Live sends require a named profile and a matching verified primary sender address. Drafts and settings remain unavailable; permanent deletion remains outside this scope.
 
 ## Quick Start
 
@@ -295,7 +349,7 @@ Existing installs keep working because the platform-default rung matches the leg
 
 ## Commands
 
-The mutation surface is deliberately narrow: raw modify/trash/delete subcommands do not exist. Every mailbox mutation flows through `cleanup plan` → `cleanup apply` (reversible via `undo`), `labels create`/`labels rename`, or `unsub plan` → `unsub run` — all gated by one-time plan tokens.
+The mutation surface is deliberately narrow: raw modify/trash/delete subcommands do not exist. Cleanup mutations flow through `cleanup plan` → `cleanup apply` (reversible via `undo`), `labels create`/`labels rename`, or `unsub plan` → `unsub run` — all gated by one-time plan tokens.
 
 ### Mailbox engine
 
