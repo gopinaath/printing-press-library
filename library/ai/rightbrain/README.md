@@ -7,6 +7,7 @@ Rightbrain's own CLI covers login and task CRUD; the rest of the platform has no
 Learn more at [Rightbrain](https://docs.rightbrain.ai/api).
 
 Created by [@papaonlegs](https://github.com/papaonlegs) (Farouk Umar).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
 
 ## Install
 
@@ -121,6 +122,10 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ```
 
 </details>
+
+### MCP over HTTP
+
+Set `PP_MCP_HTTP_TOKEN` in the server environment before starting `rightbrain-pp-mcp --transport http`. Send that token in the `Authorization: Bearer <token>` header on every request. The server listens on `127.0.0.1:7777` by default. To bind outside the local machine, provide both `--tls-cert` and `--tls-key` and use HTTPS.
 
 ## Authentication
 

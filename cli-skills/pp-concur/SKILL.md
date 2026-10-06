@@ -13,7 +13,7 @@ metadata:
     install:
       - kind: go
         bins: [concur-pp-cli]
-        module: github.com/mvanhorn/printing-press-library/library/accounting/concur/cmd/concur-pp-cli
+        module: github.com/mvanhorn/printing-press-library/library/productivity/concur/cmd/concur-pp-cli
 ---
 <!-- GENERATED FILE — DO NOT EDIT.
      This file is a verbatim mirror of library/productivity/concur/SKILL.md,
@@ -37,7 +37,7 @@ This skill drives the `concur-pp-cli` binary. **You must verify the CLI is insta
 If the `npx` install fails (no Node, offline, etc.), fall back to a direct Go install (requires Go 1.26.6 or newer). This installs into `$GOPATH/bin` (default `$HOME/go/bin`), so add that directory to `$PATH` instead:
 
 ```bash
-go install github.com/mvanhorn/printing-press-library/library/accounting/concur/cmd/concur-pp-cli@latest
+go install github.com/mvanhorn/printing-press-library/library/productivity/concur/cmd/concur-pp-cli@latest
 ```
 
 If `--version` reports "command not found" after install, the runtime cannot see the binary directory on `$PATH`. Do not proceed with skill commands until verification succeeds.
@@ -59,9 +59,11 @@ Do not use this CLI for:
 
 These capabilities aren't available in any other tool for this API.
 
-### Conditional browser fallback for report and expense creation
+### Conditional browser fallback for report/expense creation, expense update, and report submission
 - **`reports create`** — Automatically and transparently retries report creation via automated browser when the Concur v4 API rejects pure HTTP requests with a `policyId is required` error. This fallback is completely conditional and only triggers for tenants requiring explicit policy assignment. It never guesses a Concur region: the UI host is derived only from a base URL that's actually `concursolutions.com`, or from an explicit `CONCUR_UI_BASE_URL` override — anything else is a clear error, not a silent default. If the browser click already succeeded before a later step fails, the error says so explicitly (with the report ID when known) instead of looking like a safely-retryable failure; do not blindly retry in that case.
-- **`expenses create`** — Same conditional fallback pattern, triggered by a different confirmed-live defect: once a request body passes every client-side validation check, the API 404s instead of persisting (deliberately-invalid bodies correctly get a 400 instead, ruling out a body-shape bug). Triggers for a `--stdin` body exactly as reliably as the flag-driven path -- the fields it needs are read from the constructed request body, not the command's flag variables. Since the browser never surfaces a usable expense ID, success is confirmed by diffing the report's expense list (`GET .../reports/{id}/expenses`, confirmed unaffected by the defect) before and after the form's Save click, correlated against the submitted amount and expense type so a report modified concurrently through a shared manager/processor/proxy context can't have another actor's new expense misattributed as this call's own. Fills `--vendor`/`--business-purpose` directly in the form when set; if either can't be found or filled, the fallback aborts BEFORE the irreversible Save click rather than saving without a value the caller explicitly asked for. Transaction Date has no stable accessible name and Payment Type's only verified-live value is Concur's own default (Cash) -- rather than silently substitute today/Cash and report success, a `--date` or `--payment-type` this can't honor is rejected before the browser even opens.
+- **`expenses create`** — Same conditional fallback pattern, triggered by a different confirmed-live defect: once a request body passes every client-side validation check, the API 404s instead of persisting (deliberately-invalid bodies correctly get a 400 instead, ruling out a body-shape bug). Triggers for a `--stdin` body exactly as reliably as the flag-driven path -- the fields it needs are read from the constructed request body, not the command's flag variables. Since the browser never surfaces a usable expense ID, success is confirmed by diffing the report's expense list (`GET .../reports/{id}/expenses`, confirmed unaffected by the defect) before and after the form's Save click, correlated against the submitted amount and expense type so a report modified concurrently through a shared manager/processor/proxy context can't have another actor's new expense misattributed as this call's own. Fills `--vendor`/`--business-purpose` directly in the form when set; if either can't be found or filled, the fallback aborts BEFORE the irreversible Save click rather than saving without a value the caller explicitly asked for. Transaction Date is filled via Concur's calendar picker (day buttons carry a fully descriptive accessible name; direct text entry does not reliably replace an existing value), so any `--date` is honored, not just today. Payment Type's only verified-live value remains Concur's own default (Cash) -- a `--payment-type` this can't honor is still rejected before the browser even opens.
+- **`expenses update`** — Same 404 defect, on the sibling PATCH path (`.../expenses/{id}`). Fills `--purpose`/`--amount` (the latter added specifically to support this fallback) in the expense's direct edit view, then re-fetches the expense and verifies its fields actually match what was requested before reporting success -- a save whose click fired but didn't actually persist is reported as a failure, not trusted just because the follow-up GET itself succeeded. Business Purpose is required on Concur's form, so `--purpose ""` (a clear request) is rejected up front. `--comment`/`--custom-fields` aren't yet verified live through this fallback and are rejected the same way.
+- **`reports submit`** — A different-shaped (405, not 404) but same-root-cause defect: POST/PUT/DELETE all return 405 and PATCH 404s with the same "No static resource" signature against `.../reports/{id}/submit` -- no verb reaches the action server-side. Clicks the report page's "Submit Report" button, then a SECOND, separate "Submit Report" button inside the confirmation dialog that opens (both share an identical accessible name and role while the dialog is open -- disambiguated by excluding the already-clicked ref rather than risking a non-deterministic re-click of the wrong one). Confirms `isSubmitted`/`approvalStatus` on the re-fetched report before reporting success.
 
 ### Local state that compounds
 - **`expenses scan-duplicates`** — Find potential double-entered charges across all of your synced expenses.
@@ -118,6 +120,7 @@ This CLI uses Chrome-compatible HTTP transport for browser-facing endpoints. It 
 
 - `concur-pp-cli expenses create` — Create an expense inside a report (core v3-equivalent fields: type, date, amount, currency, payment type)
 - `concur-pp-cli expenses get` — Get a single expense with its filled/empty field manifest
+- `concur-pp-cli expenses list` — List every expense line item on a report (the only live way to enumerate an existing report's expenses -- `reports get` returns only the header)
 - `concur-pp-cli expenses update` — Fill or change writable fields on an expense (core + custom/list fields)
 
 **flights** — Search flight locations, travel policy preferences, and real flight availability (creates a live shopping session -- searches only, never books)
@@ -187,6 +190,17 @@ concur-pp-cli which "<capability in your own words>"
 concur-pp-cli expenses scan-duplicates --agent
 ```
 
+### See what's actually on an existing report
+
+```bash
+concur-pp-cli expenses list --user-id <uid> --report-id <report_id> --agent
+```
+
+`reports get` returns only the report header -- this is the only live way to see the report's
+actual line items: each expense's ID, type, vendor, business purpose, amount, and
+`receiptImageId` (check this is non-null to confirm a receipt attachment actually persisted
+server-side rather than trusting a mutating call's own reported success).
+
 ### Compare real flight and hotel options before requesting travel
 
 ```bash
@@ -219,9 +233,10 @@ currency-override field is confirmed live for this endpoint, and silently creati
 the report/policy default currency instead of what was requested is a correctness bug, not an
 acceptable fallback. If this command hits its confirmed-live HTTP 404 defect, it now falls back
 to browser automation automatically instead of just failing -- see "Conditional browser fallback
-for report and expense creation" above; this triggers for a `--stdin` body just as reliably as
-the flag-driven path, and will similarly reject (rather than silently substitute defaults for) a
-historical `--date` or non-Cash `--payment-type` it can't reliably honor.
+for report/expense creation, expense update, and report submission" above; this triggers for a
+`--stdin` body just as reliably as the flag-driven path. Any `--date` is honored via Concur's
+calendar picker, but a non-Cash `--payment-type` this can't reliably honor is still rejected
+(rather than silently substituted) up front.
 
 ## Auth Setup
 
@@ -565,7 +580,7 @@ Parse `$ARGUMENTS`:
 
 1. Install the MCP server:
    ```bash
-   go install github.com/mvanhorn/printing-press-library/library/accounting/concur/cmd/concur-pp-mcp@latest
+   go install github.com/mvanhorn/printing-press-library/library/productivity/concur/cmd/concur-pp-mcp@latest
    ```
 2. Register with Claude Code:
    ```bash

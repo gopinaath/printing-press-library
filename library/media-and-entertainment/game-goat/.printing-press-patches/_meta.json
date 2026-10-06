@@ -1,0 +1,17 @@
+{
+  "schema_version": 2,
+  "upstream_tracking": [
+    "https://github.com/mvanhorn/cli-printing-press/issues/4023",
+    "https://github.com/mvanhorn/cli-printing-press/issues/662"
+  ],
+  "deferred_to_upstream": [
+    {
+      "summary": "The generator should emit the catalog label and description from explicit manifest fields only, never re-derive a brand from the API spec title.",
+      "reason": "The printed CLI now pins display_name/catalog_display_name/catalog_description. Once a print derives those from narrative/API metadata without overriding explicit values (upstream 4023 and 662), the display-name patch entry becomes unnecessary."
+    },
+    {
+      "summary": "A keyless second source built on unauthenticated store services should be expressible in the spec, rather than hand-added as a sibling source client.",
+      "reason": "internal/source/steam talks to Valve store services that are not in the partner API docs because the documented catalog endpoint is key-gated and cannot filter. If the Printing Press ever models a second keyless source per CLI, the store-service client can be generated instead of hand-maintained."
+    }
+  ]
+}

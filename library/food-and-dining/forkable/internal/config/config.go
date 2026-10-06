@@ -4,22 +4,28 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/mvanhorn/printing-press-library/library/food-and-dining/forkable/internal/cliutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/mvanhorn/printing-press-library/library/food-and-dining/forkable/internal/cliutil"
+	"github.com/pelletier/go-toml/v2"
 )
 
 type Config struct {
-	BaseURL            string            `json:"base_url"`
-	AuthHeaderVal      string            `json:"auth_header"`
-	Headers            map[string]string `json:"headers,omitempty"`
-	AuthSource         string            `json:"-"`
-	CredentialSource   string            `json:"-"`
-	AgentcookieManaged bool              `json:"-"`
+	BaseURL          string            `json:"base_url" toml:"base_url"`
+	AuthHeaderVal    string            `json:"auth_header" toml:"auth_header"`
+	Headers          map[string]string `json:"headers,omitempty" toml:"headers,omitempty"`
+	AuthSource       string            `json:"-" toml:"-"`
+	CredentialSource string            `json:"-" toml:"-"`
+	// LegacyScrubWarning reports cleanup that logout could not complete after
+	// clearing active credentials. It never includes file contents.
+	LegacyScrubWarning string `json:"-" toml:"-"`
+	AgentcookieManaged bool   `json:"-" toml:"-"`
 	// configOwner records which on-disk file parseConfigData populated this
 	// config from ("config-kind path" or "legacy config path") so the
 	// credential-source fallback below reports where config-stored
@@ -29,14 +35,17 @@ type Config struct {
 	// back to it. Used by save() to scrub credential fields from the
 	// old location after relocation. Unexported: never persisted.
 	legacySourcePath string
-	AccessToken      string          `json:"access_token"`
-	RefreshToken     string          `json:"refresh_token"`
-	TokenExpiry      time.Time       `json:"token_expiry"`
-	ClientID         string          `json:"client_id"`
-	ClientSecret     string          `json:"client_secret"`
-	Path             string          `json:"-"`
-	envOverrides     map[string]bool `json:"-"`
-	fileConfig       *Config         `json:"-"`
+	// legacyConfigPaths are app-owned pre-TOML locations to scrub after an
+	// auth write, even when the active TOML file already existed at load.
+	legacyConfigPaths []string
+	AccessToken       string          `json:"access_token" toml:"access_token"`
+	RefreshToken      string          `json:"refresh_token" toml:"refresh_token"`
+	TokenExpiry       time.Time       `json:"token_expiry" toml:"token_expiry"`
+	ClientID          string          `json:"client_id" toml:"client_id"`
+	ClientSecret      string          `json:"client_secret" toml:"client_secret"`
+	Path              string          `json:"-" toml:"-"`
+	envOverrides      map[string]bool `json:"-" toml:"-"`
+	fileConfig        *Config         `json:"-" toml:"-"`
 }
 
 func Load(configPath string) (*Config, error) {
@@ -60,27 +69,38 @@ func Load(configPath string) (*Config, error) {
 		if err != nil {
 			return nil, err
 		}
-		data, sourcePath, err := cliutil.ReadFileWithLegacyFallback(path, legacyPath)
+		legacyJSONPath, err := LegacyJSONConfigPath()
+		if err != nil {
+			return nil, err
+		}
+		// A pre-TOML config.json follows the active config directory when
+		// FORKABLE_HOME, --home, or a per-kind override relocates it.
+		activeJSONPath := filepath.Join(filepath.Dir(path), "config.json")
+		cfg.legacyConfigPaths = []string{activeJSONPath, legacyPath, legacyJSONPath}
+		data, sourcePath, err := cliutil.ReadFileWithLegacyFallback(path, activeJSONPath)
+		if err != nil && os.IsNotExist(err) {
+			data, sourcePath, err = cliutil.ReadFileWithLegacyFallback(legacyPath, legacyJSONPath)
+		}
 		if err != nil {
 			if !os.IsNotExist(err) {
 				return nil, err
 			}
 		} else {
 			owner := "config-kind path"
-			if sourcePath == legacyPath {
+			if sourcePath != path {
 				owner = "legacy config path"
 			}
 			parsed := *cfg
 			if err := parseConfigData(data, &parsed, sourcePath, owner); err != nil {
-				if sourcePath == legacyPath {
+				if sourcePath != path && !strings.EqualFold(filepath.Ext(sourcePath), ".json") {
 					fmt.Fprintf(os.Stderr, "warning: legacy config parse skipped for %s: %v\n", sourcePath, err)
 				} else {
 					return nil, err
 				}
 			} else {
 				*cfg = parsed
-				if sourcePath == legacyPath {
-					cfg.legacySourcePath = legacyPath
+				if sourcePath != path {
+					cfg.legacySourcePath = sourcePath
 				}
 			}
 		}
@@ -146,13 +166,21 @@ func resolveConfigPath(configPath string) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	return filepath.Join(dir, "config.json"), false, nil
+	return filepath.Join(dir, "config.toml"), false, nil
 }
 
 func LegacyConfigPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("resolve legacy config path: %w", err)
+	}
+	return filepath.Join(home, ".config", "forkable-pp-cli", "config.toml"), nil
+}
+
+func LegacyJSONConfigPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("resolve legacy JSON config path: %w", err)
 	}
 	return filepath.Join(home, ".config", "forkable-pp-cli", "config.json"), nil
 }
@@ -166,11 +194,22 @@ func readConfigFile(path string, cfg *Config, owner string) error {
 }
 
 func parseConfigData(data []byte, cfg *Config, path string, owner string) error {
-	if err := json.Unmarshal(data, cfg); err != nil {
+	var err error
+	if configDataIsJSON(path, data) {
+		err = json.Unmarshal(data, cfg)
+	} else {
+		err = toml.Unmarshal(data, cfg)
+	}
+	if err != nil {
 		return fmt.Errorf("parsing %s %s: %w", owner, path, err)
 	}
 	cfg.configOwner = owner
 	return nil
+}
+
+func configDataIsJSON(path string, data []byte) bool {
+	ext := filepath.Ext(path)
+	return strings.EqualFold(ext, ".json") || (ext == "" && bytes.HasPrefix(bytes.TrimSpace(data), []byte("{")))
 }
 func FileHasCredentialFields(path string) (bool, error) {
 	var cfg Config
@@ -301,6 +340,9 @@ func (c *Config) saveCredentialsFirst() error {
 }
 
 func (c *Config) SaveTokens(clientID, clientSecret, accessToken, refreshToken string, expiry time.Time) error {
+	if err := c.preflightLegacyCredentialScrub(); err != nil {
+		return err
+	}
 	c.ClientID = clientID
 	c.ClientSecret = clientSecret
 	c.AccessToken = accessToken
@@ -323,6 +365,7 @@ func (c *Config) SaveTokens(clientID, clientSecret, accessToken, refreshToken st
 }
 
 func (c *Config) ClearTokens() error {
+	c.LegacyScrubWarning = ""
 	// AuthHeader() falls back to the env-var-derived fields when AuthHeaderVal
 	// and AccessToken are empty, so dropping the working credential requires
 	// zeroing every emitted credential field, not just the OAuth trio.
@@ -354,10 +397,23 @@ func (c *Config) ClearTokens() error {
 		// back; returning early would leave the secrets on disk.
 		return c.save()
 	}
-	if err := cliutil.RemoveCredentials(); err != nil {
-		return err
+	// A malformed old JSON file must not block logout. The active config is
+	// cleared first; legacy cleanup is best effort and reported separately.
+	settingsErr := c.saveWithLegacyScrubWarning()
+	// A settings write can fail after Load (for example, the directory becomes
+	// unwritable). Still remove the separate active credentials file. Neither
+	// failure should prevent the other cleanup attempt.
+	credentialsErr := cliutil.RemoveCredentials()
+	switch {
+	case settingsErr != nil && credentialsErr != nil:
+		return fmt.Errorf("settings could not be cleared: %v; credentials file could not be removed: %w", settingsErr, credentialsErr)
+	case settingsErr != nil:
+		return fmt.Errorf("credentials file removed, but settings could not be cleared: %w", settingsErr)
+	case credentialsErr != nil:
+		return fmt.Errorf("settings cleared, but credentials file could not be removed: %w", credentialsErr)
+	default:
+		return nil
 	}
-	return c.save()
 }
 
 func (c *Config) markEnvOverride(field string) {
@@ -422,19 +478,32 @@ func (c *Config) updateFileConfigField(field string) {
 }
 
 func (c *Config) save() error {
+	return c.saveWithLegacyScrub(false)
+}
+
+func (c *Config) saveWithLegacyScrubWarning() error {
+	return c.saveWithLegacyScrub(true)
+}
+
+func (c *Config) saveWithLegacyScrub(allowLegacyWarning bool) error {
 	persisted := c.configForSave()
 	var persist any = persisted
 	if !c.AgentcookieManagedByExternalStore() {
 		persist = persisted.persisted()
 	}
-	data, err := json.MarshalIndent(persist, "", "  ")
+	data, err := marshalConfigData(persist, c.Path)
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)
 	}
 	if err := cliutil.AtomicWritePrivateFile(c.Path, data, 0o600, 0o700); err != nil {
 		return err
 	}
-	c.scrubLegacyCredentials()
+	if err := c.scrubLegacyCredentials(); err != nil {
+		if !allowLegacyWarning {
+			return err
+		}
+		c.LegacyScrubWarning = "A legacy settings file could not be checked or scrubbed. Run doctor to identify the file; it may still contain credentials."
+	}
 	if !c.AgentcookieManagedByExternalStore() {
 		persisted.clearCredentialFields()
 	}
@@ -447,40 +516,95 @@ func (c *Config) save() error {
 	c.fileConfig.Headers = cloneStringMap(c.fileConfig.Headers)
 	return nil
 }
-func (c *Config) scrubLegacyCredentials() {
-	if c.legacySourcePath == "" || c.legacySourcePath == c.Path {
-		return
-	}
+func (c *Config) scrubLegacyCredentials() error {
 	if c.AgentcookieManagedByExternalStore() {
-		return
+		return nil
 	}
-	data, err := os.ReadFile(c.legacySourcePath)
+	files, err := c.prepareLegacyCredentialScrubs()
 	if err != nil {
-		if !os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "warning: cannot read legacy config to scrub credentials: %v\n", err)
+		return err
+	}
+	for _, file := range files {
+		if err := cliutil.AtomicWritePrivateFile(file.path, file.data, 0o600, 0o700); err != nil {
+			return fmt.Errorf("scrubbing legacy config %s: %w", file.path, err)
 		}
-		return
 	}
-	var legacy Config
-	if err := json.Unmarshal(data, &legacy); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: cannot parse legacy config to scrub credentials: %v\n", err)
-		return
+	return nil
+}
+
+type legacyCredentialScrub struct {
+	path string
+	data []byte
+}
+
+// CredentialProbePaths names only settings files this config owns or would
+// scrub. An explicit --config path does not confer ownership of its siblings.
+func (c *Config) CredentialProbePaths() []string {
+	if c == nil {
+		return nil
 	}
-	legacy.clearCredentialFields()
-	scrubbed := legacy.persisted()
-	scrubbedData, err := json.MarshalIndent(scrubbed, "", "  ")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "warning: cannot marshal scrubbed legacy config: %v\n", err)
-		return
+	return append(append([]string{c.Path}, c.legacyConfigPaths...), c.legacySourcePath)
+}
+
+// Check legacy files before changing the credentials store or active config.
+// A malformed coexisting JSON file must not make auth report failure after
+// the new credential has already taken effect.
+func (c *Config) preflightLegacyCredentialScrub() error {
+	if c.AgentcookieManagedByExternalStore() {
+		return nil
 	}
-	if err := cliutil.AtomicWritePrivateFile(c.legacySourcePath, scrubbedData, 0o600, 0o700); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: cannot write scrubbed legacy config: %v\n", err)
+	_, err := c.prepareLegacyCredentialScrubs()
+	return err
+}
+
+func (c *Config) prepareLegacyCredentialScrubs() ([]legacyCredentialScrub, error) {
+	seen := map[string]bool{}
+	var files []legacyCredentialScrub
+	for _, legacyPath := range c.CredentialProbePaths() {
+		if legacyPath == "" || legacyPath == c.Path || seen[legacyPath] {
+			continue
+		}
+		seen[legacyPath] = true
+		data, err := os.ReadFile(legacyPath) // #nosec G304 -- app-owned legacy config path.
+		if os.IsNotExist(err) {
+			continue
+		}
+		if err != nil {
+			return nil, fmt.Errorf("reading legacy config %s: %w", legacyPath, err)
+		}
+		var legacy Config
+		if err := parseConfigData(data, &legacy, legacyPath, "legacy config path"); err != nil {
+			return nil, err
+		}
+		if !legacy.hasCredentialFields() {
+			continue
+		}
+		legacy.clearCredentialFields()
+		scrubbedData, err := marshalConfigData(legacy.persisted(), legacyPath)
+		if err != nil {
+			return nil, fmt.Errorf("marshaling legacy config %s: %w", legacyPath, err)
+		}
+		files = append(files, legacyCredentialScrub{path: legacyPath, data: scrubbedData})
 	}
+	return files, nil
 }
 
 type persistedConfig struct {
-	BaseURL string            `json:"base_url"`
-	Headers map[string]string `json:"headers,omitempty"`
+	BaseURL string            `json:"base_url" toml:"base_url"`
+	Headers map[string]string `json:"headers,omitempty" toml:"headers,omitempty"`
+}
+
+func marshalConfigData(value any, path string) ([]byte, error) {
+	formatJSON := strings.EqualFold(filepath.Ext(path), ".json")
+	if filepath.Ext(path) == "" {
+		if existing, err := os.ReadFile(path); err == nil { // #nosec G304 -- caller's selected config path.
+			formatJSON = configDataIsJSON(path, existing)
+		}
+	}
+	if formatJSON {
+		return json.MarshalIndent(value, "", "  ")
+	}
+	return toml.Marshal(value)
 }
 
 func (c *Config) persisted() persistedConfig {

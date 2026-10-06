@@ -10,6 +10,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	sqlite "modernc.org/sqlite"
+	sqlite3 "modernc.org/sqlite/lib"
 )
 
 // granolaSchemaSQL is the set of CREATE TABLE statements added on top of
@@ -28,6 +31,8 @@ var granolaSchemaSQL = []string{
 		deleted_at TEXT,
 		notes_markdown TEXT,
 		notes_plain TEXT,
+		summary_markdown TEXT,
+		summary_plain TEXT,
 		transcript_available INTEGER NOT NULL DEFAULT 0,
 		recipes_applied TEXT,
 		creation_source TEXT,
@@ -58,6 +63,7 @@ var granolaSchemaSQL = []string{
 		confidence REAL,
 		speaker_name TEXT,
 		diarization_label TEXT,
+		attribution TEXT,
 		row_source TEXT NOT NULL DEFAULT 'cache',
 		PRIMARY KEY (meeting_id, idx)
 	)`,
@@ -139,6 +145,10 @@ var granolaSchemaSQL = []string{
 		role TEXT,
 		raw TEXT
 	)`,
+	`CREATE TABLE IF NOT EXISTS granola_sync_meta (
+		key TEXT PRIMARY KEY,
+		value TEXT NOT NULL
+	)`,
 
 	`CREATE VIRTUAL TABLE IF NOT EXISTS meetings_fts USING fts5(
 		title, notes_plain, content='meetings', content_rowid='rowid', tokenize='porter unicode61'
@@ -147,6 +157,26 @@ var granolaSchemaSQL = []string{
 	`CREATE VIRTUAL TABLE IF NOT EXISTS transcript_fts USING fts5(
 		text, content='transcript_segments', tokenize='porter unicode61'
 	)`,
+	`CREATE TRIGGER IF NOT EXISTS meetings_fts_ai AFTER INSERT ON meetings BEGIN
+		INSERT INTO meetings_fts(rowid, title, notes_plain) VALUES (new.rowid, new.title, new.notes_plain);
+	END`,
+	`CREATE TRIGGER IF NOT EXISTS meetings_fts_ad AFTER DELETE ON meetings BEGIN
+		INSERT INTO meetings_fts(meetings_fts, rowid, title, notes_plain) VALUES ('delete', old.rowid, old.title, old.notes_plain);
+	END`,
+	`CREATE TRIGGER IF NOT EXISTS meetings_fts_au AFTER UPDATE ON meetings BEGIN
+		INSERT INTO meetings_fts(meetings_fts, rowid, title, notes_plain) VALUES ('delete', old.rowid, old.title, old.notes_plain);
+		INSERT INTO meetings_fts(rowid, title, notes_plain) VALUES (new.rowid, new.title, new.notes_plain);
+	END`,
+	`CREATE TRIGGER IF NOT EXISTS transcript_fts_ai AFTER INSERT ON transcript_segments BEGIN
+		INSERT INTO transcript_fts(rowid, text) VALUES (new.rowid, new.text);
+	END`,
+	`CREATE TRIGGER IF NOT EXISTS transcript_fts_ad AFTER DELETE ON transcript_segments BEGIN
+		INSERT INTO transcript_fts(transcript_fts, rowid, text) VALUES ('delete', old.rowid, old.text);
+	END`,
+	`CREATE TRIGGER IF NOT EXISTS transcript_fts_au AFTER UPDATE ON transcript_segments BEGIN
+		INSERT INTO transcript_fts(transcript_fts, rowid, text) VALUES ('delete', old.rowid, old.text);
+		INSERT INTO transcript_fts(rowid, text) VALUES (new.rowid, new.text);
+	END`,
 }
 
 // Row-ownership markers written into the row_source column. Every DELETE in
@@ -201,22 +231,75 @@ var granolaAddedColumns = []struct{ table, column, decl string }{
 	// downstream commands stay source-agnostic.
 	{"transcript_segments", "speaker_name", "TEXT"},
 	{"transcript_segments", "diarization_label", "TEXT"},
+	{"transcript_segments", "attribution", "TEXT"},
+	{"meetings", "summary_markdown", "TEXT"},
+	{"meetings", "summary_plain", "TEXT"},
 }
 
 // EnsureSchema runs the additive Granola-specific migrations. Idempotent.
 // Call this from any command that touches the granola tables.
 func EnsureSchema(ctx context.Context, db *sql.DB) error {
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("granola schema: pin connection: %w", err)
+	}
+	defer conn.Close()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		_, err = conn.ExecContext(ctx, `BEGIN IMMEDIATE`)
+		if err == nil {
+			break
+		}
+		if !isSQLiteBusy(err) || time.Now().After(deadline) {
+			return fmt.Errorf("granola schema: acquire migration lock: %w", err)
+		}
+		if err := waitSchemaRetry(ctx, 25*time.Millisecond); err != nil {
+			return err
+		}
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_, _ = conn.ExecContext(context.Background(), `ROLLBACK`)
+		}
+	}()
 	for _, stmt := range granolaSchemaSQL {
-		if _, err := db.ExecContext(ctx, stmt); err != nil {
+		if _, err := conn.ExecContext(ctx, stmt); err != nil {
 			return fmt.Errorf("granola schema: %w: %s", err, firstLine(stmt))
 		}
 	}
 	for _, c := range granolaAddedColumns {
-		if err := ensureGranolaColumn(ctx, db, c.table, c.column, c.decl); err != nil {
+		if err := ensureGranolaColumn(ctx, conn, c.table, c.column, c.decl); err != nil {
 			return err
 		}
 	}
+	if _, err := conn.ExecContext(ctx, `COMMIT`); err != nil {
+		return fmt.Errorf("granola schema: commit: %w", err)
+	}
+	committed = true
 	return nil
+}
+
+type granolaSchemaConn interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
+func isSQLiteBusy(err error) bool {
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "database is locked") || strings.Contains(msg, "database is busy") || strings.Contains(msg, "sqlite_busy")
+}
+
+func waitSchemaRetry(ctx context.Context, d time.Duration) error {
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-t.C:
+		return nil
+	}
 }
 
 // ensureGranolaColumn adds a column to an existing table when it is missing.
@@ -226,7 +309,7 @@ func EnsureSchema(ctx context.Context, db *sql.DB) error {
 //
 // Skips silently when the table does not exist (the CREATE TABLE above will
 // have declared the column already) or when the column is already present.
-func ensureGranolaColumn(ctx context.Context, db *sql.DB, table, column, decl string) error {
+func ensureGranolaColumn(ctx context.Context, db granolaSchemaConn, table, column, decl string) error {
 	var name string
 	err := db.QueryRowContext(ctx,
 		`SELECT name FROM sqlite_master WHERE type='table' AND name=?`, table).Scan(&name)
@@ -701,15 +784,9 @@ func SyncFromCacheWithOptions(ctx context.Context, db *sql.DB, cache *Cache, opt
 		res.ChatMessages++
 	}
 
-	// Rebuild FTS indexes — drop and re-populate. INSERT INTO ... SELECT
-	// is the FTS5 idiomatic populate-from-content-table pattern.
-	if _, err := tx.ExecContext(ctx, `INSERT INTO meetings_fts(meetings_fts) VALUES ('rebuild')`); err != nil {
-		return res, fmt.Errorf("rebuild meetings_fts: %w", err)
+	if err := markSuccessfulSync(ctx, tx); err != nil {
+		return res, err
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO transcript_fts(transcript_fts) VALUES ('rebuild')`); err != nil {
-		return res, fmt.Errorf("rebuild transcript_fts: %w", err)
-	}
-
 	if err := tx.Commit(); err != nil {
 		return res, err
 	}
@@ -890,13 +967,9 @@ func SyncFromAPI(ctx context.Context, db *sql.DB, notes []APINote) (APISyncResul
 		}
 	}
 
-	if _, err := tx.ExecContext(ctx, `INSERT INTO meetings_fts(meetings_fts) VALUES ('rebuild')`); err != nil {
-		return res, fmt.Errorf("rebuild meetings_fts: %w", err)
+	if err := markSuccessfulSync(ctx, tx); err != nil {
+		return res, err
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO transcript_fts(transcript_fts) VALUES ('rebuild')`); err != nil {
-		return res, fmt.Errorf("rebuild transcript_fts: %w", err)
-	}
-
 	if err := tx.Commit(); err != nil {
 		return res, err
 	}
@@ -906,6 +979,41 @@ func SyncFromAPI(ctx context.Context, db *sql.DB, notes []APINote) (APISyncResul
 	res.PreservedTranscripts = keptTranscripts.count()
 	res.PreservationWarning = keptTranscripts.warning()
 	return res, nil
+}
+
+func markSuccessfulSync(ctx context.Context, tx *sql.Tx) error {
+	_, err := tx.ExecContext(ctx, `INSERT INTO granola_sync_meta(key, value) VALUES ('last_success_at', ?)
+		ON CONFLICT(key) DO UPDATE SET value=excluded.value`, time.Now().UTC().Format(time.RFC3339Nano))
+	if err != nil {
+		return fmt.Errorf("record successful sync: %w", err)
+	}
+	return nil
+}
+
+// StoreHasData reports whether this database completed a sync. Existing
+// pre-marker databases remain readable when they already contain meetings;
+// an empty schema left behind by a failed first sync does not masquerade as a
+// successfully hydrated store.
+func StoreHasData(ctx context.Context, db *sql.DB) (bool, error) {
+	var marker string
+	err := db.QueryRowContext(ctx, `SELECT value FROM granola_sync_meta WHERE key='last_success_at'`).Scan(&marker)
+	if err == nil {
+		return true, nil
+	}
+	if !errors.Is(err, sql.ErrNoRows) {
+		return false, fmt.Errorf("read Granola sync marker: %w", err)
+	}
+	var count int
+	if err := db.QueryRowContext(ctx, `SELECT
+		(SELECT COUNT(*) FROM meetings) +
+		(SELECT COUNT(*) FROM folders) +
+		(SELECT COUNT(*) FROM panel_templates) +
+		(SELECT COUNT(*) FROM recipes) +
+		(SELECT COUNT(*) FROM chat_threads) +
+		(SELECT COUNT(*) FROM workspaces)`).Scan(&count); err != nil {
+		return false, fmt.Errorf("probe Granola data tables: %w", err)
+	}
+	return count > 0, nil
 }
 
 // upsertAPINote writes one note's detail across every domain table.
@@ -928,9 +1036,10 @@ func upsertAPINote(ctx context.Context, tx *sql.Tx, n *APINote, res *APISyncResu
 		title = n.CalendarEvent.EventTitle
 	}
 
-	// summary_markdown / summary_text land in notes_markdown / notes_plain:
-	// those are the columns the meeting read path (show, export, memo,
-	// notes-show, the cache backfill) already consumes as the meeting body.
+	// Granola v1.5 distinguishes owner-written private notes from generated
+	// summaries. Keep those streams separate: notes_* is human-authored,
+	// summary_* is generated. A null private-notes field means the caller is
+	// not the owner and must never erase cache-owned notes.
 	//
 	// ON CONFLICT DO UPDATE rather than INSERT OR REPLACE for two reasons:
 	// REPLACE reallocates the rowid, which desynchronises the external-content
@@ -940,12 +1049,22 @@ func upsertAPINote(ctx context.Context, tx *sql.Tx, n *APINote, res *APISyncResu
 	// source never overwrites a populated one from the other. row_source is
 	// intentionally left alone on conflict: whichever path created the row
 	// keeps ownership, so neither path's scoped DELETE can reach the other's.
+	privateMarkdown, privatePlain := "", ""
+	privateMarkdownProvided, privatePlainProvided := 0, 0
+	if n.PrivateNotesMarkdown != nil {
+		privateMarkdown = *n.PrivateNotesMarkdown
+		privateMarkdownProvided = 1
+	}
+	if n.PrivateNotesText != nil {
+		privatePlain = *n.PrivateNotesText
+		privatePlainProvided = 1
+	}
 	_, err := tx.ExecContext(ctx, `INSERT INTO meetings(
 		id, title, created_at, updated_at, started_at, ended_at, workspace_id,
-		calendar_event_id, deleted_at, notes_markdown, notes_plain,
+		calendar_event_id, deleted_at, notes_markdown, notes_plain, summary_markdown, summary_plain,
 		transcript_available, recipes_applied, creation_source, valid_meeting,
 		row_source
-	) VALUES (?,?,?,?,?,?,'',?,'',?,?,?,'[]','granola_api',1,?)
+	) VALUES (?,?,?,?,?,?,'',?,'',?,?,?,?,?,'[]','granola_api',1,?)
 	ON CONFLICT(id) DO UPDATE SET
 		title                = COALESCE(NULLIF(excluded.title,''), meetings.title),
 		created_at           = COALESCE(NULLIF(excluded.created_at,''), meetings.created_at),
@@ -953,11 +1072,23 @@ func upsertAPINote(ctx context.Context, tx *sql.Tx, n *APINote, res *APISyncResu
 		started_at           = COALESCE(NULLIF(excluded.started_at,''), meetings.started_at),
 		ended_at             = COALESCE(NULLIF(excluded.ended_at,''), meetings.ended_at),
 		calendar_event_id    = COALESCE(NULLIF(excluded.calendar_event_id,''), meetings.calendar_event_id),
-		notes_markdown       = COALESCE(NULLIF(excluded.notes_markdown,''), meetings.notes_markdown),
-		notes_plain          = COALESCE(NULLIF(excluded.notes_plain,''), meetings.notes_plain),
+		deleted_at           = '',
+		notes_markdown       = CASE
+			WHEN ? = 0 THEN meetings.notes_markdown
+			WHEN meetings.row_source = 'api' THEN excluded.notes_markdown
+			ELSE COALESCE(NULLIF(excluded.notes_markdown,''), meetings.notes_markdown)
+		END,
+		notes_plain          = CASE
+			WHEN ? = 0 THEN meetings.notes_plain
+			WHEN meetings.row_source = 'api' THEN excluded.notes_plain
+			ELSE COALESCE(NULLIF(excluded.notes_plain,''), meetings.notes_plain)
+		END,
+		summary_markdown     = COALESCE(NULLIF(excluded.summary_markdown,''), meetings.summary_markdown),
+		summary_plain        = COALESCE(NULLIF(excluded.summary_plain,''), meetings.summary_plain),
 		transcript_available = MAX(meetings.transcript_available, excluded.transcript_available)`,
 		n.ID, title, n.CreatedAt, n.UpdatedAt, startedAt, endedAt,
-		calEventID, n.SummaryMarkdown, n.SummaryText, transcriptAvail, RowSourceAPI,
+		calEventID, privateMarkdown, privatePlain, n.SummaryMarkdown, n.SummaryText, transcriptAvail, RowSourceAPI,
+		privateMarkdownProvided, privatePlainProvided,
 	)
 	if err != nil {
 		return fmt.Errorf("upsert api meeting %s: %w", n.ID, err)
@@ -971,6 +1102,107 @@ func upsertAPINote(ctx context.Context, tx *sql.Tx, n *APINote, res *APISyncResu
 		return err
 	}
 	return upsertAPITranscript(ctx, tx, n, res, bad, kept)
+}
+
+// ReconcileMissingAPINotes soft-deletes API-owned meetings absent from a
+// complete unfiltered list. Incremental/windowed syncs must never call this:
+// absence from a partial response says nothing about upstream existence.
+func ReconcileMissingAPINotes(ctx context.Context, db *sql.DB, seen map[string]struct{}) (int, error) {
+	return reconcileMissingAPINotes(ctx, db, seen, nil)
+}
+
+func reconcileMissingAPINotes(ctx context.Context, db *sql.DB, seen map[string]struct{}, afterScan func()) (int, error) {
+	if err := EnsureSchema(ctx, db); err != nil {
+		return 0, err
+	}
+	// A peer can commit to the WAL between our read snapshot and first write.
+	// SQLite then refuses that snapshot's write upgrade; restart the complete
+	// selection and deletion transaction rather than leaving notes stale.
+	for attempt := 0; ; attempt++ {
+		deleted, err := reconcileMissingAPINotesOnce(ctx, db, seen, afterScan)
+		if err == nil || !isReconcileSQLiteBusy(err) || attempt >= 4 {
+			return deleted, err
+		}
+		wait := time.NewTimer(time.Duration(25<<attempt) * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			wait.Stop()
+			return 0, ctx.Err()
+		case <-wait.C:
+		}
+	}
+}
+
+func isReconcileSQLiteBusy(err error) bool {
+	var sqliteErr *sqlite.Error
+	if !errors.As(err, &sqliteErr) {
+		return false
+	}
+	switch sqliteErr.Code() & 0xff {
+	case sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED:
+		return true
+	default:
+		return false
+	}
+}
+
+func reconcileMissingAPINotesOnce(ctx context.Context, db *sql.DB, seen map[string]struct{}, afterScan func()) (int, error) {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
+	rows, err := tx.QueryContext(ctx, `SELECT id FROM meetings WHERE row_source='api' AND COALESCE(deleted_at, '')=''`)
+	if err != nil {
+		return 0, fmt.Errorf("list API-owned meetings for reconciliation: %w", err)
+	}
+	var missing []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		if _, ok := seen[id]; !ok {
+			missing = append(missing, id)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return 0, fmt.Errorf("read API-owned meetings for reconciliation: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return 0, err
+	}
+	if len(missing) == 0 {
+		return 0, nil
+	}
+	if afterScan != nil {
+		afterScan()
+	}
+	deletedAt := time.Now().UTC().Format(time.RFC3339Nano)
+	for _, id := range missing {
+		if _, err := tx.ExecContext(ctx, `UPDATE meetings SET deleted_at=? WHERE id=? AND row_source='api'`, deletedAt, id); err != nil {
+			return 0, fmt.Errorf("mark missing API note %s deleted: %w", id, err)
+		}
+		// API-owned dependent rows must disappear with the upstream note or
+		// direct transcript/attendee/membership reads can bypass the tombstone.
+		// Cache-owned rows are intentionally retained: a later cache sync owns
+		// their lifecycle independently of the public API list.
+		if _, err := tx.ExecContext(ctx, `DELETE FROM transcript_segments WHERE meeting_id=? AND row_source=?`, id, RowSourceAPI); err != nil {
+			return 0, fmt.Errorf("remove transcript for missing API note %s: %w", id, err)
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM attendees WHERE meeting_id=? AND row_source=?`, id, RowSourceAPI); err != nil {
+			return 0, fmt.Errorf("remove attendees for missing API note %s: %w", id, err)
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM folder_memberships WHERE meeting_id=? AND row_source=?`, id, RowSourceAPI); err != nil {
+			return 0, fmt.Errorf("remove folder memberships for missing API note %s: %w", id, err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	return len(missing), nil
 }
 
 // upsertAPIAttendees reconciles the note's attendees[] with its
@@ -1107,7 +1339,7 @@ func upsertAPITranscript(ctx context.Context, tx *sql.Tx, n *APINote, res *APISy
 		startMs := bad.parse(seg.StartTime, n.ID, i, "start_time")
 		endMs := bad.parse(seg.EndTime, n.ID, i, "end_time")
 		source := ""
-		var speakerName, label any
+		var speakerName, label, attribution any
 		if seg.Speaker != nil {
 			source = NormalizeSpeakerSource(seg.Speaker.Source)
 			if nm := seg.Speaker.ResolvedName(); nm != "" {
@@ -1116,15 +1348,18 @@ func upsertAPITranscript(ctx context.Context, tx *sql.Tx, n *APINote, res *APISy
 			if lb := seg.Speaker.ResolvedLabel(); lb != "" {
 				label = lb
 			}
+			if seg.Speaker.Attribution != "" {
+				attribution = seg.Speaker.Attribution
+			}
 		}
 		// confidence is 0: the public API does not expose a per-segment
 		// confidence score. Writing a fabricated 1.0 would make
 		// talktime's confidence_avg lie about API-sourced meetings.
 		_, err := tx.ExecContext(ctx, `INSERT INTO transcript_segments(
 			meeting_id, idx, source, text, start_ts_ms, end_ts_ms, confidence,
-			speaker_name, diarization_label, row_source
-		) VALUES (?,?,?,?,?,?,0,?,?,?)`,
-			n.ID, i, source, seg.Text, startMs, endMs, speakerName, label, RowSourceAPI)
+			speaker_name, diarization_label, attribution, row_source
+		) VALUES (?,?,?,?,?,?,0,?,?,?,?)`,
+			n.ID, i, source, seg.Text, startMs, endMs, speakerName, label, attribution, RowSourceAPI)
 		if err != nil {
 			return fmt.Errorf("upsert api segment %s/%d: %w", n.ID, i, err)
 		}

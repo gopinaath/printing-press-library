@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "ordertogo",
   "cli_name": "ordertogo-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T22:45:57Z",
+  "source_commit": "ab5416bac3b83579a5d18a9332141b2660c4ff24",
   "printing_press_version": "4.2.2",
   "run_id": "20260510-083403",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "Reuse a durable request ID for uncertain OrderToGo checkouts",
+      "pr": 2127,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2127",
+      "commit": "ab5416bac3b83579a5d18a9332141b2660c4ff24"
     }
   ]
 }

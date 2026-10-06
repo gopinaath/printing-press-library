@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mvanhorn/printing-press-library/library/commerce/creativefabrica/internal/algolia"
 	"github.com/mvanhorn/printing-press-library/library/commerce/creativefabrica/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/commerce/creativefabrica/internal/cliutil"
 	"github.com/mvanhorn/printing-press-library/library/commerce/creativefabrica/internal/config"
@@ -226,6 +227,26 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				report["api"] = "not configured (set base_url in config file)"
 			}
 
+			// Catalog commands use the public Algolia search key rather than
+			// the generated liveness client. Exercise a minimal query so doctor
+			// catches missing, rotated, or rejected catalog credentials.
+			if cfg != nil && flags.dryRun {
+				report["catalog"] = "skipped (dry run)"
+			} else if cfg != nil {
+				ctx, cancel := boundCtx(cmd.Context(), flags)
+				defer cancel()
+				catalogClient := newAlgoliaClient(flags)
+				_, catalogErr := catalogClient.Search(ctx, algolia.SearchRequest{
+					IndexName:   algolia.IndexRelevance,
+					HitsPerPage: 1,
+				})
+				if catalogErr != nil {
+					report["catalog"] = fmt.Sprintf("error: %s", catalogErr)
+				} else {
+					report["catalog"] = "reachable (catalog key verified)"
+				}
+			}
+
 			// Verify mode state. Surfaced so an operator who unintentionally
 			// inherits PRINTING_PRESS_VERIFY=1 (parent shell, CI runner, container
 			// image) detects the foot-gun without inspecting a response body.
@@ -258,6 +279,7 @@ func newDoctorCmd(flags *rootFlags) *cobra.Command {
 				{"env_vars", "Env Vars"},
 				{"verify_mode", "Verify Mode"},
 				{"api", "API"},
+				{"catalog", "Catalog"},
 				{"credentials", "Credentials"},
 			}
 			for _, ck := range checkKeys {

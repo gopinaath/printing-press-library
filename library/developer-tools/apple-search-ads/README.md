@@ -1,5 +1,8 @@
 # Apple Search Ads CLI
 
+Created by [@rk-labs-tech](https://github.com/rk-labs-tech) (Ryan Kelley).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 **Every Apple Search Ads feature, plus local cost analytics, bid optimization, and cross-org templating no Python CLI offers.**
 
 apple-search-ads-pp-cli is a native Go CLI covering all campaign, keyword, and reporting operations plus a local SQLite cache for offline analytics. UA teams get bid optimization suggestions, budget pacing forecasts, and cross-org template sync without hitting API rate limits.
@@ -106,6 +109,12 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ```
 
 </details>
+
+### Remote MCP over HTTP
+
+The MCP binary uses stdio by default. To serve it over HTTP, set a private bearer token in the server environment and start `apple-search-ads-pp-mcp --transport http`. It binds to `127.0.0.1:7777` by default. Connect to `http://127.0.0.1:7777/mcp` with `Authorization: Bearer <your token>`. Set `PP_MCP_HTTP_TOKEN` in the process environment; the binary does not accept a token flag. A non-loopback bind requires both `--tls-cert` and `--tls-key`.
+
+For the `apple-search-ads_execute` MCP tool, supply each path ID in `params` by placeholder name. If a path repeats a placeholder, such as `/apps/{id}/product-pages/{id}`, supply its distinct values as an ordered array, for example `{"id":["app-id","page-id"]}`.
 
 ## Authentication
 

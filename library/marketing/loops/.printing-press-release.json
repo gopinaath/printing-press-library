@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "loops",
+  "cli_name": "loops-pp-cli",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T19:18:45Z",
+  "source_commit": "208781893b2a1077f86862d1eee2ebbb715f642e",
+  "printing_press_version": "4.33.0",
+  "run_id": "20261002-173515",
+  "changes": [
+    {
+      "title": "feat(loops): add loops",
+      "pr": 2243,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2243",
+      "commit": "208781893b2a1077f86862d1eee2ebbb715f642e"
+    }
+  ]
+}

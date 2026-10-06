@@ -25,6 +25,7 @@ func newAvvisiSearchCmd(flags *rootFlags) *cobra.Command {
 	var flagPage string
 	var flagSize int
 	var flagAll bool
+	var flagMaxPages int
 
 	cmd := &cobra.Command{
 		Use:         "search",
@@ -32,6 +33,12 @@ func newAvvisiSearchCmd(flags *rootFlags) *cobra.Command {
 		Example:     "  anac-pl-pp-cli avvisi search",
 		Annotations: map[string]string{"pp:endpoint": "avvisi.search", "pp:method": "GET", "pp:path": "/avvisi-full-text", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if flagMaxPages < 1 {
+				return usageErr(fmt.Errorf("--max-pages deve essere almeno 1"))
+			}
+			if cmd.Flags().Changed("max-pages") && !flagAll {
+				return usageErr(fmt.Errorf("--max-pages richiede --all"))
+			}
 			if cmd.Flags().Changed("sort-dir") {
 				allowedSortDirection := []string{"ASC", "DESC"}
 				validSortDirection := false
@@ -44,6 +51,12 @@ func newAvvisiSearchCmd(flags *rootFlags) *cobra.Command {
 				if !validSortDirection {
 					return fmt.Errorf("invalid value %q for --%s: must be one of %v", flagSortDirection, "sort-dir", allowedSortDirection)
 				}
+			}
+			// --page era accettato dal servizio e ignorato: restituiva sempre
+			// la prima pagina. La paginazione di /avvisi-full-text e' a token,
+			// ed e' esposta da 'cerca --pages'.
+			if cmd.Flags().Changed("page") {
+				return usageErr(fmt.Errorf("--page non è supportato: ANAC pagina a token e ignora il numero di pagina. Usa 'cerca --pages N' per scaricare più pagine"))
 			}
 			scheda, err := ValidaRicercaAvvisi(flagCodiceScheda, flagAtlasFuzzySearchEnabled)
 			if err != nil {
@@ -69,9 +82,8 @@ func newAvvisiSearchCmd(flags *rootFlags) *cobra.Command {
 				"sortField":               fmt.Sprintf("%v", flagSortField),
 				"sortDirection":           fmt.Sprintf("%v", flagSortDirection),
 				"atlasFuzzySearchEnabled": fmt.Sprintf("%v", flagAtlasFuzzySearchEnabled),
-				"page":                    fmt.Sprintf("%v", flagPage),
 				"size":                    fmt.Sprintf("%v", flagSize),
-			}, nil, flagAll, "", "offset", "", "", "", cmd.ErrOrStderr())
+			}, nil, flagAll, "tokenPaginazione", "cursor", "size", "lastPaginationToken", "", cmd.ErrOrStderr(), flagMaxPages)
 			if err != nil {
 				return classifyAPIError(err, flags)
 			}
@@ -133,9 +145,11 @@ func newAvvisiSearchCmd(flags *rootFlags) *cobra.Command {
 	cmd.Flags().StringVar(&flagSortField, "sort-field", "", "Campo di ordinamento (es. dataPubblicazione). Il servizio lo onora solo senza --query: con testo libero ordina per rilevanza")
 	cmd.Flags().StringVar(&flagSortDirection, "sort-dir", "", "Direzione di ordinamento: ASC o DESC (one of: ASC, DESC)")
 	cmd.Flags().BoolVar(&flagAtlasFuzzySearchEnabled, "fuzzy", true, "true (default): termini in OR per rilevanza. false: frase esatta, parole adiacenti nell'ordine dato; richiede --scheda")
-	cmd.Flags().StringVar(&flagPage, "page", "0", "Numero di pagina (0-based)")
+	cmd.Flags().StringVar(&flagPage, "page", "0", "Non supportato: ANAC ignora il numero di pagina, usa 'cerca --pages'")
+	_ = cmd.Flags().MarkHidden("page")
 	cmd.Flags().IntVar(&flagSize, "size", 10, "Numero di risultati per pagina")
 	cmd.Flags().BoolVar(&flagAll, "all", false, "Fetch all pages")
+	cmd.Flags().IntVar(&flagMaxPages, "max-pages", paginatedGetMaxPages, "Limite di pagine per --all (aumentalo per ricerche ampie)")
 
 	return cmd
 }

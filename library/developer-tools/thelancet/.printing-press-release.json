@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "thelancet",
   "cli_name": "thelancet-pp-cli",
-  "version": "2026.9.2",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.2",
+  "released_at": "2026-10-04T08:54:26Z",
+  "source_commit": "7376d5fc0da12663c1234a0e72e19912516c76d2",
   "printing_press_version": "4.24.0",
   "run_id": "20260617-072858-2f9fe13e",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "feat(thelancet): curate outputs pub_date and citations_per_year and sorts by per-year",
+      "pr": 2266,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2266",
+      "commit": "7376d5fc0da12663c1234a0e72e19912516c76d2"
     }
   ]
 }

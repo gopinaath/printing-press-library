@@ -1,0 +1,18 @@
+HTTP/2 500 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 974
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline; filename="500"
+content-type: text/html; charset=utf-8
+date: Wed, 23 Sep 2026 23:52:26 GMT
+etag: "4b455aedd6909781e6054e8645348906"
+last-modified: Wed, 23 Sep 2026 23:36:12 GMT
+server: Vercel
+strict-transport-security: max-age=63072000
+x-matched-path: /500
+x-next-error-status: 500
+x-vercel-cache: MISS
+x-vercel-id: sin1::495b4-1790207545179-9c995e0cc4a4
+content-length: 3083
+

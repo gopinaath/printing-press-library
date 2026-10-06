@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "retraction-checker",
   "cli_name": "retraction-checker-pp-cli",
-  "version": "2026.9.2",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.4",
+  "released_at": "2026-10-01T22:18:13Z",
+  "source_commit": "3dd5f1439f6ff106ef5dfd96fdf0fe6524d3c480",
   "printing_press_version": "4.25.0",
   "run_id": "20260702-090842-5bac53b7",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "Fix Retraction Checker watch checkpoint and pagination",
+      "pr": 2152,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2152",
+      "commit": "3dd5f1439f6ff106ef5dfd96fdf0fe6524d3c480"
     }
   ]
 }

@@ -1,0 +1,90 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-09-24T08:33:03.170161Z",
+  "printing_press_version": "4.32.4",
+  "api_name": "oneword-domains",
+  "display_name": "One Word Domains",
+  "cli_name": "oneword-domains-pp-cli",
+  "creator": {
+    "handle": "devacto",
+    "name": "Victor Wibisono"
+  },
+  "owner": "devacto",
+  "printer": "devacto",
+  "printer_name": "Victor Wibisono",
+  "spec_path": "oneword-domains-spec.yaml",
+  "spec_format": "internal",
+  "spec_source": "sniffed",
+  "spec_checksum": "sha256:c6b5b57ad5acdcb1390fb17964cf24d708ab6accad00ca57776962b310de6f22",
+  "run_id": "20260924-061450-62059de3",
+  "category": "developer-tools",
+  "description": "Check a word across every TLD with registrar prices, watch the aftermarket, and generate names with DomainsGPT, all from the terminal with a local store the site itself does not offer.",
+  "mcp_binary": "oneword-domains-pp-mcp",
+  "mcp_tool_count": 14,
+  "mcp_public_tool_count": 11,
+  "mcp_ready": "partial",
+  "api_version": "0.1.0",
+  "auth_type": "cookie",
+  "novel_features": [
+    {
+      "name": "Brainstorm pipeline",
+      "command": "brainstorm",
+      "description": "Generate DomainsGPT names, keep only the available ones with price, cheapest registrar, and a dictionary flag, and save the batch locally; one call per TLD, quota 10 anonymous."
+    },
+    {
+      "name": "Shortlist recheck",
+      "command": "recheck",
+      "description": "Re-check every word and TLD you looked up before and report what changed: taken, freed, premium, price, or popularity."
+    },
+    {
+      "name": "Auction ranking",
+      "command": "listings rank",
+      "description": "Rank aftermarket auctions by how contested the word is across TLDs, price relative to fresh registration, and bid pace."
+    },
+    {
+      "name": "Cross-TLD intersection",
+      "command": "domains intersect",
+      "description": "Find dictionary words that are free on every TLD you list, or free on one and taken on another; needs the lifetime-pass session from auth login --chrome or auth login --cookies-file."
+    },
+    {
+      "name": "Dictionary mining",
+      "command": "words mine",
+      "description": "Filter the 27,627-word dictionary by several categories at once, length, prefix, or glob, offline after a one-time words mine --refresh."
+    },
+    {
+      "name": "TLD inventory",
+      "command": "tlds inventory",
+      "description": "Compare how many available one-word domains each TLD still has for a category and length filter, next to its cheapest registration price (public route)."
+    },
+    {
+      "name": "Cross-TLD check",
+      "command": "check",
+      "description": "Check one word, or a file of words, across the most-viewed TLDs or all 93, with availability, premium flag, popularity, and the cheapest registrar price per TLD."
+    },
+    {
+      "name": "Side-by-side compare",
+      "command": "compare",
+      "description": "Compare several full domains in one table: available, premium, price, popularity, and cheapest registrar, with the cheapest available one called out."
+    },
+    {
+      "name": "Domain hacks",
+      "command": "hacks",
+      "description": "Find domain hacks: split a word so its ending is one of the 93 TLDs (sm.art), or list dictionary words ending in a TLD."
+    },
+    {
+      "name": "TLD price drift",
+      "command": "tlds drift",
+      "description": "Record registrar price snapshots for every TLD and report which prices moved since an earlier snapshot."
+    },
+    {
+      "name": "Aftermarket watch",
+      "command": "listings watch",
+      "description": "Diff the aftermarket feed against the last run: new listings, price or bid changes, listings that disappeared, and auctions ending within a window."
+    },
+    {
+      "name": "DomainsGPT generate",
+      "command": "gpt generate",
+      "description": "Run DomainsGPT and get the streamed names back as real JSON, optionally only the available ones."
+    }
+  ]
+}

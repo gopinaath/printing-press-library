@@ -123,6 +123,10 @@ type MCPBlock struct {
 	PublicToolCount int      `json:"public_tool_count"`
 	AuthType        string   `json:"auth_type,omitempty"`
 	EnvVars         []string `json:"env_vars"`
+	// HTTPAuthType and HTTPAuthEnvVars describe protection of the MCP HTTP
+	// listener, separately from AuthType for the upstream API.
+	HTTPAuthType    string   `json:"http_auth_type,omitempty"`
+	HTTPAuthEnvVars []string `json:"http_auth_env_vars,omitempty"`
 	MCPReady        string   `json:"mcp_ready,omitempty"`
 	SpecFormat      string   `json:"spec_format,omitempty"`
 }
@@ -160,6 +164,8 @@ type printingPressManifest struct {
 	MCPReady           string   `json:"mcp_ready"`
 	AuthType           string   `json:"auth_type"`
 	AuthEnvVars        []string `json:"auth_env_vars"`
+	MCPHTTPAuthType    string   `json:"mcp_http_auth_type"`
+	MCPHTTPAuthEnvVars []string `json:"mcp_http_auth_env_vars"`
 	SpecFormat         string   `json:"spec_format"`
 	NovelFeatures      []struct {
 		Name        string `json:"name"`
@@ -840,6 +846,17 @@ func titleCaseSlug(slug string) string {
 // preserved (prior) signals; full-block preservation for legacy CLIs
 // happens upstream in buildEntry.
 func buildMCPBlock(pp printingPressManifest, prior *MCPBlock, cliDir string) *MCPBlock {
+	// Keep API-auth provenance separate, then publish the stable union for
+	// existing catalog readers that only know mcp.env_vars.
+	envVars := make([]string, 0, len(pp.AuthEnvVars)+len(pp.MCPHTTPAuthEnvVars))
+	seenEnvVars := make(map[string]bool)
+	for _, name := range append(append([]string{}, pp.AuthEnvVars...), pp.MCPHTTPAuthEnvVars...) {
+		if name == "" || seenEnvVars[name] {
+			continue
+		}
+		seenEnvVars[name] = true
+		envVars = append(envVars, name)
+	}
 	mcp := &MCPBlock{
 		Binary:     pp.MCPBinary,
 		Transports: detectMCPTransports(cliDir, pp.MCPBinary),
@@ -848,7 +865,7 @@ func buildMCPBlock(pp printingPressManifest, prior *MCPBlock, cliDir string) *MC
 		// rather than `null`; this matches the historical hand-edited
 		// registry shape where every MCP entry has an env_vars array
 		// regardless of whether it's populated.
-		EnvVars: append([]string{}, pp.AuthEnvVars...),
+		EnvVars: envVars,
 	}
 	switch {
 	case pp.MCPPublicToolCount != nil:
@@ -860,6 +877,16 @@ func buildMCPBlock(pp printingPressManifest, prior *MCPBlock, cliDir string) *MC
 		mcp.AuthType = pp.AuthType
 	} else if prior != nil {
 		mcp.AuthType = prior.AuthType
+	}
+	if pp.MCPHTTPAuthType != "" {
+		mcp.HTTPAuthType = pp.MCPHTTPAuthType
+	} else if prior != nil {
+		mcp.HTTPAuthType = prior.HTTPAuthType
+	}
+	if pp.MCPHTTPAuthEnvVars != nil {
+		mcp.HTTPAuthEnvVars = append([]string{}, pp.MCPHTTPAuthEnvVars...)
+	} else if prior != nil {
+		mcp.HTTPAuthEnvVars = append([]string{}, prior.HTTPAuthEnvVars...)
 	}
 	if pp.MCPReady != "" {
 		mcp.MCPReady = pp.MCPReady

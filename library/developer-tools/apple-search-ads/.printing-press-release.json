@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "apple-search-ads",
   "cli_name": "apple-search-ads-pp-cli",
-  "version": "2026.9.3",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.2",
+  "released_at": "2026-10-02T01:57:00Z",
+  "source_commit": "d616ff03c10cc0d57096472bdd5b3c6c37df433c",
   "printing_press_version": "4.19.0",
   "run_id": "20260529-060535",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(apple-search-ads): secure HTTP MCP and nested path IDs",
+      "pr": 2214,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2214",
+      "commit": "d616ff03c10cc0d57096472bdd5b3c6c37df433c"
     }
   ]
 }

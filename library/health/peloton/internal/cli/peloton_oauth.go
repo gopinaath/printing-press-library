@@ -5,6 +5,7 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -221,7 +222,30 @@ func installManagedPelotonBearer(c *client.Client) error {
 }
 
 // pelotonTwoXXRoundTripper makes a managed catalog proof fail closed on a
-// redirect or other non-2xx response before generated client code can parse it.
+// redirect before generated client code can parse it as a normal success
+// response. client.Client.do()'s own success check (resp.StatusCode < 400)
+// treats any 3xx as success too; with CheckRedirect set to
+// http.ErrUseLastResponse (installManagedPelotonBearer, right above where
+// this gets installed) a redirect reaches that check unfollowed, and
+// whatever thin/HTML/empty body a redirect carries would otherwise be
+// handed to the caller as if it were real typed API data.
+//
+// 4xx/5xx are deliberately left untouched here. do() already builds a
+// proper *client.APIError carrying the real status code and body for
+// those, with its own 429/5xx retry -- exactly what tools.go's
+// status-code-specific error messages (permission denied, auth failed,
+// etc.) match against via strings.Contains(err.Error(), "HTTP 403") and
+// siblings. An earlier version of this roundtripper masked 4xx/5xx the
+// same way as a redirect, discarding the real status code before do()
+// ever saw it and making every one of those hints unreachable for any
+// managed Peloton request -- confirmed as a real, independent gap while
+// investigating a live container whose stale refresh_token produced only
+// "managed Peloton OAuth request failed with HTTP 403" (from the
+// separate, unwrapped oauthHTTPClient token endpoint, not this
+// roundtripper) with no further detail. That specific report turned out
+// to be about the token endpoint, not this masking, but the masking was
+// real regardless and would have hidden the status code on the
+// resource-API side too.
 type pelotonTwoXXRoundTripper struct{ base http.RoundTripper }
 
 func (t pelotonTwoXXRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -233,9 +257,9 @@ func (t pelotonTwoXXRoundTripper) RoundTrip(req *http.Request) (*http.Response, 
 	if err != nil || resp == nil {
 		return resp, err
 	}
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+	if resp.StatusCode < http.StatusOK || (resp.StatusCode >= http.StatusMultipleChoices && resp.StatusCode < http.StatusBadRequest) {
 		_ = resp.Body.Close()
-		return nil, fmt.Errorf("managed Peloton HTTP response must be 2xx")
+		return nil, fmt.Errorf("managed Peloton HTTP response must not be a redirect (got HTTP %d)", resp.StatusCode)
 	}
 	return resp, nil
 }
@@ -250,8 +274,40 @@ func managedPelotonAccessToken() (string, error) {
 	}
 
 	var next pelotonTokenResponse
+	recoveredViaBootstrapAfterDeadRefreshToken := false
 	if err == nil && bundle.RefreshToken != "" {
 		next, err = refreshPelotonToken(bundle.RefreshToken)
+		if err != nil && hasBootstrapCredentials() && isRefreshCredentialRejected(err) {
+			// A refresh_token can go permanently invalid outside this
+			// process's control (provider-side rotation, revocation,
+			// absolute expiry) -- confirmed live as the actual cause
+			// behind a week of persistent refresh failures on a
+			// long-running server, with no automatic recovery even
+			// though bootstrap credentials would have worked. Only the
+			// "no refresh_token cached at all" branch below used to try
+			// bootstrapPelotonToken(); a failed refresh returned
+			// immediately instead. Fall back here too when a fresh
+			// username/password login is possible, rather than staying
+			// dead until a human manually reseeds the token file. If
+			// bootstrap also fails, err below still carries the
+			// original refresh failure (more diagnostic than a generic
+			// "bootstrap credentials unavailable" would be, since
+			// bootstrap wasn't the credential that actually failed).
+			//
+			// isRefreshCredentialRejected gates this to 4xx-excluding-429
+			// only: without it, a plain network timeout, a 429 (the
+			// provider already rate-limiting this client), or a
+			// provider-side 5xx would ALSO trigger an extra bootstrap
+			// request -- none of which say anything about whether the
+			// refresh_token itself is actually invalid, and firing a
+			// second password-grant request into an active timeout or
+			// 429 only makes things worse (confirmed as a real gap in
+			// review on the first version of this fix).
+			if bootstrapped, bootErr := bootstrapPelotonToken(); bootErr == nil {
+				next, err = bootstrapped, nil
+				recoveredViaBootstrapAfterDeadRefreshToken = true
+			}
+		}
 	} else {
 		next, err = bootstrapPelotonToken()
 	}
@@ -261,7 +317,13 @@ func managedPelotonAccessToken() (string, error) {
 	if next.AccessToken == "" || next.ExpiresIn <= 0 {
 		return "", fmt.Errorf("managed Peloton OAuth response is incomplete")
 	}
-	if next.RefreshToken == "" {
+	if next.RefreshToken == "" && !recoveredViaBootstrapAfterDeadRefreshToken {
+		// Carrying the old refresh_token forward is only safe for a
+		// routine refresh that simply didn't rotate it. A bootstrap
+		// login recovering from an already-dead refresh_token must never
+		// fall back to that same dead value if the fresh login somehow
+		// omitted its own -- that would silently resurrect the exact
+		// credential this fallback exists to route around.
 		next.RefreshToken = bundle.RefreshToken
 	}
 	updated := pelotonTokenBundle{
@@ -280,6 +342,15 @@ func managedPelotonAccessToken() (string, error) {
 		return "", fmt.Errorf("saving managed Peloton OAuth token: %w", err)
 	}
 	return updated.AccessToken, nil
+}
+
+// hasBootstrapCredentials reports whether a fresh username/password login
+// is possible right now, so a failed refresh can decide whether attempting
+// bootstrapPelotonToken() is worth the extra request rather than just
+// letting it fail with its own "credentials are unavailable" error, which
+// would otherwise replace a more diagnostic refresh failure message.
+func hasBootstrapCredentials() bool {
+	return strings.TrimSpace(os.Getenv("PELOTON_OAUTH_USERNAME")) != "" && os.Getenv("PELOTON_OAUTH_PASSWORD") != ""
 }
 
 func bootstrapPelotonToken() (pelotonTokenResponse, error) {
@@ -395,6 +466,40 @@ func oauthAudience() string {
 }
 func oauthScope() string { return oauthProviderValue("PELOTON_OAUTH_SCOPE", pelotonOAuthScope) }
 
+// pelotonOAuthHTTPError distinguishes a non-2xx response FROM the OAuth
+// token endpoint (a real HTTP status the provider chose to send) from a
+// network-level failure (timeout, DNS, connection reset -- no status code
+// at all) or a local configuration error. Callers use isRefreshCredentialRejected
+// to decide whether a failure means "this specific credential is invalid,"
+// as opposed to something transient that retrying with a different grant
+// type wouldn't fix and could make worse.
+type pelotonOAuthHTTPError struct{ statusCode int }
+
+func (e *pelotonOAuthHTTPError) Error() string {
+	return fmt.Sprintf("managed Peloton OAuth request failed with HTTP %d", e.statusCode)
+}
+
+// isRefreshCredentialRejected reports whether err indicates the OAuth
+// provider rejected the request itself as invalid (4xx, e.g. Auth0's
+// invalid_grant for a dead/rotated/revoked refresh_token) as opposed to a
+// transient condition a fallback login can't fix and could make worse:
+// a network-level failure (no status code to inspect at all), 429 (the
+// provider is already rate-limiting this client -- firing an immediate
+// second request via a different grant type fights the throttle instead
+// of respecting it), or 5xx (a provider-side outage, not a statement
+// about this specific credential). Confirmed as a live gap (Greptile
+// review on the original fallback fix): without this check, EVERY refresh
+// failure -- including plain timeouts -- triggered an extra
+// bootstrapPelotonToken() request, up to roughly doubling auth latency on
+// a transient blip and adding fuel to an active 429.
+func isRefreshCredentialRejected(err error) bool {
+	var httpErr *pelotonOAuthHTTPError
+	if !errors.As(err, &httpErr) {
+		return false
+	}
+	return httpErr.statusCode >= 400 && httpErr.statusCode < 500 && httpErr.statusCode != http.StatusTooManyRequests
+}
+
 func requestPelotonToken(form url.Values) (pelotonTokenResponse, error) {
 	if form.Get("client_id") == "" || (form.Get("grant_type") == pelotonOAuthGrant && form.Get("realm") == "") {
 		return pelotonTokenResponse{}, fmt.Errorf("managed Peloton OAuth public client configuration is unavailable")
@@ -412,7 +517,7 @@ func requestPelotonToken(form url.Values) (pelotonTokenResponse, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return pelotonTokenResponse{}, fmt.Errorf("managed Peloton OAuth request failed with HTTP %d", resp.StatusCode)
+		return pelotonTokenResponse{}, &pelotonOAuthHTTPError{statusCode: resp.StatusCode}
 	}
 	var token pelotonTokenResponse
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 64<<10)).Decode(&token); err != nil {

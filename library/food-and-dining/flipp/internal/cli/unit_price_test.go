@@ -51,6 +51,20 @@ func TestParseUnitPriceHandlesLiquidGrocerySizes(t *testing.T) {
 	if got, want := *half.Value, 7.98; got != want {
 		t.Fatalf("fractional value = %.2f, want %.2f", got, want)
 	}
+
+	mixed := parseUnitPrice("Family Milk (1 1/2 Gallon)", &price)
+	if mixed.Value == nil {
+		t.Fatalf("expected mixed-number unit price, got warning %q", mixed.Warning)
+	}
+	if got, want := *mixed.Value, 2.66; got < want-0.001 || got > want+0.001 {
+		t.Fatalf("mixed-number value = %.3f, want %.3f", got, want)
+	}
+	for _, quantity := range []string{"1 1/2", "1 1/ 2", "1 1 /2", "1 1 / 2", "1   1  /  2"} {
+		info := parseUnitPrice("Family Milk ("+quantity+" Gallon)", &price)
+		if info.Value == nil || *info.Value < 2.659 || *info.Value > 2.661 {
+			t.Fatalf("mixed quantity %q gave %+v, want 1.5 gallons at 2.66 per gallon", quantity, info)
+		}
+	}
 }
 
 func TestMatchesSearchIntentRejectsMilkCandyForMilkQuery(t *testing.T) {

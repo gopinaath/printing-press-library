@@ -19,25 +19,45 @@ func newListingsUpdateInventoriesCmd(flags *rootFlags) *cobra.Command {
 	var stdinBody bool
 
 	cmd := &cobra.Command{
-		Use:         "update-inventories",
-		Short:       "Update the inventories of channel listings.",
-		Example:     "  hostex-pp-cli listings update-inventories --channel-type airbnb",
-		Annotations: map[string]string{"pp:endpoint": "listings.update-inventories", "pp:method": "POST", "pp:path": "/listings/inventories"},
+		Use:   "update-inventories",
+		Short: "Update the inventories of channel listings.",
+		Long: `Update the inventories of channel listings.
+
+Body shape for --inventories (or the "inventories" key with --stdin):
+  [{"start_date":"YYYY-MM-DD","end_date":"YYYY-MM-DD","inventory":<integer>}]
+inventory is the number of available units for the range (0 closes the channel for those dates). end_date must be within 3 years from now.
+
+This only changes the per-channel inventory, not the property calendar (use availabilities update for that); a later availability change can overwrite it. Wrong values can cause oversells or sellouts. Run with --dry-run first. The API is asynchronous: success only means the task was queued, so confirm the result in the Hostex Host Portal (https://hostex.io/app/price).`,
+		Example: `  # Preview first, then drop --dry-run to send
+  hostex-pp-cli listings update-inventories --channel-type airbnb --listing-id <listing-id> --inventories '[{"start_date":"YYYY-MM-DD","end_date":"YYYY-MM-DD","inventory":1}]' --dry-run`,
+		Annotations: map[string]string{"pp:endpoint": "listings.update-inventories", "pp:method": "POST", "pp:path": "/listings/inventories", "pp:requires-input": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Bare invocation of a command with required input prints help
 			// instead of pflag's terse "required flag not set" error. Optional-
 			// only read commands fall through so a bare call still executes.
-			if cmd.Flags().NFlag() == 0 && len(args) == 0 && !flags.dryRun {
+			// Machine callers (--json/--agent, which sets asJSON) get a usage
+			// error + exit 2 instead of silent exit-0 help, so an incomplete
+			// invocation is never mistaken for success.
+			if !hasChangedLocalFlags(cmd) && len(args) == 0 && !flags.dryRun {
+				if flags.asJSON {
+					if printErr := printJSONFiltered(cmd.OutOrStdout(), map[string]any{
+						"error": "requires input",
+						"usage": cmd.CommandPath() + " --help",
+					}, flags); printErr != nil {
+						return printErr
+					}
+					return usageErr(fmt.Errorf("%q requires input; run %q for usage", cmd.CommandPath(), cmd.CommandPath()+" --help"))
+				}
 				return cmd.Help()
 			}
 			if !stdinBody {
-				if !cmd.Flags().Changed("channel-type") && !flags.dryRun {
+				if !cmd.Flags().Changed("channel-type") && bodyChannelType == "" && !flags.dryRun {
 					return fmt.Errorf("required flag \"%s\" not set", "channel-type")
 				}
-				if !cmd.Flags().Changed("inventories") && !flags.dryRun {
+				if !cmd.Flags().Changed("inventories") && bodyInventories == "" && !flags.dryRun {
 					return fmt.Errorf("required flag \"%s\" not set", "inventories")
 				}
-				if !cmd.Flags().Changed("listing-id") && !flags.dryRun {
+				if !cmd.Flags().Changed("listing-id") && bodyListingId == "" && !flags.dryRun {
 					return fmt.Errorf("required flag \"%s\" not set", "listing-id")
 				}
 			}
@@ -47,7 +67,7 @@ func newListingsUpdateInventoriesCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 			params := map[string]string{}
-			var body map[string]any
+			var body any
 			if stdinBody {
 				stdinData, err := io.ReadAll(os.Stdin)
 				if err != nil {
@@ -59,24 +79,29 @@ func newListingsUpdateInventoriesCmd(flags *rootFlags) *cobra.Command {
 				}
 				body = jsonBody
 			} else {
-				body = map[string]any{}
-				if bodyChannelType != "" {
-					body["channel_type"] = bodyChannelType
+				bodyMap := map[string]any{}
+				body = bodyMap
+				if cmd.Flags().Changed("channel-type") || bodyChannelType != "" {
+					bodyMap["channel_type"] = bodyChannelType
 				}
-				if bodyInventories != "" {
+				if cmd.Flags().Changed("inventories") || bodyInventories != "" {
 					var parsedInventories any
 					if err := json.Unmarshal([]byte(bodyInventories), &parsedInventories); err != nil {
 						return fmt.Errorf("parsing --inventories JSON: %w", err)
 					}
-					body["inventories"] = parsedInventories
+					asArray, ok := parsedInventories.([]any)
+					if !ok {
+						return fmt.Errorf("--inventories must be a JSON array, got JSON %T", parsedInventories)
+					}
+					bodyMap["inventories"] = asArray
 				}
-				if bodyListingId != "" {
-					body["listing_id"] = bodyListingId
+				if cmd.Flags().Changed("listing-id") || bodyListingId != "" {
+					bodyMap["listing_id"] = bodyListingId
 				}
 			}
 			data, statusCode, err := c.PostWithParams(cmd.Context(), path, params, body)
 			if err != nil {
-				return classifyAPIError(err, flags)
+				return classifyAPIError(cmd.OutOrStdout(), err, flags)
 			}
 			// Inspect the mutate response body for a partial-failure-shaped
 			// field (e.g. Google Ads `partialFailureError`). Several Google
@@ -169,15 +194,22 @@ func newListingsUpdateInventoriesCmd(flags *rootFlags) *cobra.Command {
 						}
 					}
 				}
+				// Mutation-riding reads (POST search, RPC-over-POST lists) return
+				// the same single-key collection envelopes as GET reads. Unwrap
+				// before filtering so rows nest once under the result key and
+				// --select filters rows, not envelope keys; plain created-object
+				// responses pass through unwrapSingleKeyArray untouched.
 				// Apply --compact and --select to the API response before wrapping.
 				// --select wins when both are set: explicit field choice trumps the
 				// generic high-gravity allow-list. Otherwise --compact still applies
 				// when --agent is on but the user did not name fields.
-				filtered := data
+				var selectErr error
+				filtered := unwrapSingleKeyArray(data)
 				if flags.selectFields != "" {
-					filtered = filterFields(filtered, flags.selectFields)
+					filtered, selectErr = filterFieldsChecked(filtered, flags.selectFields)
+					selectErr = selectErrorForDryRun(selectErr, flags, data)
 				} else if flags.compact {
-					filtered = compactFields(filtered)
+					filtered = compactFields(filtered, map[string]bool{"error_code": true, "request_id": true})
 				}
 				if len(filtered) > 0 {
 					var parsed any
@@ -193,32 +225,39 @@ func newListingsUpdateInventoriesCmd(flags *rootFlags) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				if perr := printOutput(cmd.OutOrStdout(), json.RawMessage(envelopeJSON), true); perr != nil {
+				resultKey := "data"
+				if flags.agent {
+					resultKey = "results"
+				}
+				structured, err := wrapPlatformStructuredOutput(json.RawMessage(envelopeJSON), flags, resultKey, true)
+				if err != nil {
+					return err
+				}
+				if perr := printOutput(cmd.OutOrStdout(), structured, true); perr != nil {
 					return perr
 				}
 				if partialFailure != nil && !flags.allowPartialFailure {
 					return partialFailureErr(fmt.Errorf("partial failure in %s response: %s", "listings", partialFailure.Message))
 				}
-				return nil
+				return selectErr
 			}
 			// Fall-through for mutate paths that did not hit the table or
 			// asJSON branches: --quiet, --csv, --plain, and default terminal
-			// raw output. printOutputWithFlags renders the body, then the
-			// typed partial-failure exit fires unless --allow-partial-failure
-			// downgrades it. Without this guard a partial failure would exit
-			// 0 for these output modes — the exact silent-swallow regression
-			// the surrounding patch is preventing for asJSON / piped output.
-			if perr := printOutputWithFlags(cmd.OutOrStdout(), data, flags); perr != nil {
-				return perr
-			}
+			// raw output. printOutputWithFlagsMeta renders the body with live
+			// provenance, then the typed partial-failure exit fires unless
+			// --allow-partial-failure downgrades it. Without this guard a
+			// partial failure would exit 0 for these output modes — the exact
+			// silent-swallow regression the surrounding patch is preventing
+			// for asJSON / piped output.
+			printErr := printOutputWithFlagsMeta(cmd.OutOrStdout(), data, flags, map[string]any{"source": "live"}, map[string]bool{"error_code": true, "request_id": true})
 			if partialFailure != nil && !flags.allowPartialFailure {
 				return partialFailureErr(fmt.Errorf("partial failure in %s response: %s", "listings", partialFailure.Message))
 			}
-			return nil
+			return printErr
 		},
 	}
 	cmd.Flags().StringVar(&bodyChannelType, "channel-type", "", "The type of the channel to be queried.")
-	cmd.Flags().StringVar(&bodyInventories, "inventories", "", "Inventories")
+	cmd.Flags().StringVar(&bodyInventories, "inventories", "", "JSON array of inventory ranges, e.g. '[{\"start_date\":\"YYYY-MM-DD\",\"end_date\":\"YYYY-MM-DD\",\"inventory\":1}]'. inventory is an integer count of available units; dates are YYYY-MM-DD and end_date must be within 3 years from now")
 	cmd.Flags().StringVar(&bodyListingId, "listing-id", "", "The unique identifier for different channels.")
 	cmd.Flags().BoolVar(&stdinBody, "stdin", false, "Read request body as JSON from stdin")
 

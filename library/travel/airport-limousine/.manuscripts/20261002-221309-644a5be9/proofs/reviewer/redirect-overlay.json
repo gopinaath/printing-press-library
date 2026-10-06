@@ -1,0 +1,5 @@
+{
+  "Replace": {
+    "<cli-dir>/internal/limousine/redirect_budget_review_test.go": "<proof-dir>/redirect_budget_review_test.go"
+  }
+}

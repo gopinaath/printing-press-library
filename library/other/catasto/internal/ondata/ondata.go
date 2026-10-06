@@ -29,11 +29,14 @@ import (
 	"github.com/parquet-go/parquet-go"
 )
 
+// PATCH: Refresh cached ondata files after a day while retaining an offline copy.
 const (
 	BaseURL          = "https://raw.githubusercontent.com/ondata/dati_catastali/main/S_0000_ITALIA/anagrafica"
 	IndexFileName    = "index.parquet"
 	defaultTimeout   = 30 * time.Second
-	parquetSizeHint  = 1 << 30 // 1GB upper bound on a regional file
+	defaultCacheTTL  = 24 * time.Hour
+	parquetSizeHint  = 1 << 30  // 1GB upper bound on a regional file
+	indexSizeLimit   = 16 << 20 // index is normally around 50KB
 	streamBufferSize = 16 << 20
 )
 
@@ -81,10 +84,13 @@ var ErrNotFound = errors.New("parcel not found")
 // Most commonly this means Trentino-Alto-Adige (TAA runs autonomous cadastres).
 var ErrComuneNotIndexed = errors.New("comune not in ondata index (Trentino-Alto-Adige is not covered)")
 
+// PATCH: SourceURL and CacheTTL make refresh policy testable without live requests.
 // Client is a small fetch+query helper.
 type Client struct {
-	HTTP     *http.Client
-	CacheDir string // local dir to store downloaded Parquet files
+	HTTP      *http.Client
+	CacheDir  string        // local dir to store downloaded Parquet files
+	SourceURL string        // dataset base URL; defaults to BaseURL
+	CacheTTL  time.Duration // cache freshness; defaults to 24 hours
 }
 
 // NewClient returns a client that caches Parquet files under cacheDir.
@@ -97,9 +103,12 @@ func NewClient(cacheDir string) *Client {
 		}
 		cacheDir = filepath.Join(base, "catasto-pp-cli", "ondata")
 	}
+	// PATCH: Use the same refresh policy for the index and regional files.
 	return &Client{
-		HTTP:     &http.Client{Timeout: defaultTimeout},
-		CacheDir: cacheDir,
+		HTTP:      &http.Client{Timeout: defaultTimeout},
+		CacheDir:  cacheDir,
+		SourceURL: BaseURL,
+		CacheTTL:  defaultCacheTTL,
 	}
 }
 
@@ -264,47 +273,166 @@ func sortStringsAsc(s []string) {
 	}
 }
 
-// fetch downloads a Parquet file if not already cached locally.
-// Caches under CacheDir/<fileName>.
+// PATCH: Refresh stale cached files atomically and retain a usable offline copy.
+// fetch refreshes a cached Parquet file after its TTL. A failed refresh keeps
+// an existing nonempty copy available for offline lookups.
 func (c *Client) fetch(ctx context.Context, fileName string) (string, error) {
+	if fileName == "" || fileName == "." || fileName == ".." ||
+		filepath.Base(fileName) != fileName || strings.ContainsAny(fileName, `/\`) {
+		return "", fmt.Errorf("invalid cadastral dataset filename %q", fileName)
+	}
 	if err := os.MkdirAll(c.CacheDir, 0o755); err != nil {
 		return "", err
 	}
 	local := filepath.Join(c.CacheDir, fileName)
-	if fi, err := os.Stat(local); err == nil && fi.Size() > 0 {
+	fi, statErr := os.Lstat(local)
+	hasCache := statErr == nil && fi.Mode().IsRegular() && fi.Size() > 0
+	ttl := c.CacheTTL
+	if ttl <= 0 {
+		ttl = defaultCacheTTL
+	}
+	if hasCache && time.Since(fi.ModTime()) < ttl {
 		return local, nil
 	}
-	url := BaseURL + "/" + fileName
+	useStaleOnFailure := func(err error) (string, error) {
+		if hasCache && ctx.Err() == nil {
+			fmt.Fprintf(os.Stderr, "warning: refresh failed for %s; using cached cadastral data\n", fileName)
+			return local, nil
+		}
+		return "", err
+	}
+	baseURL := c.SourceURL
+	if baseURL == "" {
+		baseURL = BaseURL
+	}
+	url := strings.TrimRight(baseURL, "/") + "/" + fileName
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return "", err
+		return useStaleOnFailure(err)
 	}
 	req.Header.Set("User-Agent", "catasto-pp-cli (+https://github.com/mvanhorn/cli-printing-press)")
 	resp, err := c.HTTP.Do(req)
 	if err != nil {
-		return "", err
+		return useStaleOnFailure(err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("GET %s: HTTP %d", url, resp.StatusCode)
+		return useStaleOnFailure(fmt.Errorf("GET %s: HTTP %d", url, resp.StatusCode))
+	}
+	limit := int64(parquetSizeHint)
+	if fileName == IndexFileName {
+		limit = indexSizeLimit
+	}
+	if resp.ContentLength > limit {
+		return useStaleOnFailure(fmt.Errorf("cadastral dataset %s exceeds %d bytes", fileName, limit))
 	}
 	tmp, err := os.CreateTemp(c.CacheDir, fileName+".part-*")
 	if err != nil {
-		return "", err
+		return useStaleOnFailure(err)
 	}
-	if _, err := io.Copy(tmp, resp.Body); err != nil {
+	n, err := io.Copy(tmp, io.LimitReader(resp.Body, limit+1))
+	if err != nil || n == 0 || n > limit {
 		tmp.Close()
 		os.Remove(tmp.Name())
-		return "", err
+		if err == nil {
+			if n == 0 {
+				err = fmt.Errorf("empty cadastral dataset %s", fileName)
+			} else {
+				err = fmt.Errorf("cadastral dataset %s exceeds %d bytes", fileName, limit)
+			}
+		}
+		return useStaleOnFailure(err)
 	}
 	if err := tmp.Close(); err != nil {
-		return "", err
+		os.Remove(tmp.Name())
+		return useStaleOnFailure(err)
+	}
+	if err := validateDownloadedParquet(tmp.Name(), fileName); err != nil {
+		os.Remove(tmp.Name())
+		return useStaleOnFailure(fmt.Errorf("invalid cadastral dataset %s: %w", fileName, err))
 	}
 	if err := os.Rename(tmp.Name(), local); err != nil {
 		os.Remove(tmp.Name())
-		return "", err
+		return useStaleOnFailure(err)
 	}
 	return local, nil
+}
+
+// Validate every row through the same typed decoder used by lookups before a
+// downloaded file can replace the offline copy. Read in batches to keep memory
+// bounded even when a regional Parquet file approaches the download limit.
+func validateDownloadedParquet(path, fileName string) (err error) {
+	// parquet-go can panic while mapping an incompatible downloaded schema
+	// onto the typed rows. Treat that as a rejected refresh, preserving the
+	// existing offline file instead of terminating the lookup.
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			err = fmt.Errorf("Parquet decoder rejected incompatible schema: %v", recovered)
+		}
+	}()
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	pf, err := parquet.OpenFile(f, fi.Size())
+	if err != nil {
+		return err
+	}
+	textKinds := []parquet.Kind{parquet.ByteArray, parquet.FixedLenByteArray}
+	required := map[string][]parquet.Kind{"comune": textKinds, "foglio": textKinds, "particella": textKinds, "x": {parquet.Int32, parquet.Int64}, "y": {parquet.Int32, parquet.Int64}}
+	if fileName == IndexFileName {
+		required = map[string][]parquet.Kind{"comune": textKinds, "file": textKinds, "CODISTAT": textKinds, "DENOMINAZIONE_IT": textKinds}
+	}
+	for column, kinds := range required {
+		leaf, ok := pf.Schema().Lookup(column)
+		if !ok {
+			return fmt.Errorf("missing Parquet column %s", column)
+		}
+		got := leaf.Node.Type().Kind()
+		compatible := false
+		for _, kind := range kinds {
+			if got == kind {
+				compatible = true
+				break
+			}
+		}
+		if !compatible {
+			return fmt.Errorf("Parquet column %s has incompatible type %s", column, got)
+		}
+	}
+	if fileName == IndexFileName {
+		return validateParquetRows[IndexEntry](pf)
+	}
+	return validateParquetRows[ParcelRow](pf)
+}
+
+func validateParquetRows[T any](pf *parquet.File) error {
+	reader := parquet.NewGenericReader[T](pf)
+	defer reader.Close()
+	rows := make([]T, 1024)
+	total := 0
+	for {
+		n, err := reader.Read(rows)
+		total += n
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return fmt.Errorf("Parquet reader made no progress")
+		}
+	}
+	if total == 0 {
+		return fmt.Errorf("Parquet file has no rows")
+	}
+	return nil
 }
 
 // readParquet reads an entire Parquet file into a slice of T.

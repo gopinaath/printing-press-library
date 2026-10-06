@@ -1,5 +1,7 @@
 # Copper CLI
 
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 **The Copper CRM command line no one else built: full CRUD plus a local database, weighted pipeline forecasting, stale-deal detection, and the bulk operations Copper's own API refuses to provide.**
 
 Copper has no CLI, no Go client, and no agent-native tool. This turns a click-heavy web CRM into a scriptable, offline-queryable surface. It mirrors people, companies, leads, opportunities, projects, tasks, and activities into local SQLite, then adds the weighted forecast (forecast), cold-deal sweep (stale), and rate-limit-aware bulk editor (bulk) that the API and web UI leave out.
@@ -285,6 +287,10 @@ Precedence matters in fleets: an ambient per-kind variable such as `COPPER_DATA_
 Relocation is one-way. Unsetting `COPPER_HOME` does not move files back to platform defaults, and `doctor` cannot find credentials left under a former root. Move the files manually before unsetting relocation variables.
 
 Existing installs keep working because the platform-default rung matches the legacy layout. On the first auth write, stored secrets leave `config.toml` and are consolidated into `credentials.toml` under the data directory. Run `copper-pp-cli doctor --fail-on warn` to check path and credential-location warnings in automation.
+
+Installs that used the older `config.json` format are read as a fallback. If both formats exist, TOML settings take priority. Typed credentials come from TOML if it has any, otherwise the complete typed credential set comes from JSON; fields from the two files are never combined. On the next auth save, those fields move to `credentials.toml`, non-secret settings move to `config.toml`, and the old JSON is scrubbed. If an older JSON file cannot be inspected, active TOML still works, but auth save reports an incomplete migration and `doctor` warns. A failed scrub also returns an incomplete-migration error; `doctor` warns while old typed credentials remain or cannot be checked. Agentcookie-managed configs keep their existing external-store behavior.
+
+Custom `headers` entries remain in config files. The migration cannot tell whether a custom header contains a secret, so review old JSON headers manually and move any credential-valued header to a supported auth field before relying on the scrub.
 
 ## Commands
 

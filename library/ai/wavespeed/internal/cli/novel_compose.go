@@ -1,5 +1,7 @@
 // Copyright 2026 Cathryn Lavery and contributors. Licensed under Apache-2.0. See LICENSE.
 
+// pp:data-source live
+
 package cli
 
 import (
@@ -30,9 +32,11 @@ type composeStep struct {
 func newComposeCmd(flags *rootFlags) *cobra.Command {
 	var cf composeFlags
 	cmd := &cobra.Command{
-		Use:   "compose",
-		Short: "Run an explicit multi-step generation pipeline",
-		Long:  "Chain steps (e.g. text->image,image->upscale,image->video), feeding each step's output into the next. A step failure rolls back later steps and records the completed steps.",
+		Use:         "compose",
+		Annotations: map[string]string{"pp:live-happy-path": "true", "pp:happy-args": "--steps=text->image,image->image;--prompt=a red circle on white;--models=pruna-ai/p-image/text-to-image,wavespeed-ai/z-image-turbo/image-to-image"},
+		Example:     "  wavespeed-pp-cli compose --steps \"text->image,image->video\" --prompt \"a red mug on oak\" --models wavespeed-ai/flux-dev,bytedance/seedance-v1.5-pro/image-to-video --agent",
+		Short:       "Run an explicit multi-step generation pipeline",
+		Long:        "Chain steps (e.g. text->image,image->upscale,image->video), feeding each step's output into the next. A step failure rolls back later steps and records the completed steps.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if strings.TrimSpace(cf.prompt) == "" {
 				return usageErr(fmt.Errorf("--prompt is required"))
@@ -56,6 +60,7 @@ func newComposeCmd(flags *rootFlags) *cobra.Command {
 			env := newEnvelope("compose")
 			if flags.dryRun {
 				env.DryRun = true
+				env.Action = fmt.Sprintf("submit %d chained predictions", len(steps))
 				for i, st := range steps {
 					env.Results = append(env.Results, map[string]any{"step": i, "from": st.From, "to": st.To, "model": st.Model})
 				}
@@ -66,7 +71,7 @@ func newComposeCmd(flags *rootFlags) *cobra.Command {
 			recordEnabled := shouldRecord(project, true, cf.noRecord)
 			ctx := cmd.Context()
 			prevURL := ""
-			var stepFailed bool
+			var stepFailed, downloadIncomplete bool
 			for i, st := range steps {
 				inputs := map[string]any{"prompt": cf.prompt}
 				if i > 0 && prevURL != "" {
@@ -87,6 +92,14 @@ func newComposeCmd(flags *rootFlags) *cobra.Command {
 					for _, d := range res.Downloads {
 						oc.Files = append(oc.Files, d.Path)
 					}
+					// The prediction completed and was billed. Its output URL
+					// still feeds the next step, so a failed local download is
+					// a warning, not a reason to stop the pipeline.
+					noteDownloadFailure(&oc, res)
+					if oc.DownloadFailed {
+						env.Warnings = append(env.Warnings, fmt.Sprintf("step %d (%s->%s): %s", i, st.From, st.To, oc.Warning))
+						downloadIncomplete = true
+					}
 					if urls := collectURLStrings(unwrapWaveSpeedData(res.Result)); len(urls) > 0 {
 						prevURL = urls[0]
 					}
@@ -102,6 +115,7 @@ func newComposeCmd(flags *rootFlags) *cobra.Command {
 					if len(oc.Files) > 0 {
 						g.Path = oc.Files[0]
 					}
+					g.Data = oc.recoveryData()
 					if rerr := recordGeneration(g); rerr != nil {
 						env.LibraryRecordErrors = append(env.LibraryRecordErrors, rerr.Error())
 					}
@@ -119,6 +133,12 @@ func newComposeCmd(flags *rootFlags) *cobra.Command {
 				env.RecommendedAction = "fix the failed step's model/inputs and re-run; completed steps are recorded"
 				_ = emitEnvelope(cmd.OutOrStdout(), env)
 				return partialFailureErr(fmt.Errorf("compose pipeline stopped at a failed step"))
+			}
+			if downloadIncomplete {
+				env.PartialFailure = true
+				env.RecommendedAction = "every step completed, but some outputs were not saved locally; download them from the URLs in warnings or with prediction-results <id>"
+				_ = emitEnvelope(cmd.OutOrStdout(), env)
+				return partialFailureErr(fmt.Errorf("compose completed but some outputs were not downloaded"))
 			}
 			env.RecommendedAction = "the final step output is your deliverable"
 			return emitEnvelope(cmd.OutOrStdout(), env)

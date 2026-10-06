@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "tabelog",
+  "cli_name": "tabelog-pp-cli",
+  "version": "2026.9.1",
+  "released_at": "2026-09-28T08:53:15Z",
+  "source_commit": "296146acca4b580779f04a8d72c8cedb2e882d5e",
+  "printing_press_version": "4.32.5",
+  "run_id": "20260927-212939-86ef661f",
+  "changes": [
+    {
+      "title": "feat(tabelog): add tabelog",
+      "pr": 2076,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2076",
+      "commit": "296146acca4b580779f04a8d72c8cedb2e882d5e"
+    }
+  ]
+}

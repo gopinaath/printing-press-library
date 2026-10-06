@@ -1,0 +1,9 @@
+{
+  "dir": "\u003ccli-dir\u003e/oneword-domains-pp-cli",
+  "research_dir": "\u003ccli-dir\u003e/20260924-061450-62059de3",
+  "verdict": "pass",
+  "actors": null,
+  "issues": [
+    "no Apify actor references found, skipping"
+  ]
+}

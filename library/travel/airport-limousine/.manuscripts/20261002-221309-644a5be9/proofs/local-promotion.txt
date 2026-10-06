@@ -1,0 +1,7 @@
+{
+  "cli": "airport-limousine-pp-cli",
+  "library_dir": "<cli-dir>",
+  "preserved_patches": [],
+  "promoted": true
+}
+

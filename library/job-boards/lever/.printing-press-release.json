@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "lever",
   "cli_name": "lever-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T21:13:11Z",
+  "source_commit": "b21cf4f5b927715e27385b52a5e816e290f66e46",
   "printing_press_version": "4.28.0",
   "run_id": "20260807-044310",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "Replace Lever company snapshots only after complete fetch",
+      "pr": 2134,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2134",
+      "commit": "b21cf4f5b927715e27385b52a5e816e290f66e46"
     }
   ]
 }

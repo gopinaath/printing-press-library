@@ -1,5 +1,8 @@
 # Flipp CLI
 
+Created by [@mlabrenz](https://github.com/mlabrenz) (mlabrenz).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 **Find local Flipp flyer deals, coupons, and grocery savings by ZIP or postal code.**
 
 Search local weekly flyers, coupons, merchants, and item clippings from Flipp's unauthenticated web endpoints. The CLI adds agent-native JSON, local SQLite, basket comparison, expiring-deal views, and unit-price helpers for grocery planning.
@@ -320,6 +323,20 @@ flipp-pp-cli flyers list --dry-run
 # Agent mode — JSON + compact + no prompts in one flag
 flipp-pp-cli flyers list --agent
 ```
+
+## Offline markets
+
+Choose a postal code for every archive or sync, and choose the same market for local search:
+
+```bash
+flipp-pp-cli sync --postal-code 10001
+flipp-pp-cli search "coffee" --zip 10001 --data-source local
+flipp-pp-cli workflow archive --postal-code 10001
+```
+
+The local database keeps flyers, merchants, and cached item search hits from different postal codes and locales separate. A database upgrade moves older rows only when their saved location is known. Rows with no saved location, or a collision with an already scoped row, remain in the database but are hidden from market-specific reads. Re-sync the intended market to refresh it. A `--full` archive clears only that market's cursor and reports an incomplete resource as an error. This upgrade raises the local database schema to version 5, so older Flipp binaries cannot open it afterward.
+
+`flyers items <flyer_id>` is live-only because its API request has no postal code. Its clippings cannot safely be assigned to a market in the offline database. If a flyers or merchants response advertises another page without a declared paginator, archive reports an incomplete result instead of claiming success.
 
 ## Agent Usage
 

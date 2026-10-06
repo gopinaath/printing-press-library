@@ -1,0 +1,12 @@
+HTTP/2 401 
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain; charset=utf-8
+date: Wed, 23 Sep 2026 23:52:35 GMT
+server: Vercel
+strict-transport-security: max-age=63072000
+x-matched-path: /api/domains
+x-vercel-cache: MISS
+x-vercel-id: sin1::iad1::cvq2b-1790207555797-eecb2de8dfbf
+content-length: 12
+

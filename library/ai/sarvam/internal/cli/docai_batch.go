@@ -7,6 +7,7 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -58,21 +59,11 @@ func newNovelDocaiBatchCmd(flags *rootFlags) *cobra.Command {
 				return err
 			}
 
-			// Enumerate documents in the folder.
-			entries, err := os.ReadDir(flagDir)
+			// Enumerate regular documents only. A symlink with a document
+			// extension must not upload a file outside the selected folder.
+			docs, err := docaiBatchDocuments(flagDir)
 			if err != nil {
 				return fmt.Errorf("reading dir %s: %w", flagDir, err)
-			}
-			docs := make([]string, 0)
-			for _, e := range entries {
-				if e.IsDir() {
-					continue
-				}
-				ext := strings.ToLower(filepath.Ext(e.Name()))
-				switch ext {
-				case ".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".webp", ".bmp":
-					docs = append(docs, filepath.Join(flagDir, e.Name()))
-				}
 			}
 			if len(docs) == 0 {
 				return notFoundErr(fmt.Errorf("no document files (pdf/png/jpg/tiff) found in %s", flagDir))
@@ -89,11 +80,11 @@ func newNovelDocaiBatchCmd(flags *rootFlags) *cobra.Command {
 			}
 
 			type docResult struct {
-				File     string          `json:"file"`
-				JobID    string          `json:"job_id,omitempty"`
-				Status   string          `json:"status"`
-				Result   json.RawMessage `json:"result,omitempty"`
-				Error    string          `json:"error,omitempty"`
+				File   string          `json:"file"`
+				JobID  string          `json:"job_id,omitempty"`
+				Status string          `json:"status"`
+				Result json.RawMessage `json:"result,omitempty"`
+				Error  string          `json:"error,omitempty"`
 			}
 			results := make([]docResult, 0, len(docs))
 			for _, doc := range docs {
@@ -120,37 +111,47 @@ func newNovelDocaiBatchCmd(flags *rootFlags) *cobra.Command {
 					continue
 				}
 
-				// 2. Upload the file to the presigned URL.
+				// 2. Upload the file to the presigned URL. Stream the document so a
+				// maximum-size input does not require a second full in-memory copy.
+				if err := validatePresignedUploadURL(uploadResp.UploadURL); err != nil {
+					res.Error = err.Error()
+					res.Status = "failed"
+					results = append(results, res)
+					continue
+				}
 				// #nosec G304 -- doc is a path enumerated from the user-supplied --dir.
-				fileBytes, err := os.ReadFile(doc)
+				file, err := openDocaiBatchDocument(doc)
 				if err != nil {
 					res.Error = err.Error()
 					res.Status = "failed"
 					results = append(results, res)
 					continue
 				}
-				req, err := http.NewRequestWithContext(ctx, http.MethodPut, uploadResp.UploadURL, strings.NewReader(string(fileBytes)))
+				req, err := http.NewRequestWithContext(ctx, http.MethodPut, uploadResp.UploadURL, file)
 				if err != nil {
-					res.Error = err.Error()
+					_ = file.Close()
+					res.Error = "building presigned upload request failed"
 					res.Status = "failed"
 					results = append(results, res)
 					continue
+				}
+				if info, statErr := file.Stat(); statErr == nil {
+					req.ContentLength = info.Size()
 				}
 				req.Header.Set("Content-Type", mimeTypeFor(doc))
-				uploadClient := c.HTTPClient
-				if uploadClient == nil {
-					uploadClient = http.DefaultClient
-				}
+				uploadClient := presignedUploadHTTPClient(c.HTTPClient, flags.timeout)
 				upResp, err := uploadClient.Do(req)
+				_ = file.Close()
 				if err != nil {
-					res.Error = err.Error()
+					// net/http errors can include the signed URL and query token.
+					res.Error = "presigned upload request failed"
 					res.Status = "failed"
 					results = append(results, res)
 					continue
 				}
 				_, _ = io.Copy(io.Discard, upResp.Body)
 				_ = upResp.Body.Close()
-				if upResp.StatusCode >= 400 {
+				if upResp.StatusCode < 200 || upResp.StatusCode >= 300 {
 					res.Error = fmt.Sprintf("upload HTTP %d", upResp.StatusCode)
 					res.Status = "failed"
 					results = append(results, res)
@@ -207,9 +208,15 @@ func newNovelDocaiBatchCmd(flags *rootFlags) *cobra.Command {
 								resultsData, err := c.GetNoCache(ctx, "/doc-ai/v1/job/"+extractResp.JobID+"/results", nil)
 								if err == nil {
 									res.Result = resultsData
-									outFile := filepath.Join(flagOut, strings.TrimSuffix(filepath.Base(doc), filepath.Ext(doc))+".json")
-									// #nosec G306 -- user-facing extraction result the caller explicitly requested; 0644 keeps it readable by downstream tooling.
-									if werr := os.WriteFile(outFile, resultsData, 0o644); werr != nil {
+									outFile, pathErr := privateOutputPath(flagOut, docaiResultFileName(doc))
+									if pathErr != nil {
+										res.Error = "unsafe result filename"
+										res.Status = "failed"
+										break
+									}
+									// Extraction output commonly contains identity and financial
+									// fields; replace it atomically with owner-only permissions.
+									if werr := writePrivateOutputFile(outFile, resultsData); werr != nil {
 										res.Error = "writing result: " + werr.Error()
 										res.Status = "failed"
 									}
@@ -282,6 +289,48 @@ func newNovelDocaiBatchCmd(flags *rootFlags) *cobra.Command {
 	return cmd
 }
 
+func docaiBatchDocuments(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	docs := make([]string, 0)
+	for _, e := range entries {
+		info, err := e.Info()
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return nil, err
+		}
+		if !info.Mode().IsRegular() {
+			continue
+		}
+		switch strings.ToLower(filepath.Ext(e.Name())) {
+		case ".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".webp", ".bmp":
+			docs = append(docs, filepath.Join(dir, e.Name()))
+		}
+	}
+	return docs, nil
+}
+
+func openDocaiBatchDocument(path string) (*os.File, error) {
+	// An entry can be replaced after directory enumeration and presign.
+	// Compare the opened descriptor with the current path so an intervening
+	// symlink swap cannot redirect an upload outside the selected folder.
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	opened, openErr := file.Stat()
+	current, pathErr := os.Lstat(path)
+	if openErr != nil || pathErr != nil || !opened.Mode().IsRegular() || !current.Mode().IsRegular() || !os.SameFile(opened, current) {
+		_ = file.Close()
+		return nil, fmt.Errorf("document changed while opening: %s", filepath.Base(path))
+	}
+	return file, nil
+}
+
 func loadDocaiSchema(cmd *cobra.Command, name string) (json.RawMessage, error) {
 	db, err := openDocaiSchemaDB(cmd)
 	if err != nil {
@@ -316,6 +365,12 @@ func docaiBatchFailureReason(status string) string {
 	default:
 		return fmt.Sprintf("job did not complete (status: %s)", status)
 	}
+}
+
+// Keep the source extension so two inputs such as invoice.pdf and invoice.png
+// cannot silently overwrite one another's extraction result.
+func docaiResultFileName(path string) string {
+	return filepath.Base(path) + ".json"
 }
 
 func mimeTypeFor(path string) string {

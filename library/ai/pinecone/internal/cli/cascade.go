@@ -24,6 +24,77 @@ type cascadeResult struct {
 	Failures []textQueryFailure `json:"fetch_failures,omitempty"`
 }
 
+func ensureCascadeCompatible(baseName string, base pineconeIndexShape, indexName string, candidate pineconeIndexShape) error {
+	if base.Dimension != candidate.Dimension {
+		return fmt.Errorf("index %q is %d-dim; cascade index %q is %d-dim", indexName, candidate.Dimension, baseName, base.Dimension)
+	}
+	if base.Metric == "" || candidate.Metric == "" {
+		return fmt.Errorf("cannot verify scoring metric compatibility between indexes %q and %q", baseName, indexName)
+	}
+	if !strings.EqualFold(base.Metric, candidate.Metric) {
+		return fmt.Errorf("index %q uses %s metric; cascade index %q uses %s metric", indexName, candidate.Metric, baseName, base.Metric)
+	}
+	return nil
+}
+
+func selectCascadeIndexes(names []string, describe func(string) (pineconeIndexShape, error)) ([]string, pineconeIndexShape, []textQueryFailure, error) {
+	type shapeGroup struct {
+		shape pineconeIndexShape
+		names []string
+	}
+	groups := make(map[string]*shapeGroup)
+	ordered := make([]*shapeGroup, 0)
+	seenNames := make(map[string]bool, len(names))
+	var failures []textQueryFailure
+	for _, name := range names {
+		if seenNames[name] {
+			continue
+		}
+		seenNames[name] = true
+		shape, err := describe(name)
+		if err == nil && (shape.Dimension <= 0 || shape.Metric == "") {
+			err = fmt.Errorf("index %q did not report a comparable dimension and scoring metric", name)
+		}
+		if err != nil {
+			failures = append(failures, textQueryFailure{Index: name, Error: err.Error()})
+			continue
+		}
+		key := fmt.Sprintf("%d:%s", shape.Dimension, strings.ToLower(shape.Metric))
+		group := groups[key]
+		if group == nil {
+			group = &shapeGroup{shape: shape}
+			groups[key] = group
+			ordered = append(ordered, group)
+		}
+		group.names = append(group.names, name)
+	}
+	if len(ordered) == 0 {
+		return nil, pineconeIndexShape{}, failures, nil
+	}
+	best := ordered[0]
+	tied := false
+	for _, group := range ordered[1:] {
+		if len(group.names) > len(best.names) {
+			best, tied = group, false
+		} else if len(group.names) == len(best.names) {
+			tied = true
+		}
+	}
+	if tied {
+		return nil, pineconeIndexShape{}, failures, fmt.Errorf("indexes have incompatible dimensions or scoring metrics with no unique largest compatible group")
+	}
+	for _, group := range ordered {
+		if group == best {
+			continue
+		}
+		for _, name := range group.names {
+			err := ensureCascadeCompatible(best.names[0], best.shape, name, group.shape)
+			failures = append(failures, textQueryFailure{Index: name, Error: err.Error()})
+		}
+	}
+	return best.names, best.shape, failures, nil
+}
+
 func newNovelCascadeCmd(flags *rootFlags) *cobra.Command {
 	var topK int
 	var namespace string
@@ -61,7 +132,15 @@ Do NOT use this command for a single index; use 'text-query'.`,
 			if topK <= 0 {
 				topK = 5
 			}
-			names := strings.Split(indexes, ",")
+			names := make([]string, 0)
+			for _, name := range strings.Split(indexes, ",") {
+				if name = strings.TrimSpace(name); name != "" {
+					names = append(names, name)
+				}
+			}
+			if len(names) == 0 {
+				return usageErr(fmt.Errorf("--indexes must include at least one index name"))
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -69,21 +148,26 @@ Do NOT use this command for a single index; use 'text-query'.`,
 			if model == "" {
 				model = "multilingual-e5-large"
 			}
-			// Resolve every index's dimension up front. All indexes in a
-			// cascade must share a dimension (the embed is performed once).
-			// Unresolvable indexes are recorded as failures, not silently
-			// dropped, so the output always accounts for every requested index.
-			dim, err := indexDimension(ctx, c, names[0])
+			// Keep reachable, compatible indexes. A stale name is a per-index
+			// failure, not a reason to discard results from healthy indexes.
+			validNames, baseShape, failures, err := selectCascadeIndexes(names, func(name string) (pineconeIndexShape, error) {
+				return describeIndexShape(ctx, c, name)
+			})
 			if err != nil {
 				return err
 			}
+			if len(validNames) == 0 {
+				return fmt.Errorf("no compatible indexes available for cascade: %s", failures[0].Error)
+			}
+			dim := baseShape.Dimension
 			if err := ensureModelDimension(ctx, c, model, dim); err != nil {
 				result := cascadeResult{
-					Index:   strings.Join(names, ","),
-					Query:   text,
-					TopK:    topK,
-					Matches: []textQueryMatch{},
-					Note:    fmt.Sprintf("no Pinecone hosted embedding model matches the indexes' %d-dimension vectors; embed externally and use 'query' instead", dim),
+					Index:    strings.Join(names, ","),
+					Query:    text,
+					TopK:     topK,
+					Matches:  []textQueryMatch{},
+					Note:     fmt.Sprintf("no Pinecone hosted embedding model matches the indexes' %d-dimension vectors; embed externally and use 'query' instead", dim),
+					Failures: failures,
 				}
 				if !wantsHumanTable(cmd.OutOrStdout(), flags) {
 					return printJSONFiltered(cmd.OutOrStdout(), result, flags)
@@ -122,28 +206,12 @@ Do NOT use this command for a single index; use 'text-query'.`,
 				matches []textQueryMatch
 				err     error
 			}
-			ch := make(chan perIndex, len(names))
+			ch := make(chan perIndex, len(validNames))
 			var wg sync.WaitGroup
-			for _, name := range names {
-				name := strings.TrimSpace(name)
-				if name == "" {
-					continue
-				}
+			for _, name := range validNames {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					// Validate this index resolves and matches the shared
-					// dimension; unresolvable or mismatched indexes are
-					// accounted as per-index failures, never silently dropped.
-					idim, err := indexDimension(ctx, c, name)
-					if err != nil {
-						ch <- perIndex{index: name, err: fmt.Errorf("resolving %q: %w", name, err)}
-						return
-					}
-					if idim != dim {
-						ch <- perIndex{index: name, err: fmt.Errorf("index %q is %d-dim; cascade requires %d-dim", name, idim, dim)}
-						return
-					}
 					path, err := dataPlanePath(ctx, c, name, "/query")
 					if err != nil {
 						ch <- perIndex{index: name, err: err}
@@ -191,7 +259,6 @@ Do NOT use this command for a single index; use 'text-query'.`,
 
 			best := map[string]textQueryMatch{}
 			order := []string{}
-			var failures []textQueryFailure
 			for r := range ch {
 				if r.err != nil {
 					failures = append(failures, textQueryFailure{Index: r.index, Error: r.err.Error()})

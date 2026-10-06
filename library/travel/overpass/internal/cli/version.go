@@ -10,7 +10,7 @@ import (
 )
 
 // version is the printed CLI's version, overridable at build time via ldflags.
-var version = "2026.9.2"
+var version = "2026.10.1"
 
 // newVersionCmd prints the CLI name and version. Shared by the HTTP and device
 // generators so both printed-CLI shapes carry an identical version command.
@@ -19,7 +19,7 @@ func newVersionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print version",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("%s %s\n", cmd.Root().Name(), version)
+			fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", cmd.Root().Name(), version)
 		},
 	}
 }

@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "copper",
   "cli_name": "copper-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.2",
+  "released_at": "2026-10-02T00:15:49Z",
+  "source_commit": "6aa25d5c1f4cf120b2c94d6d6e07a14f8bbebe7c",
   "printing_press_version": "4.25.0",
   "run_id": "20260623-105449-202981ca",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(copper): migrate older JSON settings to TOML safely",
+      "pr": 2178,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2178",
+      "commit": "6aa25d5c1f4cf120b2c94d6d6e07a14f8bbebe7c"
     }
   ]
 }

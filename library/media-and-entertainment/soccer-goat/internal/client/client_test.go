@@ -130,3 +130,139 @@ func TestGetWithHeadersValuesPreservesRepeatedQueryParams(t *testing.T) {
 		t.Fatalf("GetWithHeadersValues returned error: %v", err)
 	}
 }
+
+func TestRedirect_CrossOriginStripsCustomCredentialHeaders(t *testing.T) {
+	received := make(chan http.Header, 1)
+	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received <- r.Header.Clone()
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	t.Cleanup(target.Close)
+
+	primary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, target.URL+"/final", http.StatusFound)
+	}))
+	t.Cleanup(primary.Close)
+
+	c := New(&config.Config{
+		BaseURL:       primary.URL,
+		AuthHeaderVal: "Bearer primary-secret",
+		Headers: map[string]string{
+			"X-API-Key":       "config-secret",
+			"Accept":          "accept-secret",
+			"Accept-Encoding": "encoding-secret",
+			"Content-Type":    "content-secret",
+			"User-Agent":      "agent-secret",
+		},
+	}, time.Second, 0)
+	c.NoCache = true
+	_, err := c.GetWithHeaders(context.Background(), "/start", nil, map[string]string{"X-Endpoint-Credential": "endpoint-secret"})
+	if err != nil {
+		t.Fatalf("cross-origin redirect failed: %v", err)
+	}
+
+	headers := <-received
+	for _, name := range []string{"Authorization", "Cookie", "X-API-Key", "X-Endpoint-Credential"} {
+		if got := headers.Get(name); got != "" {
+			t.Fatalf("cross-origin redirect target received %s=%q", name, got)
+		}
+	}
+	for name, secret := range map[string]string{
+		"Accept":          "accept-secret",
+		"Accept-Encoding": "encoding-secret",
+		"Content-Type":    "content-secret",
+		"User-Agent":      "agent-secret",
+	} {
+		if got := headers.Get(name); got == secret {
+			t.Fatalf("cross-origin redirect forwarded caller-configured %s", name)
+		}
+	}
+	if got := headers.Get("Accept"); got != "application/json" {
+		t.Fatalf("cross-origin redirect Accept = %q, want client default", got)
+	}
+	if got := headers.Get("User-Agent"); got != "soccer-goat-pp-cli/0.1.0" {
+		t.Fatalf("cross-origin redirect User-Agent = %q, want client default", got)
+	}
+}
+
+func TestRedirectRegeneratesBinaryAndBodyDefaults(t *testing.T) {
+	original, err := http.NewRequest(http.MethodPost, "https://primary.example/test", strings.NewReader(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	original.Header.Set("Accept", "*/*")
+	redirected, err := http.NewRequest(http.MethodPost, "https://mirror.example/test", strings.NewReader(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	redirected.Header.Set("Content-Type", "caller-secret")
+	redirected.Header.Set("X-Secret", "caller-secret")
+	stripCrossOriginRedirectHeaders(redirected, original)
+	for name, want := range map[string]string{
+		"Accept":       "*/*",
+		"Content-Type": "application/json",
+		"User-Agent":   "soccer-goat-pp-cli/0.1.0",
+	} {
+		if got := redirected.Header.Get(name); got != want {
+			t.Errorf("regenerated %s = %q, want %q", name, got, want)
+		}
+	}
+	if got := redirected.Header.Get("X-Secret"); got != "" {
+		t.Fatal("redirect retained caller-supplied credential header")
+	}
+}
+
+func TestSameOriginNormalizesDefaultPorts(t *testing.T) {
+	for _, tc := range []struct {
+		a, b string
+		want bool
+	}{
+		{"https://example.com", "https://example.com:443", true},
+		{"http://example.com", "http://example.com:80", true},
+		{"https://example.com:8443", "https://EXAMPLE.com:8443", true},
+		{"https://example.com", "https://example.com:8443", false},
+		{"http://example.com", "https://example.com", false},
+		{"https://example.com", "https://other.example.com", false},
+		{"https://example.com", "invalid", false},
+	} {
+		if got := sameOrigin(tc.a, tc.b); got != tc.want {
+			t.Errorf("sameOrigin(%q, %q) = %v, want %v", tc.a, tc.b, got, tc.want)
+		}
+	}
+}
+
+func TestRedirect_SameOriginPreservesConfiguredHeaders(t *testing.T) {
+	received := make(chan http.Header, 1)
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/start" {
+			http.Redirect(w, r, server.URL+"/final", http.StatusFound)
+			return
+		}
+		received <- r.Header.Clone()
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	t.Cleanup(server.Close)
+
+	c := New(&config.Config{
+		BaseURL:       server.URL,
+		AuthHeaderVal: "Bearer trusted-secret",
+		Headers:       map[string]string{"X-Config-Value": "config-value"},
+	}, time.Second, 0)
+	c.NoCache = true
+	_, err := c.GetWithHeaders(context.Background(), "/start", nil, map[string]string{"X-Endpoint-Value": "endpoint-value"})
+	if err != nil {
+		t.Fatalf("same-origin redirect failed: %v", err)
+	}
+
+	headers := <-received
+	for name, want := range map[string]string{
+		"Authorization":    "Bearer trusted-secret",
+		"X-Config-Value":   "config-value",
+		"X-Endpoint-Value": "endpoint-value",
+	} {
+		if got := headers.Get(name); got != want {
+			t.Fatalf("same-origin redirect %s=%q, want %q", name, got, want)
+		}
+	}
+}

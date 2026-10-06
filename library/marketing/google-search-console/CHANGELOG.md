@@ -2,6 +2,10 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.9.3 - 2026-09-25
+
+- fix(google-search-console): stop double-encoding sitemap feedpath (#2054).
+
 ## 2026.9.2 - 2026-09-11
 
 - fix: fail closed on ambiguous fleet write retries (#1978).

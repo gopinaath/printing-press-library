@@ -28,6 +28,11 @@ import (
 
 const BinaryResponseHeader = "X-Printing-Press-Binary-Response"
 
+// BinaryResponseHeader value "true" keeps CLI text/JSON downloads in their
+// original output shape. "force" is reserved for MCP base64 downloads, which
+// must preserve every file byte regardless of its Content-Type.
+const ForceBinaryResponseValue = "force"
+
 var ErrPlaceholderCredential = errors.New("auth placeholder credential")
 
 type Client struct {
@@ -253,10 +258,9 @@ func (c *Client) GetWithHeadersNoCacheValues(ctx context.Context, path string, p
 }
 
 func (c *Client) responseCacheEnabled(path string, binaryResponse bool) bool {
-	// Hand-added: DSM's login and logout are GETs, and the cache is only
-	// invalidated by mutating verbs, so a cached login response would keep a
-	// copy of the sid and SynoToken on disk that `session logout` never clears.
-	if isDSMAuthCall(path, "login") || isDSMAuthCall(path, "logout") {
+	// DSM has GET-shaped writes; no mutation response may be cached or
+	// replayed from an earlier call, including login session secrets.
+	if isDSMMutatingGet(path) {
 		return false
 	}
 	return !binaryResponse && !c.NoCache && !c.DryRun && c.cacheDir != ""
@@ -282,7 +286,7 @@ func binaryResponseHeaderValue(headers map[string]string) (bool, bool) {
 	for k, v := range headers {
 		if strings.EqualFold(k, BinaryResponseHeader) {
 			found = true
-			if strings.EqualFold(v, "true") {
+			if strings.EqualFold(v, "true") || strings.EqualFold(v, ForceBinaryResponseValue) {
 				return true, true
 			}
 		}
@@ -548,6 +552,7 @@ func (c *Client) doRead(ctx context.Context, method, path string, params map[str
 // operations like GraphQL queries) to skip the mutating-verb verify-mode
 // gate. Plain do() callers leave it false and get the usual short-circuit.
 func (c *Client) doInternal(ctx context.Context, method, path string, params map[string]string, body any, headerOverrides map[string]string, readOnlyIntent bool) (json.RawMessage, int, error) {
+	mutatingGet := method == http.MethodGet && isDSMMutatingGet(path)
 	// Verify-mode transport-layer gate. When the verifier (or any consumer
 	// that sets PRINTING_PRESS_VERIFY=1) drives a mutating verb without
 	// the LIVE_HTTP=1 opt-in, return a synthetic envelope without dialing,
@@ -564,7 +569,7 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 	// minting, and the success-branch invalidateCache() call below — so
 	// no cache invalidation runs (no remote state changed) and no
 	// client_credentials mint happens unnecessarily.
-	if !readOnlyIntent && isMutatingVerb(method) && cliutil.IsVerifyEnv() && !cliutil.IsVerifyLiveHTTPEnv() {
+	if !readOnlyIntent && (isMutatingVerb(method) || mutatingGet) && cliutil.IsVerifyEnv() && !cliutil.IsVerifyLiveHTTPEnv() {
 		return verifyShortCircuitEnvelope(method, path), http.StatusOK, nil
 	}
 	if err := rejectUnresolvedPathParams(path, nil); err != nil {
@@ -607,9 +612,14 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 	}
 
 	maxRetries := clientMaxRetries()
+	if mutatingGet {
+		// DSM may have committed the operation before a timeout or 5xx.
+		// The caller must decide whether a fresh attempt is safe.
+		maxRetries = 0
+	}
 	// Retry only methods that are safe to replay after an ambiguous transport
 	// failure or server error; a write may already have committed remotely.
-	canRetryAmbiguousFailure := readOnlyIntent || method == http.MethodGet || method == http.MethodHead || method == http.MethodOptions
+	canRetryAmbiguousFailure := !mutatingGet && (readOnlyIntent || method == http.MethodGet || method == http.MethodHead || method == http.MethodOptions)
 	var lastErr error
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
@@ -672,7 +682,9 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 		for k, v := range headerOverrides {
 			req.Header.Set(k, v)
 		}
-		binaryResponse := strings.EqualFold(req.Header.Get(BinaryResponseHeader), "true")
+		binaryMode := req.Header.Get(BinaryResponseHeader)
+		forceBinaryResponse := strings.EqualFold(binaryMode, ForceBinaryResponseValue)
+		binaryResponse := forceBinaryResponse || strings.EqualFold(binaryMode, "true")
 		if binaryResponse {
 			req.Header.Del(BinaryResponseHeader)
 		}
@@ -744,38 +756,44 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 		// Success
 		if resp.StatusCode < 400 {
 			c.limiter.OnSuccess()
-			if method != http.MethodGet && !c.DryRun {
-				c.invalidateCache()
-			}
-			// Non-textual bodies (PDF, zip, image, octet-stream) must not be
-			// run through the JSON sanitizer or returned as raw json.RawMessage
-			// — return a self-describing base64 envelope instead. Textual and
-			// JSON responses fall through to the unchanged path.
-			if isBinaryResponseContentType(resp.Header.Get("Content-Type")) {
-				env, encErr := wrapBinaryResponse(resp.Header.Get("Content-Type"), respBody)
-				if encErr != nil {
-					return nil, 0, encErr
-				}
-				return env, resp.StatusCode, nil
-			}
 			// Hand-added: DSM reports every failure as HTTP 200 with
 			// {"success":false,"error":{"code":N}}. Without this branch an
 			// expired session would be handed to the caller as a successful
 			// response and the invalidate-and-retry loop below would never
 			// fire, because that loop only ever sees status codes.
-			if dsmCode, failed := dsmErrorCode(respBody); failed {
-				if dsmCode == dsmErrSessionExpired && c.Session != nil && attempt < maxRetries && authHeader != "" {
+			// Synology's download mode marks a successful file transfer with
+			// Content-Disposition: attachment. The file can itself contain a
+			// JSON object shaped exactly like a DSM error, so attached bytes
+			// take precedence over RPC error parsing.
+			attachedDownload := binaryResponse && strings.HasPrefix(strings.ToLower(strings.TrimSpace(resp.Header.Get("Content-Disposition"))), "attachment")
+			if dsmCode, failed := dsmErrorCode(respBody); failed && !attachedDownload {
+				if dsmCode == dsmErrSessionExpired && c.Session != nil && authHeader != "" {
 					c.Session.Invalidate()
-					authHeader = ""
-					lastErr = &APIError{
-						Method:     method,
-						Path:       c.displayURL(path, authHeader),
-						StatusCode: resp.StatusCode,
-						Body:       dsmErrorText(dsmCode, path),
+					if attempt < maxRetries {
+						authHeader = ""
+						lastErr = &APIError{
+							Method:     method,
+							Path:       c.displayURL(path, authHeader),
+							StatusCode: resp.StatusCode,
+							Body:       dsmErrorText(dsmCode, path),
+						}
+						continue
 					}
-					continue
 				}
 				return nil, resp.StatusCode, fmt.Errorf("%s %s: %s", method, c.displayURL(path, authHeader), dsmErrorText(dsmCode, path))
+			}
+			// A download is opaque bytes even when the file's Content-Type is
+			// text or JSON. Always wrap the marked response before the JSON
+			// sanitizer can alter it or mistake file content for our envelope.
+			if forceBinaryResponse || isBinaryResponseContentType(resp.Header.Get("Content-Type")) {
+				env, encErr := wrapBinaryResponse(resp.Header.Get("Content-Type"), respBody)
+				if encErr != nil {
+					return nil, 0, encErr
+				}
+				if method != http.MethodGet || mutatingGet {
+					c.invalidateCache()
+				}
+				return env, resp.StatusCode, nil
 			}
 			// Hand-added: adopt the session a successful `session login`
 			// just created, and drop it again on `session logout`. Doing
@@ -791,6 +809,9 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 				case isDSMAuthCall(path, "logout"):
 					c.Session.Clear()
 				}
+			}
+			if method != http.MethodGet || mutatingGet {
+				c.invalidateCache()
 			}
 			return json.RawMessage(dsmUnwrapSuccess(sanitizeJSONResponse(respBody))), resp.StatusCode, nil
 		}
@@ -821,11 +842,13 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 		// Session-handshake invalidation: some status codes indicate the token
 		// was rejected. Clear the cache and retry once; EnsureToken() at the
 		// top of the next loop iteration will re-bootstrap.
-		if c.Session != nil && c.Session.ShouldInvalidate(resp.StatusCode) && attempt < maxRetries && authHeader != "" && (resp.StatusCode < 500 || canRetryAmbiguousFailure) {
+		if c.Session != nil && c.Session.ShouldInvalidate(resp.StatusCode) && authHeader != "" {
 			c.Session.Invalidate()
-			authHeader = "" // force re-fetch on next iteration
-			lastErr = apiErr
-			continue
+			if attempt < maxRetries && (resp.StatusCode < 500 || canRetryAmbiguousFailure) {
+				authHeader = "" // force re-fetch on next iteration
+				lastErr = apiErr
+				continue
+			}
 		}
 
 		// Server error - retry with backoff

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "nepra",
+  "cli_name": "nepra-pp-cli",
+  "version": "2026.9.1",
+  "released_at": "2026-09-21T09:16:59Z",
+  "source_commit": "fca54ca324ea55fef3fca866b0249dc9dd6c225d",
+  "printing_press_version": "4.31.7",
+  "run_id": "20260908-210301-9311015b",
+  "changes": [
+    {
+      "title": "feat(nepra): add nepra",
+      "pr": 2034,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2034",
+      "commit": "fca54ca324ea55fef3fca866b0249dc9dd6c225d"
+    }
+  ]
+}

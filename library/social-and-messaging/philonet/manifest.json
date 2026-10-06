@@ -1,0 +1,39 @@
+{
+  "manifest_version": "0.3",
+  "name": "philonet-pp-mcp",
+  "display_name": "Philonet",
+  "version": "0.1.0",
+  "description": "Your Philonet reading life in the terminal: feed, threads, streaks and friends, plus a local history the web app does not keep.",
+  "author": {
+    "name": "CLI Printing Press"
+  },
+  "license": "Apache-2.0",
+  "server": {
+    "type": "binary",
+    "entry_point": "bin/philonet-pp-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/bin/philonet-pp-mcp",
+      "args": [],
+      "env": {
+        "PHILONET_TOKEN": "${user_config.philonet_token}"
+      }
+    }
+  },
+  "user_config": {
+    "philonet_token": {
+      "type": "string",
+      "title": "PHILONET_TOKEN",
+      "description": "Sets PHILONET_TOKEN for the Philonet MCP server.",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ]
+  }
+}

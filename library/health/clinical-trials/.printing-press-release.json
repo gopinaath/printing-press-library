@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "clinical-trials",
   "cli_name": "clinical-trials-pp-cli",
-  "version": "2026.9.12",
-  "released_at": "2026-09-18T09:07:42Z",
-  "source_commit": "1c085105faf876463567053451051305cf40cf56",
+  "version": "2026.9.14",
+  "released_at": "2026-09-20T09:11:29Z",
+  "source_commit": "f84e1beb3ea79e637afb7cc6d259c9b4e4e51a35",
   "printing_press_version": "4.25.0",
   "run_id": "20260623-164233-df565e8d",
   "changes": [
     {
-      "title": "fix(clinical-trials): round negative emerging growth half away from zero",
-      "pr": 2011,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/2011",
-      "commit": "1c085105faf876463567053451051305cf40cf56"
+      "title": "test(clinical-trials): guard the ctgov network failure paths",
+      "pr": 2022,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2022",
+      "commit": "f84e1beb3ea79e637afb7cc6d259c9b4e4e51a35"
     }
   ]
 }

@@ -1,0 +1,394 @@
+{
+  "api_name": "oneword-domains",
+  "novelty_score": 0,
+  "alternatives": [
+    {
+      "name": "domain-goat",
+      "url": "https://github.com/mvanhorn/printing-press-library",
+      "language": "Go",
+      "install_method": "",
+      "stars": 2037,
+      "last_updated": "",
+      "command_count": 30,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "mcp-domain-availability",
+      "url": "https://github.com/imprvhub/mcp-domain-availability",
+      "language": "Python",
+      "install_method": "",
+      "stars": 59,
+      "last_updated": "",
+      "command_count": 3,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "FastDomainCheck-MCP-Server",
+      "url": "https://github.com/bingal/FastDomainCheck-MCP-Server",
+      "language": "Python",
+      "install_method": "",
+      "stars": 40,
+      "last_updated": "",
+      "command_count": 2,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "domainr-cli",
+      "url": "https://github.com/MichaelThessel/domainr-cli",
+      "language": "Go",
+      "install_method": "",
+      "stars": 25,
+      "last_updated": "",
+      "command_count": 3,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "domainr-mcp-server",
+      "url": "https://github.com/danohn/domainr-mcp-server",
+      "language": "TypeScript",
+      "install_method": "",
+      "stars": 0,
+      "last_updated": "",
+      "command_count": 3,
+      "has_json_output": false,
+      "has_auth_support": false
+    },
+    {
+      "name": "find-my-domain",
+      "url": "https://github.com/idimetrix/find-my-domain",
+      "language": "TypeScript",
+      "install_method": "",
+      "stars": 16,
+      "last_updated": "",
+      "command_count": 1,
+      "has_json_output": false,
+      "has_auth_support": false
+    }
+  ],
+  "gaps": [],
+  "patterns": [],
+  "recommendation": "proceed",
+  "researched_at": "2026-09-24T00:17:36Z",
+  "novel_features": [
+    {
+      "name": "Brainstorm pipeline",
+      "command": "brainstorm",
+      "description": "Generate DomainsGPT names, keep only the available ones with price, cheapest registrar, and a dictionary flag, and save the batch locally; one call per TLD, quota 10 anonymous.",
+      "rationale": "Requires sequencing the DomainsGPT stream with the local dictionary and TLD price tables and persisting results, which no single site page or API call does.",
+      "example": "oneword-domains-pp-cli brainstorm --type brandable --context \"a terminal tool for domain search\" --tld ai,com --json",
+      "why_it_matters": "Pick this when an agent needs priced, available, deduplicated name candidates in one call instead of generate-then-check loops.",
+      "group": "Naming pipeline"
+    },
+    {
+      "name": "Shortlist recheck",
+      "command": "recheck",
+      "description": "Re-check every word and TLD you looked up before and report what changed: taken, freed, premium, price, or popularity.",
+      "rationale": "Requires the local snapshot history that check writes on every lookup; the site has no memory of what you searched.",
+      "example": "oneword-domains-pp-cli recheck --since 7d --json",
+      "why_it_matters": "Use it to refresh a shortlist before buying instead of re-running every lookup by hand.",
+      "group": "Naming pipeline"
+    },
+    {
+      "name": "Auction ranking",
+      "command": "listings rank",
+      "description": "Rank aftermarket auctions by how contested the word is across TLDs, price relative to fresh registration, and bid pace.",
+      "rationale": "Requires joining listings with TLD prices and per-word popularity in the local store; the site only sorts by domain, price, bids, or ending.",
+      "example": "oneword-domains-pp-cli listings rank --tld co --sort popularity --max-checks 25 --agent --select rows.domain,rows.price,rows.price_x,rows.taken_of_93,rows.end_date",
+      "why_it_matters": "Reach for it when scanning auctions for underpriced words instead of reading through 455 listings by hand.",
+      "group": "Aftermarket intelligence"
+    },
+    {
+      "name": "Cross-TLD intersection",
+      "command": "domains intersect",
+      "description": "Find dictionary words that are free on every TLD you list, or free on one and taken on another; needs the lifetime-pass session from auth login --chrome or auth login --cookies-file.",
+      "rationale": "Requires paging the per-TLD database and intersecting word sets locally; the site shows one TLD per page.",
+      "example": "oneword-domains-pp-cli domains intersect --tld com,ai --category positive --min-length 4 --max-length 6 --csv",
+      "why_it_matters": "Use it when a brand needs the same word on several extensions and the user has a lifetime pass.",
+      "group": "Lifetime-pass database"
+    },
+    {
+      "name": "Dictionary mining",
+      "command": "words mine",
+      "description": "Filter the 27,627-word dictionary by several categories at once, length, prefix, or glob, offline after a one-time words mine --refresh.",
+      "rationale": "Requires the synced word and category tables; the words route accepts one category and no length bounds.",
+      "example": "oneword-domains-pp-cli words mine --category adjectives,positive --min-len 4 --max-len 6 --json",
+      "why_it_matters": "Pick it to build a candidate pool before checking availability, without burning API calls.",
+      "group": "Local dictionary"
+    },
+    {
+      "name": "TLD inventory",
+      "command": "tlds inventory",
+      "description": "Compare how many available one-word domains each TLD still has for a category and length filter, next to its cheapest registration price (public route).",
+      "rationale": "Requires fanning the public count route across all 93 TLDs and joining local price data; the site shows one count per page.",
+      "example": "oneword-domains-pp-cli tlds inventory --category positive --min-len 4 --max-len 6 --sort count --json",
+      "why_it_matters": "Use it to choose an extension by remaining supply and cost before mining words.",
+      "group": "TLD intelligence"
+    },
+    {
+      "name": "Cross-TLD check",
+      "command": "check",
+      "description": "Check one word, or a file of words, across the most-viewed TLDs or all 93, with availability, premium flag, popularity, and the cheapest registrar price per TLD.",
+      "rationale": "Joins the per-domain availability route with the TLD price list and records a snapshot so recheck can diff later.",
+      "example": "oneword-domains-pp-cli check smart --tld com,io,ai --json",
+      "why_it_matters": "Use it whenever an agent needs is-it-free-and-what-does-it-cost for a dictionary word.",
+      "group": "Naming pipeline"
+    },
+    {
+      "name": "Side-by-side compare",
+      "command": "compare",
+      "description": "Compare several full domains in one table: available, premium, price, popularity, and cheapest registrar, with the cheapest available one called out.",
+      "rationale": "Fans the availability route out concurrently and joins registrar prices, which the site shows one page at a time.",
+      "example": "oneword-domains-pp-cli compare smart.com smart.io oasis.ai --json",
+      "why_it_matters": "Pick it to decide between a few candidate domains in a single call.",
+      "group": "Naming pipeline"
+    },
+    {
+      "name": "Domain hacks",
+      "command": "hacks",
+      "description": "Find domain hacks: split a word so its ending is one of the 93 TLDs (sm.art), or list dictionary words ending in a TLD.",
+      "rationale": "Uses the TLD list and the local dictionary; only stems that are dictionary words get an availability check because the site rejects unknown words.",
+      "example": "oneword-domains-pp-cli hacks --tld art --limit 20 --json",
+      "why_it_matters": "Use it for brandable hacks like he.art or ch.art that no availability search surfaces.",
+      "group": "Local dictionary"
+    },
+    {
+      "name": "TLD price drift",
+      "command": "tlds drift",
+      "description": "Record registrar price snapshots for every TLD and report which prices moved since an earlier snapshot.",
+      "rationale": "Needs the local snapshot history that no site page keeps.",
+      "example": "oneword-domains-pp-cli tlds drift --since 30d --registrars",
+      "why_it_matters": "Use it to see whether a TLD got cheaper or dearer before buying.",
+      "group": "TLD intelligence"
+    },
+    {
+      "name": "Aftermarket watch",
+      "command": "listings watch",
+      "description": "Diff the aftermarket feed against the last run: new listings, price or bid changes, listings that disappeared, and auctions ending within a window.",
+      "rationale": "Needs the local sighting table with first-seen and last-seen timestamps.",
+      "example": "oneword-domains-pp-cli listings watch --tld co --json",
+      "why_it_matters": "Run it daily to learn what changed on the aftermarket without re-reading every listing.",
+      "group": "Aftermarket intelligence"
+    },
+    {
+      "name": "DomainsGPT generate",
+      "command": "gpt generate",
+      "description": "Run DomainsGPT and get the streamed names back as real JSON, optionally only the available ones.",
+      "rationale": "The site streams concatenated JSON objects that ordinary JSON clients reject; this command parses the stream and uses the signed-in quota when a session is stored.",
+      "example": "oneword-domains-pp-cli gpt generate --type portmanteau --word open --position prefix --tld com --available-only --json",
+      "why_it_matters": "Use it for raw name generation; use brainstorm when you also want prices and dictionary flags.",
+      "group": "DomainsGPT"
+    }
+  ],
+  "novel_features_built": [
+    {
+      "name": "Brainstorm pipeline",
+      "command": "brainstorm",
+      "description": "Generate DomainsGPT names, keep only the available ones with price, cheapest registrar, and a dictionary flag, and save the batch locally; one call per TLD, quota 10 anonymous.",
+      "rationale": "Requires sequencing the DomainsGPT stream with the local dictionary and TLD price tables and persisting results, which no single site page or API call does.",
+      "example": "oneword-domains-pp-cli brainstorm --type brandable --context \"a terminal tool for domain search\" --tld ai,com --json",
+      "why_it_matters": "Pick this when an agent needs priced, available, deduplicated name candidates in one call instead of generate-then-check loops.",
+      "group": "Naming pipeline"
+    },
+    {
+      "name": "Shortlist recheck",
+      "command": "recheck",
+      "description": "Re-check every word and TLD you looked up before and report what changed: taken, freed, premium, price, or popularity.",
+      "rationale": "Requires the local snapshot history that check writes on every lookup; the site has no memory of what you searched.",
+      "example": "oneword-domains-pp-cli recheck --since 7d --json",
+      "why_it_matters": "Use it to refresh a shortlist before buying instead of re-running every lookup by hand.",
+      "group": "Naming pipeline"
+    },
+    {
+      "name": "Auction ranking",
+      "command": "listings rank",
+      "description": "Rank aftermarket auctions by how contested the word is across TLDs, price relative to fresh registration, and bid pace.",
+      "rationale": "Requires joining listings with TLD prices and per-word popularity in the local store; the site only sorts by domain, price, bids, or ending.",
+      "example": "oneword-domains-pp-cli listings rank --tld co --sort popularity --max-checks 25 --agent --select rows.domain,rows.price,rows.price_x,rows.taken_of_93,rows.end_date",
+      "why_it_matters": "Reach for it when scanning auctions for underpriced words instead of reading through 455 listings by hand.",
+      "group": "Aftermarket intelligence"
+    },
+    {
+      "name": "Cross-TLD intersection",
+      "command": "domains intersect",
+      "description": "Find dictionary words that are free on every TLD you list, or free on one and taken on another; needs the lifetime-pass session from auth login --chrome or auth login --cookies-file.",
+      "rationale": "Requires paging the per-TLD database and intersecting word sets locally; the site shows one TLD per page.",
+      "example": "oneword-domains-pp-cli domains intersect --tld com,ai --category positive --min-length 4 --max-length 6 --csv",
+      "why_it_matters": "Use it when a brand needs the same word on several extensions and the user has a lifetime pass.",
+      "group": "Lifetime-pass database"
+    },
+    {
+      "name": "Dictionary mining",
+      "command": "words mine",
+      "description": "Filter the 27,627-word dictionary by several categories at once, length, prefix, or glob, offline after a one-time words mine --refresh.",
+      "rationale": "Requires the synced word and category tables; the words route accepts one category and no length bounds.",
+      "example": "oneword-domains-pp-cli words mine --category adjectives,positive --min-len 4 --max-len 6 --json",
+      "why_it_matters": "Pick it to build a candidate pool before checking availability, without burning API calls.",
+      "group": "Local dictionary"
+    },
+    {
+      "name": "TLD inventory",
+      "command": "tlds inventory",
+      "description": "Compare how many available one-word domains each TLD still has for a category and length filter, next to its cheapest registration price (public route).",
+      "rationale": "Requires fanning the public count route across all 93 TLDs and joining local price data; the site shows one count per page.",
+      "example": "oneword-domains-pp-cli tlds inventory --category positive --min-len 4 --max-len 6 --sort count --json",
+      "why_it_matters": "Use it to choose an extension by remaining supply and cost before mining words.",
+      "group": "TLD intelligence"
+    },
+    {
+      "name": "Cross-TLD check",
+      "command": "check",
+      "description": "Check one word, or a file of words, across the most-viewed TLDs or all 93, with availability, premium flag, popularity, and the cheapest registrar price per TLD.",
+      "rationale": "Joins the per-domain availability route with the TLD price list and records a snapshot so recheck can diff later.",
+      "example": "oneword-domains-pp-cli check smart --tld com,io,ai --json",
+      "why_it_matters": "Use it whenever an agent needs is-it-free-and-what-does-it-cost for a dictionary word.",
+      "group": "Naming pipeline"
+    },
+    {
+      "name": "Side-by-side compare",
+      "command": "compare",
+      "description": "Compare several full domains in one table: available, premium, price, popularity, and cheapest registrar, with the cheapest available one called out.",
+      "rationale": "Fans the availability route out concurrently and joins registrar prices, which the site shows one page at a time.",
+      "example": "oneword-domains-pp-cli compare smart.com smart.io oasis.ai --json",
+      "why_it_matters": "Pick it to decide between a few candidate domains in a single call.",
+      "group": "Naming pipeline"
+    },
+    {
+      "name": "Domain hacks",
+      "command": "hacks",
+      "description": "Find domain hacks: split a word so its ending is one of the 93 TLDs (sm.art), or list dictionary words ending in a TLD.",
+      "rationale": "Uses the TLD list and the local dictionary; only stems that are dictionary words get an availability check because the site rejects unknown words.",
+      "example": "oneword-domains-pp-cli hacks --tld art --limit 20 --json",
+      "why_it_matters": "Use it for brandable hacks like he.art or ch.art that no availability search surfaces.",
+      "group": "Local dictionary"
+    },
+    {
+      "name": "TLD price drift",
+      "command": "tlds drift",
+      "description": "Record registrar price snapshots for every TLD and report which prices moved since an earlier snapshot.",
+      "rationale": "Needs the local snapshot history that no site page keeps.",
+      "example": "oneword-domains-pp-cli tlds drift --since 30d --registrars",
+      "why_it_matters": "Use it to see whether a TLD got cheaper or dearer before buying.",
+      "group": "TLD intelligence"
+    },
+    {
+      "name": "Aftermarket watch",
+      "command": "listings watch",
+      "description": "Diff the aftermarket feed against the last run: new listings, price or bid changes, listings that disappeared, and auctions ending within a window.",
+      "rationale": "Needs the local sighting table with first-seen and last-seen timestamps.",
+      "example": "oneword-domains-pp-cli listings watch --tld co --json",
+      "why_it_matters": "Run it daily to learn what changed on the aftermarket without re-reading every listing.",
+      "group": "Aftermarket intelligence"
+    },
+    {
+      "name": "DomainsGPT generate",
+      "command": "gpt generate",
+      "description": "Run DomainsGPT and get the streamed names back as real JSON, optionally only the available ones.",
+      "rationale": "The site streams concatenated JSON objects that ordinary JSON clients reject; this command parses the stream and uses the signed-in quota when a session is stored.",
+      "example": "oneword-domains-pp-cli gpt generate --type portmanteau --word open --position prefix --tld com --available-only --json",
+      "why_it_matters": "Use it for raw name generation; use brainstorm when you also want prices and dictionary flags.",
+      "group": "DomainsGPT"
+    }
+  ],
+  "auth": {},
+  "narrative": {
+    "display_name": "One Word Domains",
+    "headline": "Check a word across every TLD with registrar prices, watch the aftermarket, and generate names with DomainsGPT, all from the terminal with a local store the site itself does not offer.",
+    "value_prop": "One Word Domains tracks 27,627 dictionary words across 93 TLDs with prices from six registrars, an aftermarket feed, and the DomainsGPT name generator, but publishes no API. This CLI replays its JSON routes so agents and scripts can compare TLDs, check availability, mine the dictionary, browse auctions, and run DomainsGPT, then keeps everything in SQLite for price drift, auction watches, and offline search. No other tool targeted oneword.domains as of the September 2026 ecosystem search.",
+    "auth_narrative": "Every headline command works without an account. The lifetime-pass database (domains search, domains intersect), saved domains, and saved DomainsGPT names use your browser session: sign in to oneword.domains in Chrome (email magic link), then run oneword-domains-pp-cli auth login --chrome, which needs one cookie extractor installed (pycookiecheat, cookies, or cookie-scoop-cli) and reads Google Chrome profiles. If you signed in from Brave or another Chromium browser, export the cookies to a file and run oneword-domains-pp-cli auth login --cookies-file \u003cpath\u003e instead. There is no API key for the site; DomainsGPT partner tokens, when you have one, go in ONEWORD_DOMAINS_GPT_TOKEN.",
+    "quickstart": [
+      {
+        "command": "oneword-domains-pp-cli doctor --dry-run",
+        "comment": "Confirms the binary, config, and reachability of oneword.domains without touching the network"
+      },
+      {
+        "command": "oneword-domains-pp-cli tlds list --sort-alpha --json",
+        "comment": "All 93 TLDs with registrations, popularity, and minimum registration price"
+      },
+      {
+        "command": "oneword-domains-pp-cli tlds get ai",
+        "comment": "Per-registrar prices, the cheapest registrar, and example sites for .ai"
+      },
+      {
+        "command": "oneword-domains-pp-cli domains check smart.com",
+        "comment": "Availability, premium flag, and how many of the 93 TLDs still have this word free"
+      },
+      {
+        "command": "oneword-domains-pp-cli listings list --tld co --sort priceAsc --max-length 5",
+        "comment": "Cheapest short .co listings on the aftermarket"
+      },
+      {
+        "command": "oneword-domains-pp-cli gpt generate --type portmanteau --word open --position prefix --tld com",
+        "comment": "About 20 AI-generated names with live availability, parsed from the DomainsGPT stream into JSON"
+      }
+    ],
+    "troubleshoots": [
+      {
+        "symptom": "domains search returns 401 Unauthorized",
+        "fix": "Sign in to oneword.domains in Chrome with a lifetime-pass account, then run `oneword-domains-pp-cli auth login --chrome`"
+      },
+      {
+        "symptom": "domains check returns HTTP 500 for a name",
+        "fix": "The site only knows dictionary words; run oneword-domains-pp-cli words list --prefix sm to find the indexed spelling, or oneword-domains-pp-cli gpt generate --tld com for invented names"
+      },
+      {
+        "symptom": "gpt generate returns 429 or 'usage limit'",
+        "fix": "Anonymous callers get 10 generations; check `oneword-domains-pp-cli gpt usage`, sign in via `auth login --chrome` for the larger quota, or set ONEWORD_DOMAINS_GPT_TOKEN"
+      },
+      {
+        "symptom": "tlds get prints an empty record with null prices",
+        "fix": "The TLD is not one of the 93 the site tracks; run `oneword-domains-pp-cli tlds list --sort-alpha` to see the supported slugs"
+      },
+      {
+        "symptom": "listings rank --ending or listings watch --ending-within returns no rows",
+        "fix": "The aftermarket feed currently lists auctions whose end dates have already passed; drop the window flag and sort with --sort popularity or --sort price-x instead"
+      }
+    ],
+    "when_to_use": "Reach for this CLI when a task is about naming something and buying the domain: comparing TLDs by price and popularity, checking whether a dictionary word is free on a given extension, brainstorming brandable names with live availability, or scanning one-word aftermarket auctions. It is the only programmatic access to One Word Domains data, and its local store answers questions the site cannot, like price drift over time and which auctions appeared since yesterday.",
+    "anti_triggers": [
+      "Do not use it to register or buy a domain; it links to registrars but never checks out",
+      "Do not use it for WHOIS, RDAP, DNS, or certificate lookups on arbitrary domains; use domain-goat or whois for that",
+      "Do not use it to check availability of invented, non-dictionary names except through gpt generate; the check route only knows the 27,627 indexed words",
+      "Do not use it to manage DNS or hosting for domains you already own"
+    ],
+    "recipes": [
+      {
+        "title": "Cheapest way to buy a word",
+        "command": "oneword-domains-pp-cli check smart --tld com,io,ai,co,app --available-only --json --select domain,available,cheapest_registrar.name,cheapest_registrar.price",
+        "explanation": "Fans the word across the listed TLDs, keeps only free ones, and narrows the JSON to the price you would pay."
+      },
+      {
+        "title": "Underpriced short .co auctions ending soon",
+        "command": "oneword-domains-pp-cli listings rank --tld co --sort popularity --max-checks 25 --agent --select rows.domain,rows.price,rows.price_x,rows.taken_of_93,rows.hours_left",
+        "explanation": "Compact agent envelope ranking .co auctions by how many of the 93 TLDs already took the word, with price relative to fresh registration; add --ending 48h once the site's feed carries live end dates again."
+      },
+      {
+        "title": "Brainstorm with DomainsGPT and keep only free names",
+        "command": "oneword-domains-pp-cli brainstorm --type brandable --context \"a terminal tool for domain search\" --tld ai --json",
+        "explanation": "Streams about 20 names, keeps the available ones, prices them, flags dictionary words, and saves the batch locally."
+      },
+      {
+        "title": "Which TLD got cheaper this month",
+        "command": "oneword-domains-pp-cli tlds drift --since 30d --registrars",
+        "explanation": "Records a per-registrar price snapshot and diffs it against the snapshot from 30 days earlier; the first run only records, so movers appear once two dated snapshots exist."
+      },
+      {
+        "title": "Mine positive tech words that are free on .ai and .com",
+        "command": "oneword-domains-pp-cli domains intersect --tld com,ai --category positive --min-length 4 --max-length 6 --csv",
+        "explanation": "Lifetime-pass database query across two TLDs at once, exported as CSV for a spreadsheet."
+      }
+    ],
+    "trigger_phrases": [
+      "is smart.com available",
+      "cheapest TLD for a word",
+      "compare .ai vs .io prices",
+      "cheapest one-word domain auctions",
+      "brainstorm domain names with DomainsGPT",
+      "use oneword-domains",
+      "run oneword-domains"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "status": "PASS",
+  "source_fingerprint": "0b6d5c6be8cf658665c6189dd7dc3a525e08433f7f11844c50470d9e135a66f2",
+  "canonical_source_files": 168,
+  "all_per_file_digests_equal_current_approved_source": true,
+  "official_v433_helper_unchanged": true,
+  "helper_network_disabled_private_deleted": true,
+  "native_platform_metadata_and_peer_hashes_preserved": true
+}

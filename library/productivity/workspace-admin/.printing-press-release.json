@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "workspace-admin",
   "cli_name": "workspace-admin-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T20:28:02Z",
+  "source_commit": "0346fa2e230449b465018aaea6e60321c16580d3",
   "printing_press_version": "4.27.1",
   "run_id": "20260706-073846-b99ffcfa",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(workspace-admin): bind MCP HTTP to loopback",
+      "pr": 2117,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2117",
+      "commit": "0346fa2e230449b465018aaea6e60321c16580d3"
     }
   ]
 }

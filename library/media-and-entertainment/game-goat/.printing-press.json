@@ -1,0 +1,118 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-09-27T08:40:54.665403479Z",
+  "printing_press_version": "4.32.5",
+  "api_name": "game-goat",
+  "display_name": "Game GOAT",
+  "cli_name": "game-goat-pp-cli",
+  "creator": {
+    "handle": "bleighk",
+    "name": "Brad Knight"
+  },
+  "owner": "bleighk",
+  "printer": "bleighk",
+  "printer_name": "Brad Knight",
+  "spec_path": "spec.json",
+  "spec_format": "openapi3",
+  "spec_source": "official",
+  "spec_checksum": "sha256:ad4e705ed809cea34ae4ee534815e064cedcb14450c26582f8fee0e6bd606e94",
+  "run_id": "20260927-155341-72694577",
+  "category": "media-and-entertainment",
+  "description": "Look up any game, find what to play next, and browse the Steam store from one CLI - RAWG search and ratings, remake-aware title resolution, and IsThereAnyDeal price history.",
+  "mcp_binary": "game-goat-pp-mcp",
+  "mcp_tool_count": 30,
+  "mcp_ready": "full",
+  "api_version": "v1.0",
+  "auth_type": "api_key",
+  "auth_preference": "rawgKey",
+  "auth_env_vars": [
+    "RAWG_API_KEY"
+  ],
+  "auth_key_url": "https://rawg.io/apidocs",
+  "novel_features": [
+    {
+      "name": "Steam Store Search",
+      "command": "steam search",
+      "description": "Plural keyless search of the Steam store across games, demos, DLC, soundtracks, software, video, mods, and hardware, with the store tags, price, and release date on every row."
+    },
+    {
+      "name": "Steam Catalog Browse",
+      "command": "steam browse",
+      "description": "Paginated Steam catalog browse filtered by app type, free-only, store tag, and coming-soon/released, localised with --country - so \"every free demo in my region\" is one command."
+    },
+    {
+      "name": "Similar Games",
+      "command": "similar",
+      "description": "Games like <title>: the seed's own studio first, then its defining gameplay tag (roguelite, metroidvania) found by tag-neighborhood co-occurrence, then a confidence-floored genre join. Every row carries its tier and a reason."
+    },
+    {
+      "name": "Ratings Card",
+      "command": "ratings",
+      "description": "One card per game: RAWG community score, Metacritic, and a keyless Steam review score with the current store price, resolving the Steam appid from RAWG so remakes never collide."
+    },
+    {
+      "name": "Retention Verdict",
+      "command": "retention",
+      "description": "Community completion and drop verdict for one game from RAWG added_by_status counts (needs RAWG_API_KEY)."
+    },
+    {
+      "name": "Franchise Order",
+      "command": "series",
+      "description": "Franchise play order from the RAWG game-series endpoint, so a series is played in sequence rather than by release-year guesswork."
+    },
+    {
+      "name": "Price History",
+      "command": "price-history",
+      "description": "All-time, 1-year, and 3-month lows with a dated change log and a buy-now verdict, localised to a --country currency (needs ITAD_API_KEY)."
+    },
+    {
+      "name": "Storefront Prices",
+      "command": "prices",
+      "description": "Current prices across every storefront, cheapest first, with a --deals-only filter, localised to a --country currency (needs ITAD_API_KEY)."
+    }
+  ],
+  "novel_features_built": [
+    {
+      "name": "Steam Store Search",
+      "command": "steam search",
+      "description": "Keyless plural Steam store search with an app-type filter."
+    },
+    {
+      "name": "Steam Catalog Browse",
+      "command": "steam browse",
+      "description": "Keyless paginated Steam catalog browse with type/free/tag/release filters and --country localisation."
+    },
+    {
+      "name": "Retention Verdict",
+      "command": "retention",
+      "description": "Community completion and drop verdict for one game from RAWG added_by_status counts (needs RAWG_API_KEY)."
+    },
+    {
+      "name": "Price History",
+      "command": "price-history",
+      "description": "All-time / 1-year / 3-month low prices with a dated change log and a buy-now verdict, localised to a --country currency (needs ITAD_API_KEY)."
+    },
+    {
+      "name": "Storefront Prices",
+      "command": "prices",
+      "description": "Current prices across storefronts, cheapest first, with a --deals-only filter (needs ITAD_API_KEY)."
+    }
+  ],
+  "verify": {
+    "mode": "mock",
+    "pass_rate": 100,
+    "passed": 65,
+    "total": 65,
+    "data_pipeline": true,
+    "verdict": "PASS"
+  },
+  "scorecard": {
+    "steinberger": {
+      "percentage": 94,
+      "grade": "A",
+      "total": 94
+    }
+  },
+  "catalog_display_name": "Game GOAT",
+  "catalog_description": "Look up any game, find what to play next, and browse the Steam store from one CLI - RAWG search and ratings, remake-aware title resolution, and IsThereAnyDeal price history."
+}

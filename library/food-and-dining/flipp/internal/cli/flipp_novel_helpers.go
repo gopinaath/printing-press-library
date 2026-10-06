@@ -203,9 +203,22 @@ type unitPriceInfo struct {
 	Warning string   `json:"warning,omitempty"`
 }
 
-var quantityPattern = regexp.MustCompile(`(?i)(\d+(?:\.\d+)?|\d+\s*/\s*\d+)\s*(kg|g|l|ml|fl\s*oz|floz|fz|oz|lb|lbs|gal|gallon|gallons|qt|quart|quarts|pt|pint|pints)\b`)
+var quantityPattern = regexp.MustCompile(`(?i)((?:\d+\s+)?\d+\s*/\s*\d+|\d+(?:\.\d+)?)\s*(kg|g|l|ml|fl\s*oz|floz|fz|oz|lb|lbs|gal|gallon|gallons|qt|quart|quarts|pt|pint|pints)\b`)
+var mixedQuantityPattern = regexp.MustCompile(`^(\d+)\s+(\d+\s*/\s*\d+)$`)
 
 func parseQuantitySize(value string) (float64, error) {
+	value = strings.TrimSpace(value)
+	if parts := mixedQuantityPattern.FindStringSubmatch(value); len(parts) == 3 {
+		whole, err := strconv.ParseFloat(parts[1], 64)
+		if err != nil {
+			return 0, err
+		}
+		fraction, err := parseQuantitySize(parts[2])
+		if err != nil {
+			return 0, err
+		}
+		return whole + fraction, nil
+	}
 	value = strings.ReplaceAll(value, " ", "")
 	if parts := strings.Split(value, "/"); len(parts) == 2 {
 		numerator, err := strconv.ParseFloat(parts[0], 64)

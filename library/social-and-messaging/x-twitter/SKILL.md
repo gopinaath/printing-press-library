@@ -41,6 +41,8 @@ Mirrors the official X v2 API and adds what no other X tool has: a local SQLite 
 
 ## When to Use This CLI
 
+For a ranked readout of recent posts, run `x-twitter-pp-cli top-posts --metric engagement --limit 10 --max-fetch 100 --json`. It reads the live X timeline, so each page may use paid API credits. `--max-fetch` accepts 1 to 1000 posts, with a small extra-page budget for sparse responses. A leaderboard returned at that budget is partial and has `truncated: true` in every JSON row. `--user-id` selects a numeric account ID without a separate username lookup; without it, the command uses the authenticated user. JSON rows name the effective `score_metric`, and missing impression scores are `null` rather than zero. `--dry-run` makes no request.
+
 Reach for this CLI when a task involves reading, searching, or archiving X (Twitter) data and you want the results queryable offline rather than re-fetched each time — building a searchable corpus of posts, reconstructing a conversation thread, snapshotting a user's recent posts with engagement, or monitoring mentions incrementally. It is also the right choice when an AI agent needs an X surface with read-only/destructive safety hints and named multi-step intents rather than a pile of raw endpoint calls. Prefer it over raw API calls whenever the same data will be queried more than once, since the local store avoids re-spending per-read credits.
 
 ## Unique Capabilities
@@ -479,7 +481,7 @@ x-twitter-pp-cli profile show briefing
 x-twitter-pp-cli profile delete briefing --yes
 ```
 
-Explicit flags always win over profile values; profile values win over defaults. `agent-context` lists all available profiles under `available_profiles` so introspecting agents discover them at runtime.
+Explicit flags always win over profile values; profile values win over defaults. `agent-context` lists the selected store's profiles under `available_profiles`. By default, saved profiles live in `~/.x-twitter-pp-cli/profiles.json` even when `--config` selects a different credential file. Pass `--profile-store <path>` consistently when saving, listing, applying, or discovering a separate set of flag presets. The selector cannot be stored in a profile and does not change credentials or the SQLite store.
 
 ## Async Jobs
 

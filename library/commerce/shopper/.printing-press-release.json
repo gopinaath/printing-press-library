@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "shopper",
   "cli_name": "shopper-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T01:28:12Z",
+  "source_commit": "5ec9c56555e7aec26f2369c8a23a10506f11695f",
   "printing_press_version": "4.30.1",
   "run_id": "20260803-082038-a3b929d1",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(shopper): scope refresh to profile and accept token on stdin",
+      "pr": 2192,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2192",
+      "commit": "5ec9c56555e7aec26f2369c8a23a10506f11695f"
     }
   ]
 }

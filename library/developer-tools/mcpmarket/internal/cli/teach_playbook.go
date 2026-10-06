@@ -13,6 +13,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -92,12 +93,23 @@ never needs to be shell-escaped or heredoc'd into the command line.`,
 
 			playbookJSON, notes, err := resolvePlaybookInputs(playbookFile, notesText, notesFile)
 			if err != nil {
+				if flags.rejectPII {
+					return usageErr(safePlaybookInputError(err, playbookFile, notesFile))
+				}
 				return err
 			}
 			if strings.TrimSpace(playbookJSONInline) != "" {
 				playbookJSON, err = resolveInlinePlaybook(playbookJSONInline)
 				if err != nil {
+					if flags.rejectPII {
+						return usageErr(fmt.Errorf("invalid --playbook-json: check JSON syntax and field types"))
+					}
 					return err
+				}
+			}
+			if flags.rejectPII {
+				if piiErr := rejectDetectedPII(cmd, "teach-playbook", query, playbookJSON, notes); piiErr != nil {
+					return piiErr
 				}
 			}
 
@@ -157,6 +169,30 @@ never needs to be shell-escaped or heredoc'd into the command line.`,
 	cmd.Flags().StringVar(&notesFile, "notes-file", "", "Path to a markdown file with the notes")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: standard cache location)")
 	return cmd
+}
+
+// safePlaybookInputError gives actionable input guidance without echoing a
+// file path or parser content that might itself contain personal text.
+func safePlaybookInputError(err error, playbookFile, notesFile string) error {
+	var pathErr *os.PathError
+	if errors.As(err, &pathErr) {
+		flagName := "--playbook-file"
+		if notesFile != "" && pathErr.Path == notesFile {
+			flagName = "--notes-file"
+		}
+		switch {
+		case errors.Is(err, os.ErrNotExist):
+			return fmt.Errorf("cannot read %s: file not found", flagName)
+		case errors.Is(err, os.ErrPermission):
+			return fmt.Errorf("cannot read %s: permission denied", flagName)
+		default:
+			return fmt.Errorf("cannot read %s: file read failed", flagName)
+		}
+	}
+	if playbookFile != "" {
+		return fmt.Errorf("invalid --playbook-file: check JSON syntax and field types")
+	}
+	return fmt.Errorf("invalid playbook input")
 }
 
 // newPlaybookCmd is the inspection + amendment parent. `playbook list`
@@ -239,12 +275,17 @@ Disabling: pass --no-learn or set ` + noLearnEnvVar + `=true.`,
 			}
 			addNote = resolvedNote
 			if strings.TrimSpace(query) == "" {
-				writeTeachErrLog(fmt.Sprintf("playbook amend: missing --query (args=%v)", args))
+				writeTeachErrLog("playbook amend: missing --query")
 				return silentCodeErr(2)
 			}
 			if strings.TrimSpace(addNote) == "" {
-				writeTeachErrLog(fmt.Sprintf("playbook amend: missing --add-note for query=%q", query))
+				writeTeachErrLog("playbook amend: missing --add-note")
 				return silentCodeErr(2)
+			}
+			if flags.rejectPII {
+				if piiErr := rejectDetectedPII(cmd, "playbook amend", query, addNote); piiErr != nil {
+					return piiErr
+				}
 			}
 
 			dbPath = learnDBPath(dbPath)

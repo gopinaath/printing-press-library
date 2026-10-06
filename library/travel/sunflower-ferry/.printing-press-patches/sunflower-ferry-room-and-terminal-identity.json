@@ -1,0 +1,16 @@
+{
+  "schema_version": 2,
+  "id": "sunflower-ferry-room-and-terminal-identity",
+  "applied_at": "2026-10-03",
+  "base_run_id": "20261002-221558-06882353",
+  "base_printing_press_version": "4.32.5",
+  "summary": "Bind room privacy to source descriptors and terminal identity to exact observed names; distinguish source maintenance before fare submission.",
+  "reason": "Shared sections and private bed group names overlap; tab order and substring names cannot establish port identity. Observed provider maintenance must fail explicitly before a fare POST.",
+  "files": [
+    "internal/ferry/operations.go",
+    "internal/ferry/ferry_test.go",
+    "README.md",
+    "SKILL.md"
+  ],
+  "validated_outcome": "Current Go tests/vet, pinned govulncheck, retained-source room/terminal regressions, one-GET/no-POST maintenance regression and reused MAX independent review pass. Actual fresh full source-bound acceptance after provider recovery passes 120/120, preserving 94 skipped/unverified checks."
+}

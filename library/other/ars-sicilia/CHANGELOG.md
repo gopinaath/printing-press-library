@@ -2,6 +2,10 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.9.7 - 2026-09-19
+
+- fix(ars-sicilia): the empty-search hint measures the source lag instead of declaring a fixed band (#2019).
+
 ## 2026.9.6 - 2026-09-14
 
 - fix(ars-sicilia): sync stale no longer reports an unreadable store as never synced (#1997).

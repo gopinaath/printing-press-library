@@ -251,48 +251,30 @@ affidamenti aggregati via Consip; incrociare con altre fonti (es. MxMap).
 					rawItems = append(rawItems, raw)
 				}
 			} else {
-				// L'API usa paginazione a TOKEN, non a numero di pagina: si passa
-				// direzionePaginazione=AVANTI + tokenPaginazione=<lastPaginationToken>.
-				token := ""
-				for p := 0; p < pages; p++ {
-					params := map[string]string{"size": strconv.Itoa(size)}
-					for k, v := range base {
-						params[k] = v
+				// L'API usa paginazione a TOKEN, non a numero di pagina: se ne
+				// occupa fetchFullText, condiviso con 'cerca'.
+				fb := map[string]string{"size": strconv.Itoa(size)}
+				for k, v := range base {
+					fb[k] = v
+				}
+				if cpv != "" {
+					fb["cpv"] = cpv
+				}
+				items, _, _, err := fetchFullText(cmd.Context(), c, fb, pages)
+				if err != nil {
+					return classifyAPIError(err, flags)
+				}
+				for _, raw := range items {
+					var idOnly struct {
+						IDAvviso string `json:"idAvviso"`
 					}
-					if cpv != "" {
-						params["cpv"] = cpv
+					_ = json.Unmarshal(raw, &idOnly)
+					if idOnly.IDAvviso == "" || seen[idOnly.IDAvviso] {
+						continue
 					}
-					if token != "" {
-						params["direzionePaginazione"] = "AVANTI"
-						params["tokenPaginazione"] = token
-					}
-					data, err := c.Get(cmd.Context(), "/avvisi-full-text", params)
-					if err != nil {
-						return classifyAPIError(err, flags)
-					}
-					var env struct {
-						Content             []json.RawMessage `json:"content"`
-						LastPaginationToken string            `json:"lastPaginationToken"`
-					}
-					if json.Unmarshal(data, &env) != nil || len(env.Content) == 0 {
-						break
-					}
-					for _, raw := range env.Content {
-						var idOnly struct {
-							IDAvviso string `json:"idAvviso"`
-						}
-						_ = json.Unmarshal(raw, &idOnly)
-						if idOnly.IDAvviso == "" || seen[idOnly.IDAvviso] {
-							continue
-						}
-						seen[idOnly.IDAvviso] = true
-						ids = append(ids, idOnly.IDAvviso)
-						rawItems = append(rawItems, raw)
-					}
-					if len(env.Content) < size || env.LastPaginationToken == "" {
-						break
-					}
-					token = env.LastPaginationToken
+					seen[idOnly.IDAvviso] = true
+					ids = append(ids, idOnly.IDAvviso)
+					rawItems = append(rawItems, raw)
 				}
 			}
 

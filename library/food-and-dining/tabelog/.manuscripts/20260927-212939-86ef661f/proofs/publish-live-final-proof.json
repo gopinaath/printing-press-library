@@ -1,0 +1,35 @@
+{
+  "kind": "publish-live-final-proof",
+  "status": "PASS",
+  "recorded_at": "2026-09-28T03:08:01.403008+00:00",
+  "mandatory_passed": 60,
+  "mandatory_failed": 0,
+  "skipped_unverified": 127,
+  "actual_local_mutator_effects": {
+    "add_inserted_previously_absent_member": true,
+    "note_changed_from_prepared_value": true,
+    "refresh_advanced_snapshot_time": true,
+    "remove_consumed_prepared_member": true,
+    "snapshot_preserved_after_remove": true
+  },
+  "state_verification_http_requests": 0,
+  "marker_sha256": "029862acf7f595018f51977a1ea66aaac43f472a1fd651ec68de0b34f14652ec",
+  "marker_status": "pass",
+  "source_fingerprint": "e48f112c7e7d01835d496882aaabd17d01d2e1de3b6e22a9cb48483a2e336de1",
+  "source_file_count": 148,
+  "marker_identical_in_embedded_archive_runstate": true,
+  "raw_stdout_private_deleted": true,
+  "raw_stdout_sha256": "50b22776853983707b1231a2050864481491808242cb1f7b3c0a22d7ec5fc477",
+  "disposable_fixture_requarantined_outside_library_and_manuscripts": true,
+  "library_fixture_absent": true,
+  "docs_unchanged": true,
+  "source_happy_reported_GETs": 4,
+  "areas_error_path_reported_GETs": 1,
+  "successful_response_envelope_requests_after_exact_json_reuse": 5,
+  "failed_transport_attempts": "none observed; all mandatory checks passed",
+  "compact_proof_sha256": {
+    "publish-live-gate-summary.json": "558d870e5b79e7b854580ad6a1cfb6e561cca68df1ab8e13ef47c2d2cdea26c8",
+    "publish-live-mutator-before.json": "08d84964ef7fd1a163cd6877bc1a8b91a66ac58140590df2e09df007d8b1091b",
+    "publish-live-mutator-after.json": "52945bbe919eb090d990621c399527c0cd2af7d6c96614768884c558cef202cb"
+  }
+}

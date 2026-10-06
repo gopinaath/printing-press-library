@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/cliutil"
 	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/platform"
 	"github.com/spf13/cobra"
 )
@@ -61,6 +62,95 @@ func TestPlatformArtifactOverridesCannotEscapeSelectedProfile(t *testing.T) {
 	t.Setenv("SAMPLE_DB", filepath.Join(t.TempDir(), "ambient.db"))
 	if err := validatePlatformArtifactOverrides(&cobra.Command{Use: "sync"}, session); err == nil || !strings.Contains(err.Error(), "SAMPLE_DB") {
 		t.Fatalf("ambient database override error = %v", err)
+	}
+}
+
+func TestPlatformStoreSelectorIsNotADataPathOverride(t *testing.T) {
+	t.Setenv("SHOPPER_DB", "")
+	session := &platform.Session{Profile: &platform.Profile{Name: "tenant-a"}, CLI: "shopper-pp-cli", Paths: platform.Paths{DataFile: filepath.Join(t.TempDir(), "data.db")}}
+	command := &cobra.Command{Use: "catalog"}
+	var storefront string
+	command.Flags().StringVar(&storefront, "store", "", "storefront")
+	if err := command.Flags().Parse([]string{"--store", "fresh"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := validatePlatformArtifactOverrides(command, session); err != nil {
+		t.Fatalf("storefront selector was treated as a data path: %v", err)
+	}
+}
+
+func TestOptionalArtifactCommandsSelectProfileWithoutLiveGate(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	xdgDataRoot := t.TempDir()
+	t.Setenv("XDG_DATA_HOME", xdgDataRoot)
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	t.Setenv("PRINTING_PRESS_CLIENT_PROFILE", "tenant-a")
+	t.Setenv("SHOPPER_DATA_DIR", "")
+	t.Setenv("SHOPPER_STATE_DIR", "")
+	t.Setenv("SHOPPER_HOME", "")
+	t.Setenv("SHOPPER_FEEDBACK_ENDPOINT", "")
+	t.Setenv("SHOPPER_FEEDBACK_AUTO_SEND", "")
+	if err := platform.SaveProfile(&platform.Profile{
+		SchemaVersion: platform.ProfileSchemaVersion,
+		Name:          "tenant-a",
+		Sources:       map[string]platform.SourceProfile{"public-site": {ExpectedBaseURL: "https://tenant.example"}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	previousRegistration := registeredPlatformSource
+	t.Cleanup(func() { registeredPlatformSource = previousRegistration })
+	registeredPlatformSource = &platformSourceRegistration{Source: "public-site", Adapter: conformanceIdentityAdapter{}, Credentialless: true}
+
+	root := RootCmd()
+	root.SetArgs([]string{"feedback", "profile-only-feedback"})
+	root.SetOut(&bytes.Buffer{})
+	root.SetErr(&bytes.Buffer{})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("feedback profile selection: %v", err)
+	}
+	paths, err := platform.PathsFor("tenant-a", "shopper-pp-cli", "public-site")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(filepath.Join(filepath.Dir(paths.DataFile), "feedback.jsonl"))
+	if err != nil || !strings.Contains(string(data), "profile-only-feedback") {
+		t.Fatalf("feedback did not use selected profile: err=%v", err)
+	}
+	globalDir, err := cliutil.DataDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rel, err := filepath.Rel(xdgDataRoot, globalDir); err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) || filepath.IsAbs(rel) {
+		t.Fatalf("global test data directory escaped temp root: %q", globalDir)
+	}
+	globalData := filepath.Join(globalDir, "feedback.jsonl")
+	if _, err := os.Stat(globalData); err == nil {
+		t.Fatal("profile feedback leaked into global data")
+	}
+	if err := os.MkdirAll(globalDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(globalData, []byte(`{"text":"global-only-feedback","cli":"shopper-pp-cli","version":"test","timestamp":"2026-10-01T00:00:00Z"}`+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	listRoot := RootCmd()
+	listRoot.SetArgs([]string{"feedback", "list"})
+	var listOutput bytes.Buffer
+	listRoot.SetOut(&listOutput)
+	listRoot.SetErr(&bytes.Buffer{})
+	if err := listRoot.Execute(); err != nil {
+		t.Fatalf("feedback list profile selection: %v", err)
+	}
+	if !strings.Contains(listOutput.String(), "profile-only-feedback") || strings.Contains(listOutput.String(), "global-only-feedback") {
+		t.Fatalf("feedback list crossed profile boundary: %s", listOutput.String())
+	}
+	flags := &rootFlags{clientProfileName: "tenant-a"}
+	if err := prepareOptionalArtifactProfile(flags); err != nil {
+		t.Fatalf("agent-context profile selection: %v", err)
+	}
+	if got := buildAgentContextPaths(flags).StateDir; got != paths.StateDir {
+		t.Fatalf("agent-context state dir = %q, want %q", got, paths.StateDir)
 	}
 }
 

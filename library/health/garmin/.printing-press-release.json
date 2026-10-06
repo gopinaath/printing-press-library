@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "garmin",
+  "cli_name": "garmin-pp-cli",
+  "version": "2026.9.1",
+  "released_at": "2026-09-19T09:16:02Z",
+  "source_commit": "faed13504c83e44479dc8c73d885fa8e5d6d1c4c",
+  "printing_press_version": "4.32.0",
+  "run_id": "20260907-222621",
+  "changes": [
+    {
+      "title": "feat(garmin): add garmin",
+      "pr": 2020,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2020",
+      "commit": "faed13504c83e44479dc8c73d885fa8e5d6d1c4c"
+    }
+  ]
+}

@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -54,7 +55,7 @@ func IsUUID(s string) bool {
 // hand-authored choreography keyed by query family and the v6 canonical
 // learn-loop tables ported from prediction-goat (including the v3
 // resources_fts rowid rehash and v4 resources_fts content extraction).
-const StoreSchemaVersion = 9
+const StoreSchemaVersion = 10
 
 // resourcesFTSContentSchemaVersion pins the schema bump that rewrote
 // resources_fts content from raw JSON to searchable leaf values. Keep this
@@ -468,6 +469,14 @@ func (s *Store) migrate(ctx context.Context) error {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_learn_query ON search_learnings(query_pattern)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_learn_unique ON search_learnings(query_pattern, resource_id, action)`,
+		// Keep learned inventory references valid after a legacy display-name
+		// link is rekeyed to its VIN. Aliases never affect other resources.
+		`CREATE TABLE IF NOT EXISTS resource_id_aliases (
+			resource_type TEXT NOT NULL,
+			old_id TEXT NOT NULL,
+			new_id TEXT NOT NULL,
+			PRIMARY KEY (resource_type, old_id)
+		)`,
 		// entity_lookups: canonical-to-value reference data for the
 		// pattern substitution engine in internal/learn/patterns. Seeded
 		// at migration time by the consumer (e.g., a CLI may register
@@ -641,6 +650,11 @@ func (s *Store) migrate(ctx context.Context) error {
 		if current < resourcesFTSContentSchemaVersion {
 			if err := s.migrateResourcesFTSContent(ctx, conn); err != nil {
 				return fmt.Errorf("migrating resources FTS content: %w", err)
+			}
+		}
+		if current < 10 {
+			if err := migrateInventoryLinkIDs(ctx, conn); err != nil {
+				return fmt.Errorf("migrating TeslaTracker inventory link IDs: %w", err)
 			}
 		}
 		// Stamp the schema version. On a fresh DB this writes the current
@@ -1300,7 +1314,7 @@ func extendedJSONIDMapString(object map[string]any) string {
 // Includes both flat resources and dependent (parent-child) resources so a
 // child path-item annotated with x-resource-id resolves the same as a flat
 // path-item.
-var resourceIDFieldOverrides = map[string]string{}
+var resourceIDFieldOverrides = map[string]string{"inventory": "vin"}
 
 // Generic ID fields are split around the resource-specific suffix probe.
 // Stable vendor identifiers win first; then fields derived from the resource
@@ -1308,6 +1322,27 @@ var resourceIDFieldOverrides = map[string]string{}
 // ahead of the resource-specific probe silently keys rows by display labels.
 var genericIDFieldFallbacks = []string{"id", "ID", "_id", "gid", "sid", "uid", "uuid", "guid", "api_id"}
 var genericDescriptiveIDFieldFallbacks = []string{"name", "slug", "key", "code"}
+
+var inventoryVINPath = regexp.MustCompile(`^/inventory/([A-HJ-NPR-Z0-9]{17})/?$`)
+
+// TeslaTracker's inventory sync extracts HTML links, which have a URL but no
+// vin field. Key those links by the VIN in their URL so inventory get --vin
+// can find them offline after sync. Hydrate still fetches full vehicle detail.
+func inventoryLinkVIN(obj map[string]any) string {
+	raw, ok := obj["url"].(string)
+	if !ok {
+		return ""
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return ""
+	}
+	match := inventoryVINPath.FindStringSubmatch(u.Path)
+	if match == nil {
+		return ""
+	}
+	return match[1]
+}
 
 // resourceIDBaseOverrides preserves the complete final collection name for
 // composed dependents whose child segment is itself multiword.
@@ -1332,6 +1367,11 @@ func ExtractResourceID(resourceType string, obj map[string]any) string {
 			if s != "" && s != "<nil>" {
 				return s
 			}
+		}
+	}
+	if resourceType == "inventory" {
+		if vin := inventoryLinkVIN(obj); vin != "" {
+			return vin
 		}
 	}
 	for _, key := range genericIDFieldFallbacks {
@@ -1600,6 +1640,10 @@ func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) (int, 
 			continue
 		}
 		storageID := resourceStorageID(resourceType, id, obj)
+		item, err = mergeInventoryLinkWithDetailTx(tx, resourceType, storageID, obj, item)
+		if err != nil {
+			return 0, extractFailures, fmt.Errorf("merging %s/%s before link upsert: %w", resourceType, storageID, err)
+		}
 
 		if err := s.upsertGenericResourceTx(tx, resourceType, storageID, item); err != nil {
 			// A non-nil error aborts this transaction through the deferred

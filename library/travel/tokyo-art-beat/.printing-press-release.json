@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "tokyo-art-beat",
+  "cli_name": "tokyo-art-beat-pp-cli",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T08:52:18Z",
+  "source_commit": "821910adda463d22b8f79e681c7e4680a419744a",
+  "printing_press_version": "4.32.5",
+  "run_id": "20261001-020055-6892e92f",
+  "changes": [
+    {
+      "title": "feat(tokyo-art-beat): add tokyo-art-beat",
+      "pr": 2097,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2097",
+      "commit": "821910adda463d22b8f79e681c7e4680a419744a"
+    }
+  ]
+}

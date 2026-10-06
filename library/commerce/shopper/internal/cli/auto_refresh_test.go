@@ -8,11 +8,19 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/cliutil"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/cliutil"
+	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/learn"
+	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/platform"
+	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/store"
 )
 
 // captureStderr returns the bytes written to os.Stderr while fn runs. Used
@@ -116,5 +124,231 @@ func TestAutoRefreshNoLearnDoesNotOpenStore(t *testing.T) {
 	}
 	if len(entries) != 0 {
 		t.Fatalf("--no-learn created local-store files: %v", entries)
+	}
+}
+
+func TestAutoRefreshDBPathUsesActiveProfileStore(t *testing.T) {
+	t.Setenv("SHOPPER_DATA_DIR", "")
+	home := t.TempDir()
+	restore, err := cliutil.SetHomeOverride(home)
+	if err != nil {
+		t.Fatalf("set home override: %v", err)
+	}
+	t.Cleanup(restore)
+
+	defaultPath := defaultDBPath("shopper-pp-cli")
+	profilePath := filepath.Join(home, "profiles", "tenant-a", "data.db")
+	for _, fixture := range []struct {
+		path string
+		at   time.Time
+	}{
+		{path: defaultPath, at: time.Now()},
+		{path: profilePath, at: time.Now().Add(-48 * time.Hour)},
+	} {
+		db, openErr := store.OpenWithContext(context.Background(), fixture.path)
+		if openErr != nil {
+			t.Fatalf("open fixture store %s: %v", fixture.path, openErr)
+		}
+		if saveErr := db.SaveSyncStateAt("orders", "", 1, fixture.at); saveErr != nil {
+			_ = db.Close()
+			t.Fatalf("seed fixture store %s: %v", fixture.path, saveErr)
+		}
+		if closeErr := db.Close(); closeErr != nil {
+			t.Fatalf("close fixture store %s: %v", fixture.path, closeErr)
+		}
+	}
+
+	flags := &rootFlags{
+		platformSession: &platform.Session{Paths: platform.Paths{DataFile: profilePath}},
+	}
+	selectedPath, err := autoRefreshDBPath(flags)
+	if err != nil {
+		t.Fatalf("select auto-refresh DB path: %v", err)
+	}
+	if selectedPath != profilePath {
+		t.Fatalf("auto-refresh DB path = %q, want active profile %q", selectedPath, profilePath)
+	}
+	selected, err := store.OpenWithContext(context.Background(), selectedPath)
+	if err != nil {
+		t.Fatalf("open selected store: %v", err)
+	}
+	defer selected.Close()
+	decision, err := cliutil.EnsureFresh(context.Background(), selected.DB(), []string{"orders"}, cachePolicy())
+	if err != nil {
+		t.Fatalf("freshness decision: %v", err)
+	}
+	if decision != cliutil.DecisionStaleAPI {
+		t.Fatalf("active profile decision = %s, want stale-api", decision)
+	}
+}
+
+func TestAutoRefreshAndLocalReadUseSameProfileStore(t *testing.T) {
+	t.Setenv("SHOPPER_DATA_DIR", "")
+	t.Setenv("SHOPPER_STATE_DIR", "")
+	t.Setenv("SHOPPER_CONFIG_DIR", "")
+	t.Setenv("SHOPPER_CONFIG", "")
+	t.Setenv("SHOPPER_NO_LEARN", "")
+	t.Setenv("SHOPPER_LEARN_NO_CAPTURE", "")
+	home := t.TempDir()
+	restore, err := cliutil.SetHomeOverride(home)
+	if err != nil {
+		t.Fatalf("set home override: %v", err)
+	}
+	t.Cleanup(restore)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/orders/orders" {
+			t.Errorf("refresh path = %q, want /orders/orders", r.URL.Path)
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = io.WriteString(w, `[{"id":"profile-new"}]`)
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("SHOPPER_BASE_URL", server.URL)
+	t.Setenv("SHOPPER_TOKEN", "synthetic-offline-token-value")
+
+	defaultPath := defaultDBPath("shopper-pp-cli")
+	profilePath := filepath.Join(home, "profiles", "tenant-a", "data.db")
+	defaultStore, err := store.OpenWithContext(context.Background(), defaultPath)
+	if err != nil {
+		t.Fatalf("open global store: %v", err)
+	}
+	if _, _, err := defaultStore.UpsertBatch("orders", []json.RawMessage{
+		json.RawMessage(`{"id":"global-only"}`),
+		json.RawMessage(`{"id":"global-only-second"}`),
+	}); err != nil {
+		t.Fatalf("seed global row: %v", err)
+	}
+	if err := defaultStore.SaveSyncStateAt("orders", "", 1, time.Now()); err != nil {
+		t.Fatalf("seed fresh global sync state: %v", err)
+	}
+	if err := defaultStore.Close(); err != nil {
+		t.Fatalf("close global store: %v", err)
+	}
+	profileStore, err := store.OpenWithContext(context.Background(), profilePath)
+	if err != nil {
+		t.Fatalf("open profile store: %v", err)
+	}
+	if err := profileStore.SaveSyncStateAt("orders", "", 1, time.Now().Add(-48*time.Hour)); err != nil {
+		t.Fatalf("seed stale profile sync state: %v", err)
+	}
+	if err := profileStore.Close(); err != nil {
+		t.Fatalf("close profile store: %v", err)
+	}
+
+	profileStatePath := filepath.Join(home, "profiles", "tenant-a", "state")
+	flags := &rootFlags{dataSource: "auto", platformSession: &platform.Session{Paths: platform.Paths{DataFile: profilePath, StateDir: profileStatePath}}}
+	meta := autoRefreshIfStale(context.Background(), flags, []string{"orders"})
+	if !meta.Ran || meta.Reason != "refreshed" {
+		t.Fatalf("profile refresh = %+v, want ran/refreshed", meta)
+	}
+	data, _, err := resolveLocal(context.Background(), flags, io.Discard, "orders", true, "/orders/orders", nil, "test")
+	if err != nil {
+		t.Fatalf("read refreshed profile rows: %v", err)
+	}
+	if !strings.Contains(string(data), "profile-new") || strings.Contains(string(data), "global-only") {
+		t.Fatalf("local read selected wrong store: %s", data)
+	}
+	flags.asJSON = true
+	analytics := newAnalyticsCmd(flags)
+	var analyticsOutput bytes.Buffer
+	analytics.SetOut(&analyticsOutput)
+	analytics.SetErr(io.Discard)
+	analytics.SetArgs([]string{"--type", "orders"})
+	if err := analytics.Execute(); err != nil {
+		t.Fatalf("profile analytics: %v", err)
+	}
+	var analyticsResult map[string]any
+	if err := json.Unmarshal(analyticsOutput.Bytes(), &analyticsResult); err != nil {
+		t.Fatalf("decode profile analytics: %v", err)
+	}
+	analyticsData, ok := analyticsResult["data"].(map[string]any)
+	if !ok || analyticsData["count"] != float64(1) {
+		t.Fatalf("profile analytics result = %v, want count 1", analyticsResult)
+	}
+	if err := appendFeedback(FeedbackEntry{Text: "profile-only-note"}, flags); err != nil {
+		t.Fatalf("write profile feedback: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(filepath.Dir(defaultPath), "feedback.jsonl")); !os.IsNotExist(err) {
+		t.Fatalf("feedback reached global path: %v", err)
+	}
+	stateDir, err := profileStateDir(flags)
+	if err != nil {
+		t.Fatalf("select profile state dir: %v", err)
+	}
+	learn.JournalInvocationAt(stateDir, learn.JournalEntry{Cmd: []string{"orders", "list"}, QueryFamily: "profile-only-family"})
+	journalEntries, _, err := learn.ReadJournalFromAt(stateDir, learn.JournalOffset{})
+	if err != nil || len(journalEntries) != 1 || journalEntries[0].QueryFamily != "profile-only-family" {
+		t.Fatalf("profile journal = %v, err = %v", journalEntries, err)
+	}
+	if err := learn.AppendTeachLogWarningAt(stateDir, "teach", "profile-only-query", learn.Warning{Code: "synthetic"}); err != nil {
+		t.Fatalf("write profile teach warning: %v", err)
+	}
+	warnings, err := learn.ReadTeachLogWarningsAt(stateDir)
+	if err != nil || len(warnings) != 1 || warnings[0].Query != "profile-only-query" {
+		t.Fatalf("profile teach warnings = %v, err = %v", warnings, err)
+	}
+	writeTeachErrLog(flags, "synthetic profile error")
+	if err := appendLearningsAudit(flags, map[string]any{"action": "profile-test"}); err != nil {
+		t.Fatalf("write profile learnings audit: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(stateDir, "learnings.jsonl")); err != nil {
+		t.Fatalf("profile learnings audit missing: %v", err)
+	}
+	globalStateDir, err := cliutil.StateDir()
+	if err != nil {
+		t.Fatalf("select global state dir: %v", err)
+	}
+	for _, name := range []string{"learn", "teach.log", "learnings.jsonl"} {
+		if _, err := os.Stat(filepath.Join(globalStateDir, name)); !os.IsNotExist(err) {
+			t.Fatalf("profile learning state reached global %s: %v", name, err)
+		}
+	}
+	if err := learn.AppendTeachLogWarning("teach", "global-only-query", learn.Warning{Code: "synthetic"}); err != nil {
+		t.Fatalf("seed isolated global warning: %v", err)
+	}
+	warningsCmd := newLearningsListCmd(flags)
+	var warningsOutput bytes.Buffer
+	warningsCmd.SetOut(&warningsOutput)
+	warningsCmd.SetErr(io.Discard)
+	warningsCmd.SetArgs([]string{"--warnings"})
+	if err := warningsCmd.Execute(); err != nil {
+		t.Fatalf("list profile warnings: %v", err)
+	}
+	if !strings.Contains(warningsOutput.String(), "profile-only-query") || strings.Contains(warningsOutput.String(), "global-only-query") {
+		t.Fatalf("warnings command crossed profile state boundary: %s", warningsOutput.String())
+	}
+	writeMutationResponseToStore(context.Background(), flags, "cart", json.RawMessage(`{"id":"profile-cart"}`), "")
+	cartData, _, err := resolveLocal(context.Background(), flags, io.Discard, "cart", true, "/cart", nil, "test")
+	if err != nil || !strings.Contains(string(cartData), "profile-cart") {
+		t.Fatalf("profile mutation was not readable from profile store: data=%s err=%v", cartData, err)
+	}
+	globalStore, err := store.OpenWithContext(context.Background(), defaultPath)
+	if err != nil {
+		t.Fatalf("reopen global store: %v", err)
+	}
+	defer globalStore.Close()
+	globalCartCount, err := globalStore.Count("cart")
+	if err != nil || globalCartCount != 0 {
+		t.Fatalf("mutation leaked to global store: count=%d err=%v", globalCartCount, err)
+	}
+}
+
+func TestAutoRefreshDBPathFallsBackWithoutProfile(t *testing.T) {
+	got, err := autoRefreshDBPath(&rootFlags{})
+	if err != nil {
+		t.Fatalf("select default auto-refresh DB path: %v", err)
+	}
+	if want := defaultDBPath("shopper-pp-cli"); got != want {
+		t.Fatalf("auto-refresh DB path = %q, want default %q", got, want)
+	}
+}
+
+func TestAutoRefreshDBPathRejectsProfileWithoutStore(t *testing.T) {
+	_, err := autoRefreshDBPath(&rootFlags{platformSession: &platform.Session{}})
+	if err == nil || !strings.Contains(err.Error(), "no data-file path") {
+		t.Fatalf("error = %v, want missing profile store path", err)
 	}
 }

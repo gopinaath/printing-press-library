@@ -184,8 +184,10 @@ func newHelpCenterCreateCollectionCmd(flags *rootFlags) *cobra.Command {
 				if bodyDescription != "" {
 					bodyMap["description"] = bodyDescription
 				}
-				if bodyHelpCenterId != "" {
-					bodyMap["help_center_id"] = bodyHelpCenterId
+				if cmd.Flags().Changed("help-center-id") || bodyHelpCenterId != "" {
+					if err := setJSONBodyScalar(bodyMap, "help_center_id", "help-center-id", "int", bodyHelpCenterId); err != nil {
+						return err
+					}
 				}
 				if bodyName != "" {
 					bodyMap["name"] = bodyName

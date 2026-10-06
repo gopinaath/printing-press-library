@@ -1,0 +1,20 @@
+{
+  "schema_version": 2,
+  "applied_at": "2026-09-24",
+  "base_run_id": "20260924-061450-62059de3",
+  "base_printing_press_version": "4.32.4",
+  "id": "oneword-domains-dry-run-json-markers",
+  "summary": "doctor, sync and workflow archive add dry_run and action to --dry-run --json output; feedback list and profile list emit the standard dry-run object.",
+  "reason": "Generated framework commands failed the live dogfood runner's dry-run JSON checks.",
+  "files": [
+    "internal/cli/doctor.go",
+    "internal/cli/sync.go",
+    "internal/cli/channel_workflow.go",
+    "internal/cli/feedback.go",
+    "internal/cli/profile.go"
+  ],
+  "call_sites": [
+    "dryRunOK(flags)"
+  ],
+  "validated_outcome": "Live dogfood 169/169."
+}

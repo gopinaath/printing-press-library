@@ -1,0 +1,32 @@
+{
+  "api": "reachable (HTML body at /en/)",
+  "auth": "not required",
+  "base_url": "https://www.limousinebus.co.jp",
+  "config": "ok",
+  "config_path": "<run-dir>/proofs/reviewer/home/config/config.json",
+  "paths": {
+    "cache": {
+      "dir": "<run-dir>/proofs/reviewer/home/cache",
+      "rung": "home-env",
+      "source": "AIRPORT_LIMOUSINE_HOME"
+    },
+    "config": {
+      "dir": "<run-dir>/proofs/reviewer/home/config",
+      "rung": "home-env",
+      "source": "AIRPORT_LIMOUSINE_HOME"
+    },
+    "data": {
+      "dir": "<run-dir>/proofs/reviewer/home/data",
+      "rung": "home-env",
+      "source": "AIRPORT_LIMOUSINE_HOME"
+    },
+    "state": {
+      "dir": "<run-dir>/proofs/reviewer/home/state",
+      "rung": "home-env",
+      "source": "AIRPORT_LIMOUSINE_HOME"
+    },
+    "status": "ok"
+  },
+  "verify_mode": "normal operation",
+  "version": "0.0.0-dev"
+}

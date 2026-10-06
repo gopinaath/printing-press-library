@@ -106,6 +106,10 @@ type localStorageCart struct {
 	Subtotal float64 `json:"subtotal"`
 }
 
+// Kept replaceable for command tests so checkout safety can be exercised
+// without contacting Firebase or the order provider.
+var refreshCheckoutToken = firebaseAuthToken
+
 func newOrdersPlaceCmd(flags *rootFlags) *cobra.Command {
 	var reuseLast bool
 	var cartFile string
@@ -116,6 +120,7 @@ func newOrdersPlaceCmd(flags *rootFlags) *cobra.Command {
 	var confirmOverBudget bool
 	var tipSpec string
 	var force bool
+	var ackLastOrder int
 
 	cmd := &cobra.Command{
 		Use:   "place",
@@ -133,15 +138,9 @@ strings. Payment uses the Stripe customer + saved card configured via
 			if maxBudget <= 0 {
 				return usageErr(fmt.Errorf("--max is required (budget cap in dollars)"))
 			}
-			// Rate cap: rapid-fire order POSTs trip ordertogo's abuse/velocity
-			// detection (which then 400s even a valid request). Refuse a second
-			// attempt within the cool-down window unless --force.
-			if !force && !verifyMode() {
-				if wait := placeCooldownRemaining(); wait > 0 {
-					return usageErr(fmt.Errorf("last order attempt was %s ago; wait %s before retrying (rapid retries trip abuse detection). Use --force to override", placeCooldownWindow-wait, wait.Round(time.Second)))
-				}
+			if ackLastOrder < 0 {
+				return usageErr(fmt.Errorf("--ack-last-order must be a positive order ID"))
 			}
-
 			cfg, err := config.Load(flags.configPath)
 			if err != nil {
 				return configErr(err)
@@ -174,10 +173,11 @@ strings. Payment uses the Stripe customer + saved card configured via
 			}
 
 			body := buildPostOrderBody(cfg, items, subtotal, tip, tax, slug, rid)
-			if verifyMode() {
+			if verifyMode() || flags.dryRun {
 				redacted := redactPostOrderBody(body)
 				return printJSONFiltered(cmd.OutOrStdout(), map[string]any{
 					"status":     "would_post",
+					"dry_run":    flags.dryRun,
 					"endpoint":   "/m/api/postmicmeshorder",
 					"projected":  projected,
 					"item_count": len(items),
@@ -185,6 +185,20 @@ strings. Payment uses the Stripe customer + saved card configured via
 				}, flags)
 			}
 
+			fingerprint, err := cartFingerprint(body)
+			if err != nil {
+				return &cliError{code: 10, err: err}
+			}
+			if err := checkPendingPlacement(fingerprint, ackLastOrder); err != nil {
+				return &cliError{code: 10, err: err}
+			}
+			// Report an unknown checkout before a cooldown or token failure can
+			// hide the instruction to inspect recent orders.
+			if !force {
+				if wait := placeCooldownRemaining(); wait > 0 {
+					return usageErr(fmt.Errorf("last order attempt was %s ago; wait %s before retrying (rapid retries trip abuse detection). Use --force to override", placeCooldownWindow-wait, wait.Round(time.Second)))
+				}
+			}
 			c, err := flags.newClient()
 			if err != nil {
 				return err
@@ -202,10 +216,26 @@ strings. Payment uses the Stripe customer + saved card configured via
 			// fetch-metadata, client hints, priority, and a restaurant-page
 			// Referer (the generic "/" referer the client otherwise sends is a
 			// tell). cfg.BaseURL + the restaurant path mirrors the browser.
+			// Resolve authentication before reserving checkout. A token refresh
+			// failure cannot have submitted an order and must not strand one.
+			token, err := refreshCheckoutToken(cfg)
+			if err != nil {
+				return usageErr(err)
+			}
+			// Persist __requestid before the POST. A lost response leaves a
+			// reservation that blocks any further checkout until the customer
+			// inspects recent orders. Provider deduplication may expire, so the
+			// CLI cannot automatically retry an unknown outcome. The lock and
+			// durable record prevent parallel or changed-cart bypasses.
+			reservation, err := reservePlacementAcknowledging(fingerprint, ackLastOrder)
+			if err != nil {
+				return &cliError{code: 10, err: err}
+			}
+			defer reservation.Release()
 			headers := map[string]string{
 				"Accept":             "*/*",
 				"X-Requested-With":   "XMLHttpRequest",
-				"__requestid":        newRequestID(),
+				"__requestid":        reservation.RequestID,
 				"Sec-Fetch-Site":     "same-origin",
 				"Sec-Fetch-Mode":     "cors",
 				"Sec-Fetch-Dest":     "empty",
@@ -216,9 +246,7 @@ strings. Payment uses the Stripe customer + saved card configured via
 				"Accept-Language":    "en-US,en;q=0.9",
 				"Referer":            strings.TrimRight(cfg.BaseURL, "/") + "/restaurants/" + slug + "/mesh",
 			}
-			if token, terr := firebaseAuthToken(cfg); terr != nil {
-				return usageErr(terr)
-			} else if token != "" {
+			if token != "" {
 				headers["Authorization"] = token
 			}
 			recordPlaceAttempt() // stamp before the POST so the cooldown covers failed attempts too
@@ -231,9 +259,12 @@ strings. Payment uses the Stripe customer + saved card configured via
 			if err != nil {
 				return &cliError{code: 5, err: fmt.Errorf("checkout POST returned 200 but response did not contain a valid order: %w. Raw body: %s", err, truncate(string(data), 500))}
 			}
+			if warn := reservation.MarkConfirmed(result.OrderID); warn != "" {
+				result.Warning = appendWarning(result.Warning, warn)
+			}
 			if result.Total > 0 && result.Total > maxBudget && !confirmOverBudget {
 				// We charged successfully but exceeded budget; surface clearly.
-				result.Warning = fmt.Sprintf("actual total %.2f exceeded --max %.2f", result.Total, maxBudget)
+				result.Warning = appendWarning(result.Warning, fmt.Sprintf("actual total %.2f exceeded --max %.2f", result.Total, maxBudget))
 			}
 			if err := persistPlacedOrder(cmd.Context(), defaultDBPath("ordertogo-pp-cli"), result, items, subtotal, tax, tip, slug, rid); err != nil {
 				result.Warning = appendWarning(result.Warning, fmt.Sprintf("order placed successfully, but saving local history failed: %v", err))
@@ -249,6 +280,7 @@ strings. Payment uses the Stripe customer + saved card configured via
 	cmd.Flags().Float64Var(&maxBudget, "max", 0, "Maximum allowed total in dollars (required)")
 	cmd.Flags().BoolVar(&confirmOverBudget, "confirm-over-budget", false, "Allow totals over --max")
 	cmd.Flags().BoolVar(&force, "force", false, "Override the post-order cooldown (rapid retries can trip abuse detection)")
+	cmd.Flags().IntVar(&ackLastOrder, "ack-last-order", 0, "Acknowledge the previous confirmed order ID before a new checkout")
 	cmd.Flags().StringVar(&tipSpec, "tip", "auto", "Tip as auto, pct%, or dollars")
 	return cmd
 }

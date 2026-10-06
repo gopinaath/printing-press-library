@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "anac-pl",
   "cli_name": "anac-pl-pp-cli",
-  "version": "2026.9.5",
-  "released_at": "2026-09-17T09:10:25Z",
-  "source_commit": "916e5f8ed29a3af74a7c4378cd2e380536b01d53",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T00:02:45Z",
+  "source_commit": "6b9338c8a9d52ced6daae9a20a6451095562930c",
   "printing_press_version": "4.17.0",
   "run_id": "20260623-093040-ed91772a",
   "changes": [
     {
-      "title": "feat(anac-pl): offline CIG check-digit validation and scheda code descriptions",
-      "pr": 2006,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/2006",
-      "commit": "916e5f8ed29a3af74a7c4378cd2e380536b01d53"
+      "title": "Follow ANAC continuation tokens for avvisi search --all",
+      "pr": 2174,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2174",
+      "commit": "6b9338c8a9d52ced6daae9a20a6451095562930c"
     }
   ]
 }

@@ -4,6 +4,9 @@
 
 A local-first analytics CLI for the Instagram Graph API built for managers who run several owned Business/Creator accounts. It syncs accounts, media, insights, and competitor snapshots into a queryable SQLite store, then adds the views the official tools lack: rank your brands side by side (compare), follower-growth over time (growth), best-time-to-post, format breakdowns, and competitor deltas. Agent-native output, offline search, and typed exit codes throughout.
 
+Created by [@alkhamis-80](https://github.com/alkhamis-80) (Mohammed Al Khamis).
+Contributors: [@bobeglz](https://github.com/bobeglz) (bobeglz).
+
 ## Install
 
 The recommended path installs both the `instagram-pp-cli` binary and the `pp-instagram` agent skill (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, and other agents supported by the upstream [`skills`](https://github.com/vercel-labs/skills) CLI) in one shot:

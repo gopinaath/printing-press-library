@@ -1,0 +1,147 @@
+{
+  "platform": "macOS arm64",
+  "japan_journey_date": "2026-10-01",
+  "observations": "Single samples; wall time includes process startup. Peak RSS measured externally by /usr/bin/time -l. No statistical latency guarantee.",
+  "source_fingerprint": "f7a8e06d26ada3948ace5ab6470a2f882aed0130a2fdbfdd8c243f2a949ec76a",
+  "cases_passed": 7,
+  "assertions_passed": 138,
+  "requests": 3,
+  "retries": 0,
+  "cache_read_attempts_exposed": false,
+  "cases": [
+    {
+      "case": "lookup-japanese-cold",
+      "output_bytes": 3177,
+      "request_count": 1,
+      "cache_hits": 0,
+      "latency_ms": 195.652,
+      "wall_ms": 214.227,
+      "peak_rss_bytes": 31604736,
+      "rss_source_unit": "bytes",
+      "metrics": {
+        "request_count": 1,
+        "cache_hits": 0,
+        "cache_writes": 1,
+        "retries": 0,
+        "bytes_received": 1272,
+        "latency_ms": 195.652,
+        "output_bytes": 3177
+      }
+    },
+    {
+      "case": "lookup-japanese-hot",
+      "output_bytes": 3183,
+      "request_count": 0,
+      "cache_hits": 1,
+      "latency_ms": 0.305,
+      "wall_ms": 22.711,
+      "peak_rss_bytes": 26247168,
+      "rss_source_unit": "bytes",
+      "metrics": {
+        "request_count": 0,
+        "cache_hits": 1,
+        "cache_writes": 0,
+        "retries": 0,
+        "bytes_received": 0,
+        "latency_ms": 0.305,
+        "output_bytes": 3183
+      }
+    },
+    {
+      "case": "route-depart-cold",
+      "output_bytes": 4984,
+      "request_count": 1,
+      "cache_hits": 0,
+      "latency_ms": 2150.906,
+      "wall_ms": 2172.672,
+      "peak_rss_bytes": 35078144,
+      "rss_source_unit": "bytes",
+      "metrics": {
+        "request_count": 1,
+        "cache_hits": 0,
+        "cache_writes": 8,
+        "retries": 0,
+        "bytes_received": 391577,
+        "latency_ms": 2150.906,
+        "output_bytes": 4984
+      }
+    },
+    {
+      "case": "route-depart-hot",
+      "output_bytes": 4990,
+      "request_count": 0,
+      "cache_hits": 1,
+      "latency_ms": 1.081,
+      "wall_ms": 22.361,
+      "peak_rss_bytes": 27197440,
+      "rss_source_unit": "bytes",
+      "metrics": {
+        "request_count": 0,
+        "cache_hits": 1,
+        "cache_writes": 0,
+        "retries": 0,
+        "bytes_received": 0,
+        "latency_ms": 1.081,
+        "output_bytes": 4990
+      }
+    },
+    {
+      "case": "route-stored-detail",
+      "output_bytes": 3248,
+      "request_count": 0,
+      "cache_hits": 1,
+      "latency_ms": 0.324,
+      "wall_ms": 17.583,
+      "peak_rss_bytes": 26509312,
+      "rss_source_unit": "bytes",
+      "metrics": {
+        "request_count": 0,
+        "cache_hits": 1,
+        "cache_writes": 0,
+        "retries": 0,
+        "bytes_received": 0,
+        "latency_ms": 0.324,
+        "output_bytes": 3248
+      }
+    },
+    {
+      "case": "route-projected-hot",
+      "output_bytes": 214,
+      "request_count": 0,
+      "cache_hits": 1,
+      "latency_ms": 1.456,
+      "wall_ms": 15.437,
+      "peak_rss_bytes": 28098560,
+      "rss_source_unit": "bytes",
+      "metrics": {
+        "request_count": 0,
+        "cache_hits": 1,
+        "cache_writes": 0,
+        "retries": 0,
+        "bytes_received": 0,
+        "latency_ms": 1.456,
+        "output_bytes": 214
+      }
+    },
+    {
+      "case": "route-no-cache",
+      "output_bytes": 5032,
+      "request_count": 1,
+      "cache_hits": 0,
+      "latency_ms": 795.748,
+      "wall_ms": 812.239,
+      "peak_rss_bytes": 34521088,
+      "rss_source_unit": "bytes",
+      "metrics": {
+        "request_count": 1,
+        "cache_hits": 0,
+        "cache_writes": 0,
+        "retries": 0,
+        "bytes_received": 391598,
+        "latency_ms": 795.748,
+        "output_bytes": 5032
+      }
+    }
+  ],
+  "measured_at_utc": "2026-09-28T02:35:57.990222+00:00"
+}

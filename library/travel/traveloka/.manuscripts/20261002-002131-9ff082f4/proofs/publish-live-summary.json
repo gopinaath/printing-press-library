@@ -1,0 +1,21 @@
+{
+  "level": "full",
+  "verdict": "PASS",
+  "matrix_size": 156,
+  "passed": 156,
+  "failed": 0,
+  "skipped": 86,
+  "coverage_hollow": false,
+  "source_fingerprint": "f2de6e19dffeacaf0da8f2b43b1e5d69df4cbe660da134af267b2524d029882f",
+  "capture": {
+    "http_verified": true,
+    "browser_closed": true,
+    "operation_count": 8
+  },
+  "public_request_fixtures": 8,
+  "private_values_in_fixtures": 0,
+  "raw_transcript_removed": true,
+  "matching_raw_fixture_currencies": [
+    "SGD"
+  ]
+}

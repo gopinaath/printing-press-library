@@ -23,7 +23,7 @@ import (
 )
 
 // version is the printed CLI's version, overridable at build time via ldflags.
-var version = "2026.9.1"
+var version = "2026.10.2"
 
 type rootFlags struct {
 	asJSON        bool

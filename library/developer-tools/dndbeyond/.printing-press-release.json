@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "dndbeyond",
   "cli_name": "dndbeyond-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T01:37:36Z",
+  "source_commit": "56c761e850af7310612a07e551ab051daa200ffe",
   "printing_press_version": "4.30.0",
   "run_id": "20260802T050505Z-f9535648",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(dndbeyond): redact snapshots and review stored playbooks",
+      "pr": 2194,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2194",
+      "commit": "56c761e850af7310612a07e551ab051daa200ffe"
     }
   ]
 }

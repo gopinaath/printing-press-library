@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "id": "meta-graph-follow-paging-next",
+  "applied_at": "2026-09-29",
+  "base_run_id": "20260528-183943",
+  "base_printing_press_version": "4.18.1",
+  "summary": "Graph list responses have more pages exactly while paging.next is present (paging.cursors.after also rides on the last page of some edges), so --all follows paging.next reduced to its after= cursor, and a walk cut short by the page cap or a cursorless next link never reports complete.",
+  "reason": "Meta's generated endpoint metadata omits pagination, so without the Graph fallback --all returns only the first 25 records; the earlier fallback followed paging.cursors.after alone, which asked for one page past the end and still reported complete after a truncation warning.",
+  "files": [
+    "internal/cli/helpers.go",
+    "internal/cli/pagination_graph_test.go"
+  ],
+  "call_sites": [
+    "activeNextCursorPath = \"paging.next\"",
+    "cursorTokenFromMaybeURL(token, activeCursorParam)",
+    "} else if !truncated {"
+  ],
+  "validated_outcome": "Table-driven httptest test drives the ten real list and insights commands over a two-page Graph fixture whose last page keeps cursors but has no next, and fails on the old paging.cursors.after fallback and on a helper without the URL-to-cursor reduction; live read-only --all on a 4-campaign account makes 1 request where the previous build made 2, and on a 96-campaign list makes 4 requests where it made 5, with identical ids in the same order.",
+  "findings_addressed": [
+    "F1"
+  ],
+  "patch_count": 1,
+  "deferred_to_upstream": [
+    {
+      "feature": "Regenerate once the generator reads a URL-valued has_more_field (Graph paging.next) as a next link and its paged-read helper auto-detects the Graph envelope by paging.next presence (cli-printing-press#4836).",
+      "reason": "The generator's next-link fallbacks skip Graph's nested paging.next and Meta's endpoint metadata omits pagination, so a regen would return only the first 25 records again."
+    }
+  ],
+  "upstream_issue": "https://github.com/mvanhorn/cli-printing-press/issues/4836"
+}

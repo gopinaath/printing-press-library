@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "nccpl",
   "cli_name": "nccpl-pp-cli",
-  "version": "2026.9.2",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T00:14:32Z",
+  "source_commit": "86005ae1195531dd375c8bf1e00556c98551bdd5",
   "printing_press_version": "4.31.7",
   "run_id": "20260905-000548-4451d26d",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(nccpl): separate external contract checks and stabilize row IDs",
+      "pr": 2177,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2177",
+      "commit": "86005ae1195531dd375c8bf1e00556c98551bdd5"
     }
   ]
 }

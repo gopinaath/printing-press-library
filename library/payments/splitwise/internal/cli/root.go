@@ -24,7 +24,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-var version = "2026.9.2"
+var version = "2026.10.1"
 
 // Version returns the build version (set via -ldflags at release; "1.0.0" in a
 // plain go build). Exposed so the MCP server can report the same version as the CLI.

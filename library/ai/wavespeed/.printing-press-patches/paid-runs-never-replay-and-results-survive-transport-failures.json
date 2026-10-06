@@ -1,0 +1,31 @@
+{
+  "schema_version": 2,
+  "id": "paid-runs-never-replay-and-results-survive-transport-failures",
+  "applied_at": "2026-10-01",
+  "base_run_id": "20260930-225845-bd628bfa",
+  "base_printing_press_version": "4.32.6",
+  "summary": "doctor verifies credentials with a free /balance read; polls stop at --wait-timeout and tolerate transient errors; any post-submit failure keeps the prediction ID and the prediction-results recovery command; a failed download after a completed paid run is a warning (exit 6, partial_failure) across run/batch/pack/variants/aspects/compose/restyle; a pack rerun archives the superseded manifest as manifest.superseded-<ts>.json.",
+  "reason": "WaveSpeed bills per accepted prediction. The reprinted generator now owns the transport-level parts of this patch: POST submits are never replayed without an idempotency key or x-pp-replay-safe, the replay-safe upload endpoint retries with a size-scaled deadline, and JSON body pagination is typed as numbers. The WaveSpeed-specific doctor probe and post-submit recovery behavior stay hand-authored.",
+  "files": [
+    "internal/cli/run.go",
+    "internal/cli/doctor.go",
+    "internal/cli/novel_aspects.go",
+    "internal/cli/novel_batch.go",
+    "internal/cli/novel_compose.go",
+    "internal/cli/novel_pack.go",
+    "internal/cli/novel_restyle.go",
+    "internal/cli/novel_variants.go",
+    "internal/cli/reliability_test.go",
+    "internal/cli/wavespeed_wiring.go",
+    "internal/client/wavespeed_upload_test.go"
+  ],
+  "call_sites": [
+    "func verifyCredentialsWithBalance(",
+    "GetWithHeadersNoCache(cmd.Context(), \"/balance\"",
+    "&submittedPredictionError{ID: taskID, Err: err}",
+    "manifest.superseded-",
+    "func partialFailureErr("
+  ],
+  "validated_outcome": "TestPredictionSubmitIsNotReplayedAfterAmbiguousFailure (one POST on 504 and dropped connection), TestBillingsSendsNumericPagination, TestUploadRetriesTransientTransportFailure, TestUploadTransferAllowanceScalesWithSize, TestSubmitAndAwait*/TestWaitForPrediction*/TestDoctorVerifiesCredentialsWithBalance/TestPackManifestSkipsShotsWithMissingDownloads pass on the reprint; live doctor reports Credentials verified and billings --agent returns code 200.",
+  "first_applied_at": "2026-09-30"
+}

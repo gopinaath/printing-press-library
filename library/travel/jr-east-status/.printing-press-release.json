@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "jr-east-status",
+  "cli_name": "jr-east-status-pp-cli",
+  "version": "2026.10.1",
+  "released_at": "2026-10-03T08:50:22Z",
+  "source_commit": "c5260a36e1108e560cc4070a661c652dab83e17c",
+  "printing_press_version": "4.32.5",
+  "run_id": "20261002-221426-a8ff88dd",
+  "changes": [
+    {
+      "title": "feat(jr-east-status): add jr-east-status",
+      "pr": 2242,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2242",
+      "commit": "c5260a36e1108e560cc4070a661c652dab83e17c"
+    }
+  ]
+}

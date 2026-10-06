@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "id": "oneword-domains-multi-label-tld-split",
+  "applied_at": "2026-09-24",
+  "base_run_id": "20260924-061450-62059de3",
+  "base_printing_press_version": "4.32.4",
+  "summary": "owdSplitDomain splits word.tld at the first dot so multi-label TLDs such as co.uk and com.au stay intact.",
+  "reason": "Splitting at the last dot turned smart.co.uk into word smart.co and TLD uk, breaking check, recheck, brainstorm, domains intersect and listings rank for the two multi-label TLDs the site tracks.",
+  "files": [
+    "internal/cli/owd_helpers.go",
+    "internal/cli/owd_helpers_test.go"
+  ],
+  "call_sites": [
+    "strings.Index(d, \".\")",
+    "TestOwdSplitDomainMultiLabelTLD"
+  ],
+  "validated_outcome": "TestOwdSplitDomainMultiLabelTLD; compare smart.co.uk returns word smart and TLD co.uk."
+}

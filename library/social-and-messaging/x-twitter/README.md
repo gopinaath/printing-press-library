@@ -146,6 +146,13 @@ Setup sequence:
 
 A Development project does not limit the account; capability is set by app permissions and the account API tier. As of Feb 2026 X bills reads/writes per-use and restricts programmatic replies/quotes/@mentions; self-reply threads (`thread compose`) still work.
 
+Saved command profiles normally live in `~/.x-twitter-pp-cli/profiles.json`, independently of `--config`. Use `--profile-store <path>` on profile commands, `--profile` calls, and `agent-context` to keep another set of saved flag presets separate. A missing selected file starts empty; invalid files fail without falling back to the default. This flag does not change credentials or the local SQLite store.
+
+```bash
+x-twitter-pp-cli --profile-store ./automation/profiles.json profile save briefing --json
+x-twitter-pp-cli --profile-store ./automation/profiles.json profile list --json
+```
+
 ## Quick Start
 
 ```bash
@@ -164,6 +171,9 @@ x-twitter-pp-cli search "launch" --type tweets --limit 20
 # Aggregate your synced posts locally — e.g. top authors by post count — entirely offline, no API call.
 x-twitter-pp-cli analytics --type tweets --group-by author_id --limit 10
 
+# Rank recent posts with a live timeline read. X may charge for each page fetched.
+x-twitter-pp-cli top-posts --metric engagement --limit 10 --max-fetch 100 --json
+
 # Resolve a pasted X URL into a canonical, agent-friendly record.
 x-twitter-pp-cli post resolve https://x.com/user/status/123 --agent
 
@@ -179,6 +189,8 @@ x-twitter-pp-cli monitor run launch --since last --agent
 x-twitter-pp-cli brief --monitor launch --since 24h --format markdown
 
 ```
+
+`top-posts` makes live timeline reads that X may charge for. `--max-fetch` accepts 1 to 1000 posts and limits page reads; sparse pages can require extra requests, with a small safety budget before the command stops. If that budget is reached after posts were fetched, the command returns the partial leaderboard with `truncated: true` in each JSON row. Supplying `--user-id` uses ID-based post links and avoids a separate username lookup. JSON rows include `score_metric`; when impressions are unavailable for every post, the command labels its engagement fallback. When only some impression counts are missing, those rows have `score: null` and rank after measured counts, including measured zero.
 
 ## Unique Features
 

@@ -320,13 +320,9 @@ func New(cfg *config.Config, timeout time.Duration, rateLimit float64) *Client {
 		cacheDir:   cacheDir,
 		limiter:    newRateLimiter(rateLimit),
 	}
-	// CheckRedirect re-derives auth on each hop. Go's default replays the
-	// original Authorization header verbatim, which breaks nonce-bound
-	// schemes (OAuth 1.0a PLAINTEXT, SigV4, Hawk): the duplicate nonce
-	// trips the server's replay detector with a 401. c.authHeader()
-	// returns a fresh value for those schemes and the same static value
-	// for Bearer/api_key, so post-redirect headers are byte-identical for
-	// static auth and freshly-signed for nonce-bound auth.
+	// The CSRF token is bound to the session, not to an individual request.
+	// Preserve it on same-host redirects. Re-running authHeader here would
+	// bootstrap again and recurse if the bootstrap endpoint itself redirects.
 	httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		if len(via) >= 10 {
 			// Match Go's defaultCheckRedirect: a plain error so Client.Do
@@ -341,15 +337,6 @@ func New(cfg *config.Config, timeout time.Duration, rateLimit float64) *Client {
 		// headers and URL query values need explicit removal here.
 		if req.URL.Host != via[0].URL.Host {
 			req.Header.Del("x-csrf-token")
-		}
-		// Same-host gate mirrors Go's shouldCopyHeaderOnRedirect: a
-		// cross-domain 3xx (open redirect or partner handoff) must not
-		// receive the auth credential, even though we are inside
-		// CheckRedirect where Go's automatic stripping has already run.
-		if req.URL.Host == via[0].URL.Host {
-			if h, err := c.authHeader(req.Context()); err == nil && h != "" {
-				req.Header.Set("x-csrf-token", h)
-			}
 		}
 		return nil
 	}
@@ -935,13 +922,18 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 		bodyBytes = b
 	}
 
-	// Resolve auth material before the dry-run branch so --dry-run can preview
-	// exactly what would be sent. Uses only cached credentials; a token that
-	// requires a network refresh will be re-fetched on the live request path,
-	// not during dry-run.
-	authHeader, err := c.authHeader(ctx)
-	if err != nil {
-		return nil, 0, err
+	// The public CSRF endpoint is also doctor's reachability probe. Do not
+	// bootstrap a session token before probing that same endpoint, since a
+	// bootstrap failure would hide the server's actual HTTP response.
+	authHeader := ""
+	if method != http.MethodGet || path != "/gateway/csrf" {
+		// Resolve auth material before the dry-run branch so --dry-run can
+		// preview exactly what would be sent.
+		var err error
+		authHeader, err = c.authHeader(ctx)
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 
 	// Build the request for dry-run display or actual execution
@@ -1263,10 +1255,11 @@ func (c *Client) authHeader(ctx context.Context) (string, error) {
 	// as the x-csrf-token header; the cookie itself goes only on the CSRF
 	// bootstrap (sending it on graphql calls triggers 419 force_logout).
 	if c.Config.RapidapiCsrfToken == "" && c.Config.RapidapiCookie != "" {
-		if token, err := c.fetchCsrfToken(ctx); err == nil && token != "" {
-			return token, nil
+		token, err := c.fetchCsrfToken(ctx)
+		if err != nil {
+			return "", fmt.Errorf("bootstrap RapidAPI CSRF token: %w", err)
 		}
-		return "", nil
+		return token, nil
 	}
 	return authHeader, nil
 }
@@ -1318,7 +1311,10 @@ func (c *Client) fetchCsrfToken(ctx context.Context) (string, error) {
 		CSRFToken string `json:"csrfToken"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return "", err
+		return "", fmt.Errorf("decode csrf bootstrap response: %w", err)
+	}
+	if strings.TrimSpace(out.CSRFToken) == "" {
+		return "", fmt.Errorf("csrf bootstrap response is missing csrfToken")
 	}
 	return out.CSRFToken, nil
 }

@@ -4,6 +4,9 @@
 
 Sarvam AI's official SDKs and MCP server are great for code, but nothing offers offline capability: no local history of translations, TTS generations, transcriptions, or chat threads. sarvam-pp-cli adds a local SQLite store, voice auditioning, conversation resume, batch job retry/report, pronunciation spot-checks, subtitle export, and a doc-ai extraction schema library — all with --json, --dry-run, and typed exit codes for agents and scripts.
 
+Created by [@SomSamantray](https://github.com/SomSamantray) (Som Samantray).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 ## Install
 
 The recommended path installs both the `sarvam-pp-cli` binary and the `pp-sarvam` agent skill (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, and other agents supported by the upstream [`skills`](https://github.com/vercel-labs/skills) CLI) in one shot:
@@ -87,7 +90,7 @@ To install:
 
 1. Download the `.mcpb` for your platform from the [latest release](https://github.com/mvanhorn/printing-press-library/releases/tag/sarvam-current).
 2. Double-click the `.mcpb` file. Claude Desktop opens and walks you through the install.
-3. Fill in `SARVAM_API_KEY` when Claude Desktop prompts you.
+3. Fill in `SARVAM_API_KEY` when Claude Desktop prompts you. Leave the optional client profile blank unless your setup uses one.
 
 Requires Claude Desktop 1.0.0 or later. Pre-built bundles ship for macOS Apple Silicon (`darwin-arm64`) and Windows (`amd64`, `arm64`); for other platforms, use the manual config below.
 
@@ -117,6 +120,8 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ```
 
 </details>
+
+For HTTP MCP, set `PP_MCP_HTTP_TOKEN` in the server process environment and run `sarvam-pp-mcp --transport http --addr 127.0.0.1:7777`. Configure the HTTP MCP client to connect to `http://127.0.0.1:7777/mcp` and send `Authorization: Bearer <the-token>` with every request. A non-loopback bind also requires `--tls-cert` and `--tls-key`; use an HTTPS URL for that client. Keep the token out of command arguments.
 
 ## Authentication
 
@@ -165,14 +170,16 @@ These capabilities aren't available in any other tool for this API.
 ### Local state that compounds
 - **`chat resume`** — Continue a past chat thread from local history with full context
 
-  _Use to continue an assistant session without losing context, offline from the original thread_
+  _Use to continue an assistant session without losing context. New chats save the request messages and reply in your local SQLite database; older response-only records can resume from the last reply but cannot recover earlier prompts. This command sends a new paid chat request._
 
   ```bash
   sarvam-pp-cli chat resume 20260814_2d09e061 "what was our conclusion?"
   ```
+
+  Completed text-only streamed chats can also be resumed. JSON output includes structured `results.id`, `results.choices`, and `results.usage`, plus the full SSE response in `results.stream`. Only the first text choice is saved for resume. Incomplete streams and streamed tool calls are not saved because their full context cannot be reconstructed safely. Successful text-to-speech requests save their request text in local history. Audio data is not copied into SQLite.
 - **`subs`** — Emit .srt/.vtt subtitles from timestamped transcriptions in local history
 
-  _Use to turn a timestamped transcription into subtitles without a throwaway script_
+  _Use to turn a timestamped transcription into subtitles without a throwaway script. Saved subtitles are private to your local account by default._
 
   ```bash
   sarvam-pp-cli subs --from last --format srt --output subtitles.srt
@@ -186,6 +193,8 @@ These capabilities aren't available in any other tool for this API.
   ```bash
   sarvam-pp-cli stt-job retry 20260707_9f1c2b3a-4d5e-6f70-8a9b-c0d1e2f3a4b5 --failed-only --dir ./audio/
   ```
+
+  Retry checks every pending input file before creating a replacement job. It saves progress in private local state, scoped to the selected client profile when one is active, so a rerun resumes the same job and does not require files already uploaded. After a confirmed start, rerunning reports the existing job. If creation succeeded but saving its ID failed, or if the start request's outcome is unknown, check the replacement job with Sarvam and reconcile the checkpoint shown in the error before rerunning.
 - **`stt-job report`** — Per-file digest of a batch STT job with typed exit codes for cron alerting
 
   _Use in cron to alert when a batch transcription job degrades_
@@ -271,6 +280,10 @@ Pick up an assistant conversation where it left off, with full context
 ## Usage
 
 Run `sarvam-pp-cli --help` for the full command reference and flag list.
+
+For `export --output`, the parent directory must be writable. The CLI writes an
+owner-only temporary file there and replaces the destination after the export
+completes, so a failed request leaves the previous file intact.
 
 ## Paths & environment variables
 

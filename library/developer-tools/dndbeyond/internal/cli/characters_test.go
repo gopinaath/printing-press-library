@@ -20,6 +20,7 @@ func TestNormalizeCharacterSnapshotOmitsPrivateFields(t *testing.T) {
 			"level":"5",
 			"classes":{"Wizard":"5"},
 			"abilities":{"str":{"score":8,"modifier":-1},"dex":{"score":14,"modifier":2}},
+			"features":{"api_key":"json-api-key-value","api.key":"json-dotted-value","api/key":"json-slash-value","authorization":"Bearer json-auth-value","credential_hint":"json-credential-value"},
 			"hp":27,
 			"max-hp":32,
 			"email":"redacted-value",
@@ -39,7 +40,7 @@ func TestNormalizeCharacterSnapshotOmitsPrivateFields(t *testing.T) {
 		t.Fatalf("read_only = %#v, want true", got["read_only"])
 	}
 	text := string(out)
-	for _, forbidden := range []string{"redacted-value", "private text", "private narrative", "email", "backstory", "unexpected"} {
+	for _, forbidden := range []string{"redacted-value", "private text", "private narrative", "email", "backstory", "unexpected", "json-api-key-value", "json-dotted-value", "json-slash-value", "json-auth-value", "json-credential-value", "api_key", "authorization", "credential_hint"} {
 		if strings.Contains(text, forbidden) {
 			t.Errorf("normalized output contains forbidden value/key %q: %s", forbidden, text)
 		}
@@ -66,6 +67,10 @@ func TestCharacterSnapshotFromPDFFormJSON(t *testing.T) {
 				{"id":"level","value":"5"},
 				{"id":"hp","value":"27"},
 				{"id":"email","value":"redacted-value"},
+				{"id":"api_key","value":"pdf-api-key-value"},
+				{"id":"api.key","value":"pdf-dotted-value"},
+				{"id":"api/key","value":"pdf-slash-value"},
+				{"id":"Authorization","value":"Bearer pdf-auth-value"},
 				{"id":"Description","value":"private description"},
 				{"id":"Phone","value":"555-0100"},
 				{"id":"Address","value":"123 Main Street"},
@@ -85,7 +90,7 @@ func TestCharacterSnapshotFromPDFFormJSON(t *testing.T) {
 		t.Fatalf("normalizeCharacterSnapshotWithFormat() error = %v", err)
 	}
 	text := string(normalized)
-	for _, forbidden := range []string{"redacted-value", "email", "private description", "Description", "555-0100", "123 Main Street", "123-45-6789", "1990-01-01", "Phone", "Address", "SSN", "Date of Birth", "private narrative", "personality-traits"} {
+	for _, forbidden := range []string{"redacted-value", "email", "private description", "Description", "555-0100", "123 Main Street", "123-45-6789", "1990-01-01", "Phone", "Address", "SSN", "Date of Birth", "private narrative", "personality-traits", "pdf-api-key-value", "pdf-dotted-value", "pdf-slash-value", "pdf-auth-value", "api_key", "Authorization"} {
 		if strings.Contains(text, forbidden) {
 			t.Errorf("normalized PDF output contains forbidden value/key %q: %s", forbidden, text)
 		}
@@ -103,6 +108,10 @@ func TestCharacterSnapshotFromPDFWidgetFields(t *testing.T) {
 		{Label: "CLASS  LEVEL", Value: "Wizard 5"},
 		{Label: "STR", Value: "8"},
 		{Label: "PLAYER NAME", Value: "redacted-value"},
+		{Label: "apiKey", Value: "widget-api-key-value"},
+		{Label: "api.key", Value: "widget-dotted-value"},
+		{Label: "api/key", Value: "widget-slash-value"},
+		{Label: "Authorization Header", Value: "Bearer widget-auth-value"},
 		{Label: "Description", Value: "private description"},
 		{Label: "Phone", Value: "555-0100"},
 		{Label: "Address", Value: "123 Main Street"},
@@ -119,7 +128,7 @@ func TestCharacterSnapshotFromPDFWidgetFields(t *testing.T) {
 		t.Fatalf("normalizeCharacterSnapshotWithFormat() error = %v", err)
 	}
 	text := string(normalized)
-	for _, forbidden := range []string{"redacted-value", "PLAYER NAME", "private description", "Description", "555-0100", "123 Main Street", "123-45-6789", "1990-01-01", "Phone", "Address", "SSN", "Date of Birth", "private narrative", "Backstory"} {
+	for _, forbidden := range []string{"redacted-value", "PLAYER NAME", "private description", "Description", "555-0100", "123 Main Street", "123-45-6789", "1990-01-01", "Phone", "Address", "SSN", "Date of Birth", "private narrative", "Backstory", "widget-api-key-value", "widget-dotted-value", "widget-slash-value", "widget-auth-value", "apiKey", "Authorization Header"} {
 		if strings.Contains(text, forbidden) {
 			t.Errorf("normalized widget output contains forbidden value/key %q: %s", forbidden, text)
 		}

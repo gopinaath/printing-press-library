@@ -1,0 +1,55 @@
+version: 2
+project_name: philonet-pp-cli
+changelog:
+  disable: true
+builds:
+  - id: philonet-pp-cli
+    main: ./cmd/philonet-pp-cli
+    binary: philonet-pp-cli
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/mvanhorn/printing-press-library/library/social-and-messaging/philonet/internal/cli.version={{ .Version }}
+    targets:
+      - darwin_amd64
+      - darwin_arm64
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+      - windows_arm64
+  - id: philonet-pp-mcp
+    main: ./cmd/philonet-pp-mcp
+    binary: philonet-pp-mcp
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    targets:
+      - darwin_amd64
+      - darwin_arm64
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+      - windows_arm64
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+checksum:
+  name_template: checksums.txt
+brews:
+  - name: philonet-pp-cli
+    repository:
+      owner: somsamantray
+      name: homebrew-tap
+    homepage: "https://github.com/mvanhorn/printing-press-library"
+    description: "Your Philonet reading life in the terminal: feed, threads, streaks and friends, plus a local history the web app does not keep."
+    install: |
+      bin.install "philonet-pp-cli"
+      bin.install "philonet-pp-mcp"

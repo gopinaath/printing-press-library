@@ -4,12 +4,12 @@
 package cli
 
 import (
-	"github.com/mvanhorn/printing-press-library/library/other/anac-pl/internal/client"
 	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/mvanhorn/printing-press-library/library/other/anac-pl/internal/client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"io"
@@ -407,7 +407,7 @@ var conservaFalse = map[string]bool{"atlasFuzzySearchEnabled": true}
 // endpoint has no per-endpoint header overrides.
 func paginatedGet(ctx context.Context, c interface {
 	GetWithHeaders(ctx context.Context, path string, params map[string]string, headers map[string]string) (json.RawMessage, error)
-}, path string, params map[string]string, headers map[string]string, fetchAll bool, cursorParam, paginationType, limitParam, nextCursorPath, hasMoreField string) (json.RawMessage, error) {
+}, path string, params map[string]string, headers map[string]string, fetchAll bool, cursorParam, paginationType, limitParam, nextCursorPath, hasMoreField string, maxPages ...int) (json.RawMessage, error) {
 	// Cursor params are exempt from the "0"/"false" strip: offset-paginated
 	// APIs send offset=0 on the first page.
 	clean := map[string]string{}
@@ -427,6 +427,23 @@ func paginatedGet(ctx context.Context, c interface {
 		}
 		emitTruncationWarning(data, nextCursorPath, hasMoreField, paginationType)
 		return data, nil
+	}
+	// ANAC full-text search advances with a direction and continuation token,
+	// not an offset. Keep the normal data-source resolver and provenance while
+	// using the endpoint-specific paginator shared with cerca.
+	if path == "/avvisi-full-text" {
+		limit := paginatedGetMaxPages
+		if len(maxPages) > 0 {
+			limit = maxPages[0]
+		}
+		items, _, _, err := fetchFullTextWithHeaders(ctx, c, clean, 0, headers, limit)
+		if err != nil {
+			return nil, err
+		}
+		if items == nil {
+			items = []json.RawMessage{}
+		}
+		return json.Marshal(items)
 	}
 
 	// Fetch all pages

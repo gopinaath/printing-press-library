@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "conduyt-crm",
   "cli_name": "conduyt-crm-pp-cli",
-  "version": "2026.9.2",
-  "released_at": "2026-09-18T09:17:01Z",
-  "source_commit": "ef1ebf708ec74d2d75e9fd6bc0c376040bef2a3b",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T22:54:06Z",
+  "source_commit": "dd9e758828bc486aa503b5eb796ab7a1cc92a5f3",
   "printing_press_version": "4.32.1",
   "run_id": "20260916-101513-9e12dad7",
   "changes": [
     {
-      "title": "feat(conduyt-crm): add conduyt-crm",
-      "pr": 2012,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/2012",
-      "commit": "ef1ebf708ec74d2d75e9fd6bc0c376040bef2a3b"
+      "title": "fix(conduyt-crm): reject NULL DACL after control flags",
+      "pr": 2165,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2165",
+      "commit": "dd9e758828bc486aa503b5eb796ab7a1cc92a5f3"
     }
   ]
 }

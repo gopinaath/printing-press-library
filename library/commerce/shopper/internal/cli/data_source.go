@@ -86,12 +86,32 @@ func isNetworkError(err error) bool {
 // and a read command never runs a schema migration as a side effect. ctx is
 // threaded into OpenReadOnlyContext so a cancelled command (SIGINT, deadline)
 // interrupts the driver-init SQLITE_BUSY retry rather than blocking on it.
-func openStoreForRead(ctx context.Context, cliName string) (*store.Store, error) {
-	dbPath := defaultDBPath(cliName)
+func openStoreForRead(ctx context.Context, flags *rootFlags) (*store.Store, error) {
+	dbPath, err := localStorePath(flags, "")
+	if err != nil {
+		return nil, err
+	}
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		return nil, nil
 	}
 	return store.OpenReadOnlyContext(ctx, dbPath)
+}
+
+// localStorePath keeps an explicit --db choice while selecting the active
+// client profile's store for commands that use the default path.
+func localStorePath(flags *rootFlags, explicit string) (string, error) {
+	if explicit != "" {
+		return explicit, nil
+	}
+	return autoRefreshDBPath(flags)
+}
+
+func openLocalStore(ctx context.Context, flags *rootFlags, explicit string) (*store.Store, error) {
+	dbPath, err := localStorePath(flags, explicit)
+	if err != nil {
+		return nil, err
+	}
+	return store.OpenWithContext(ctx, dbPath)
 }
 
 // localProvenance builds a DataProvenance for local data reads.
@@ -203,7 +223,7 @@ func resolveReadWithStrategyResponsePathAndJSONGuard(ctx context.Context, c *cli
 				}
 			}
 			data = applyResponsePath(data, responsePath)
-			writeThroughCache(ctx, resourceType, data)
+			writeThroughCache(ctx, flags, resourceType, data)
 			return data, attachFreshness(DataProvenance{Source: "live"}, flags), nil
 		}
 		if !isNetworkError(err) {
@@ -297,7 +317,7 @@ func resolvePaginatedReadWithStrategyAndJSONGuard(ctx context.Context, c *client
 					return nil, DataProvenance{}, err
 				}
 			}
-			writeThroughCache(ctx, resourceType, data)
+			writeThroughCache(ctx, flags, resourceType, data)
 			return data, attachFreshness(DataProvenance{Source: "live"}, flags), nil
 		}
 		if !isNetworkError(err) {
@@ -356,8 +376,12 @@ var writeThroughNestedEnvelopeKeys = []string{"data", "Data", "result", "Result"
 // writeThroughCache upserts live API results into the local SQLite store so
 // FTS search covers everything the user has looked up — not just explicit syncs.
 // Best-effort: failures are silently ignored (the live result already succeeded).
-func writeThroughCache(ctx context.Context, resourceType string, data json.RawMessage) {
-	db, err := store.OpenWithContext(ctx, defaultDBPath("shopper-pp-cli"))
+func writeThroughCache(ctx context.Context, flags *rootFlags, resourceType string, data json.RawMessage) {
+	dbPath, err := autoRefreshDBPath(flags)
+	if err != nil {
+		return
+	}
+	db, err := store.OpenWithContext(ctx, dbPath)
 	if err != nil {
 		return
 	}
@@ -552,13 +576,17 @@ func isRawJSONNull(raw json.RawMessage) bool {
 	return strings.TrimSpace(string(raw)) == "null"
 }
 
-func writeMutationResponseToStore(ctx context.Context, resourceType string, data json.RawMessage, responsePath string) {
+func writeMutationResponseToStore(ctx context.Context, flags *rootFlags, resourceType string, data json.RawMessage, responsePath string) {
 	items := mutationResponseEntityItems(resourceType, data, responsePath)
 	if len(items) == 0 {
 		return
 	}
 
-	db, err := store.OpenWithContext(ctx, defaultDBPath("shopper-pp-cli"))
+	dbPath, err := autoRefreshDBPath(flags)
+	if err != nil {
+		return
+	}
+	db, err := store.OpenWithContext(ctx, dbPath)
 	if err != nil {
 		return
 	}
@@ -651,7 +679,7 @@ func mutationResponseHasID(resourceType string, data json.RawMessage) bool {
 // filters (query params, path scoping like /teams/{id}/users) are NOT applied locally.
 // The provenance metadata includes "unscoped":true when params were present but not applied.
 func resolveLocal(ctx context.Context, flags *rootFlags, hintWriter io.Writer, resourceType string, isList bool, path string, params map[string]string, reason string) (json.RawMessage, DataProvenance, error) {
-	db, err := openStoreForRead(ctx, "shopper-pp-cli")
+	db, err := openStoreForRead(ctx, flags)
 	if err != nil {
 		return nil, DataProvenance{}, fmt.Errorf("opening local database: %w\nRun 'shopper-pp-cli sync' first.", err)
 	}

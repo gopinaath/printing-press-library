@@ -14,8 +14,11 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
+	_ "time/tzdata"
 
 	"github.com/mvanhorn/printing-press-library/library/monitoring/utah-pmn/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/monitoring/utah-pmn/internal/store"
@@ -174,7 +177,7 @@ func resolveReadWithStrategy(ctx context.Context, c *client.Client, flags *rootF
 		// Network error — try local fallback
 		fallbackData, fallbackProv, fallbackErr := resolveLocal(ctx, flags, hintWriter, resourceType, isList, path, params, networkFallbackReason)
 		if fallbackErr != nil {
-			return nil, DataProvenance{}, fmt.Errorf("API unreachable and no local data. Run 'utah-pmn-pp-cli sync' to enable offline access.\n\nOriginal error: %w", err)
+			return nil, DataProvenance{}, fmt.Errorf("API unreachable and local fallback unavailable: %v\n\nOriginal error: %w", fallbackErr, err)
 		}
 		return fallbackData, attachFreshness(fallbackProv, flags), nil
 	}
@@ -554,6 +557,9 @@ func mutationResponseHasID(resourceType string, data json.RawMessage) bool {
 // filters (query params, path scoping like /teams/{id}/users) are NOT applied locally.
 // The provenance metadata includes "unscoped":true when params were present but not applied.
 func resolveLocal(ctx context.Context, flags *rootFlags, hintWriter io.Writer, resourceType string, isList bool, path string, params map[string]string, reason string) (json.RawMessage, DataProvenance, error) {
+	if resourceType == "notices" && isList && strings.TrimSpace(params["zipOrCity"]) != "" {
+		return nil, DataProvenance{}, fmt.Errorf("offline notice searches by location are unavailable: PMN searches nearby locations, but cached notices do not retain which search found them; use --data-source live")
+	}
 	db, err := openStoreForRead(ctx, "utah-pmn-pp-cli")
 	if err != nil {
 		return nil, DataProvenance{}, fmt.Errorf("opening local database: %w\nRun 'utah-pmn-pp-cli sync' first.", err)
@@ -569,8 +575,10 @@ func resolveLocal(ctx context.Context, flags *rootFlags, hintWriter io.Writer, r
 
 	prov := localProvenance(db, resourceType, reason)
 
-	// Warn if endpoint had filters that local reads can't reproduce
-	if len(params) > 0 {
+	filtersApplied := resourceType == "notices" && isList
+	// Warn only when endpoint filters cannot be reproduced locally. Notice
+	// date and limit filters are handled below; location searches fail above.
+	if len(params) > 0 && !filtersApplied {
 		fmt.Fprintf(os.Stderr, "warning: local data is unfiltered — endpoint filters are not applied to cached data\n")
 	}
 
@@ -591,6 +599,12 @@ func resolveLocal(ctx context.Context, flags *rootFlags, hintWriter io.Writer, r
 		}
 		if len(items) == 0 {
 			return nil, DataProvenance{}, fmt.Errorf("no local data for %q. Run 'utah-pmn-pp-cli sync' first", resourceType)
+		}
+		if filtersApplied {
+			items, err = filterCachedNotices(items, params)
+			if err != nil {
+				return nil, DataProvenance{}, err
+			}
 		}
 		// Marshal []json.RawMessage into a single JSON array
 		data, err := json.Marshal(items)
@@ -613,6 +627,131 @@ func resolveLocal(ctx context.Context, flags *rootFlags, hintWriter io.Writer, r
 	}
 	return item, prov, nil
 }
+
+func filterCachedNotices(items []json.RawMessage, params map[string]string) ([]json.RawMessage, error) {
+	if strings.TrimSpace(params["zipOrCity"]) != "" {
+		return nil, fmt.Errorf("offline notice searches by location are unavailable: PMN searches nearby locations, but cached notices do not retain which search found them; use --data-source live")
+	}
+	start, err := parseNoticeFilterDate(params["startDate"])
+	if err != nil {
+		return nil, fmt.Errorf("invalid startDate: %w", err)
+	}
+	end, err := parseNoticeFilterDate(params["endDate"])
+	if err != nil {
+		return nil, fmt.Errorf("invalid endDate: %w", err)
+	}
+	limit := 50
+	if value := strings.TrimSpace(params["listSize"]); value != "" {
+		limit, err = strconv.Atoi(value)
+		if err != nil || limit <= 0 {
+			return nil, fmt.Errorf("invalid listSize %q: expected a positive integer", value)
+		}
+	}
+
+	type cachedNotice struct {
+		raw     json.RawMessage
+		meeting time.Time
+	}
+	matches := make([]cachedNotice, 0, len(items))
+	for index, item := range items {
+		var notice struct {
+			MeetingStartTime json.RawMessage `json:"meetingStartTime"`
+		}
+		if err := json.Unmarshal(item, &notice); err != nil {
+			return nil, fmt.Errorf("decoding cached notice %d: %w", index+1, err)
+		}
+		meeting, parsedMeeting, err := parseCachedMeetingJSONTime(notice.MeetingStartTime)
+		if err != nil {
+			return nil, fmt.Errorf("decoding meetingStartTime for cached notice %d: %w", index+1, err)
+		}
+		if !start.IsZero() || !end.IsZero() {
+			if !parsedMeeting || (!start.IsZero() && meeting.Before(start)) || (!end.IsZero() && !meeting.Before(end.AddDate(0, 0, 1))) {
+				continue
+			}
+		}
+		matches = append(matches, cachedNotice{raw: item, meeting: meeting})
+	}
+	sort.SliceStable(matches, func(i, j int) bool {
+		if matches[i].meeting.IsZero() {
+			return false
+		}
+		if matches[j].meeting.IsZero() {
+			return true
+		}
+		return matches[i].meeting.Before(matches[j].meeting)
+	})
+	filtered := make([]json.RawMessage, 0, len(matches))
+	for _, match := range matches {
+		filtered = append(filtered, match.raw)
+		if limit > 0 && len(filtered) == limit {
+			break
+		}
+	}
+	return filtered, nil
+}
+
+func parseNoticeFilterDate(value string) (time.Time, error) {
+	if strings.TrimSpace(value) == "" {
+		return time.Time{}, nil
+	}
+	parsed, err := time.ParseInLocation("2006-01-02", value, utahNoticeLocation)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("expected YYYY-MM-DD")
+	}
+	return parsed, nil
+}
+
+func parseCachedMeetingTime(value string) (time.Time, bool) {
+	for _, layout := range []string{
+		time.RFC3339, "2006-01-02", "2006-01-02 15:04:05",
+		"1/2/2006 3:04 PM", "1/2/2006 3:04:05 PM",
+		"01/02/2006 03:04 PM", "01/02/2006 03:04:05 PM",
+	} {
+		if parsed, err := time.ParseInLocation(layout, strings.TrimSpace(value), utahNoticeLocation); err == nil {
+			return parsed, true
+		}
+	}
+	return time.Time{}, false
+}
+
+// parseCachedMeetingJSONTime accepts both response shapes emitted by PMN:
+// formatted requests return a JSON string, while unformatted requests return
+// a Unix timestamp (normally milliseconds). Cached rows preserve the upstream
+// JSON, so local filtering must understand both representations.
+func parseCachedMeetingJSONTime(raw json.RawMessage) (time.Time, bool, error) {
+	value := strings.TrimSpace(string(raw))
+	if value == "" || value == "null" {
+		return time.Time{}, false, nil
+	}
+	if value[0] == '"' {
+		var formatted string
+		if err := json.Unmarshal(raw, &formatted); err != nil {
+			return time.Time{}, false, err
+		}
+		meeting, parsed := parseCachedMeetingTime(formatted)
+		return meeting, parsed, nil
+	}
+
+	epoch, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return time.Time{}, false, fmt.Errorf("expected a formatted date string or integer Unix timestamp")
+	}
+	seconds, nanoseconds := epoch, int64(0)
+	if epoch >= 100_000_000_000 || epoch <= -100_000_000_000 {
+		seconds = epoch / 1_000
+		nanoseconds = (epoch % 1_000) * int64(time.Millisecond)
+	}
+	return time.Unix(seconds, nanoseconds).In(utahNoticeLocation), true, nil
+}
+
+var utahNoticeLocation = func() *time.Location {
+	location, err := time.LoadLocation("America/Denver")
+	if err != nil {
+		// time/tzdata above supplies this zone on hosts without zoneinfo.
+		panic(err)
+	}
+	return location
+}()
 
 // Ensure time import is used (compilation guard).
 var _ = time.Now

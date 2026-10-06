@@ -6,10 +6,13 @@
 package cli
 
 import (
+	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/mvanhorn/printing-press-library/library/ai/pinecone/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -19,9 +22,70 @@ type prunePlan struct {
 	OlderThan string   `json:"older_than"`
 	Count     int      `json:"count"`
 	IDs       []string `json:"ids"`
+	Missing   []string `json:"already_absent,omitempty"`
 	DryRun    bool     `json:"dry_run"`
 	Applied   bool     `json:"applied,omitempty"`
 	Deleted   int      `json:"deleted,omitempty"`
+}
+
+type localPruneVector struct {
+	ID        string
+	StorageID string
+	RawData   string
+	Meta      map[string]any
+}
+
+func explicitStringField(obj map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		value, ok := obj[key]
+		if !ok {
+			continue
+		}
+		text, ok := value.(string)
+		if ok {
+			return text, true
+		}
+	}
+	return "", false
+}
+
+// loadScopedPruneVectors fails closed: a locally mirrored vector is eligible
+// only when its stored payload explicitly identifies the requested index and
+// namespace. Older/unscoped mirror rows are deliberately ignored because
+// sending their IDs to another namespace can delete an unrelated live vector.
+func loadScopedPruneVectors(ctx context.Context, db *sql.DB, indexName, namespace string) ([]localPruneVector, error) {
+	rows, err := db.QueryContext(ctx, `SELECT id, data FROM resources WHERE resource_type = 'vectors'`)
+	if err != nil {
+		return nil, fmt.Errorf("querying vectors: %w", err)
+	}
+	defer rows.Close()
+
+	var vectors []localPruneVector
+	for rows.Next() {
+		var storageID, data string
+		if err := rows.Scan(&storageID, &data); err != nil {
+			return nil, fmt.Errorf("scanning vector: %w", err)
+		}
+		var obj map[string]any
+		if err := json.Unmarshal([]byte(data), &obj); err != nil {
+			continue
+		}
+		storedIndex, hasIndex := explicitStringField(obj, "index_name", "indexName", "index")
+		storedNamespace, hasNamespace := explicitStringField(obj, "namespace")
+		if !hasIndex || !hasNamespace || storedIndex != indexName || storedNamespace != namespace {
+			continue
+		}
+		id, _ := explicitStringField(obj, "id")
+		if id == "" {
+			continue
+		}
+		metadata, _ := obj["metadata"].(map[string]any)
+		vectors = append(vectors, localPruneVector{ID: id, StorageID: storageID, RawData: data, Meta: metadata})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterating vectors: %w", err)
+	}
+	return vectors, nil
 }
 
 func newNovelPruneCmd(flags *rootFlags) *cobra.Command {
@@ -38,7 +102,7 @@ func newNovelPruneCmd(flags *rootFlags) *cobra.Command {
 
 Use this command to delete stale vectors identified from local metadata timestamps.
 Do NOT use this command for arbitrary filter/ID deletion; use 'delete'.`,
-		Example: `  pinecone-pp-cli prune travel-chat-embeddings --namespace __default__ --older-than 90d
+		Example: `  pinecone-pp-cli prune travel-chat-embeddings --older-than 90d
   pinecone-pp-cli prune travel-chat-embeddings --older-than 90d --apply`,
 		Annotations: map[string]string{"pp:no-error-path-probe": "true", "pp:happy-args": "index=travel-chat-embeddings", "pp:typed-exit-codes": "0,2"},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -71,59 +135,27 @@ Do NOT use this command for arbitrary filter/ID deletion; use 'delete'.`,
 				fmt.Fprintln(cmd.OutOrStdout(), "No local snapshot data; run 'pinecone-pp-cli sync' or 'snapshot' first.")
 				return nil
 			}
-			s, db, err := openNovelDB(ctx)
+			s, db, err := openNovelDB(ctx, resolvedDB)
 			if err != nil {
 				return err
 			}
 			defer s.Close()
 
-			// Scan synced vector records from the resources table
-			// (records synced under the 'vectors' resource type).
-			rows, err := db.QueryContext(ctx,
-				`SELECT data FROM resources WHERE resource_type = 'vectors'`)
+			vecs, err := loadScopedPruneVectors(ctx, db, indexName, namespace)
 			if err != nil {
-				return fmt.Errorf("querying vectors: %w", err)
+				return err
 			}
-			type vec struct {
-				ID   string         `json:"id"`
-				Meta map[string]any `json:"metadata"`
-			}
-			var vecs []vec
-			for rows.Next() {
-				var data string
-				if err := rows.Scan(&data); err != nil {
-					_ = rows.Close()
-					return fmt.Errorf("scanning vector: %w", err)
-				}
-				var v vec
-				_ = json.Unmarshal([]byte(data), &v)
-				if v.ID != "" {
-					vecs = append(vecs, v)
-				}
-			}
-			if err := rows.Err(); err != nil {
-				_ = rows.Close()
-				return fmt.Errorf("iterating vectors: %w", err)
-			}
-			_ = rows.Close()
 
 			var stale []string
+			seenStale := make(map[string]bool)
 			for _, v := range vecs {
-				ts, ok := v.Meta["timestamp"].(string)
+				t, ok := pruneTimestamp(v.Meta)
 				if !ok {
 					continue
 				}
-				t, err := time.Parse("02/01/06 3:04:05 PM", ts)
-				if err != nil {
-					// also try RFC3339
-					t2, err2 := time.Parse(time.RFC3339, ts)
-					if err2 != nil {
-						continue
-					}
-					t = t2
-				}
-				if t.Before(cutoffTime) {
+				if t.Before(cutoffTime) && !seenStale[v.ID] {
 					stale = append(stale, v.ID)
+					seenStale[v.ID] = true
 				}
 			}
 			if limit > 0 && len(stale) > limit {
@@ -142,10 +174,20 @@ Do NOT use this command for arbitrary filter/ID deletion; use 'delete'.`,
 				if err != nil {
 					return err
 				}
-				path, err := dataPlanePath(ctx, c, indexName, "/vectors/delete")
+				host, err := verifiedIndexHost(ctx, c, indexName)
 				if err != nil {
 					return err
 				}
+				base := "https://" + host
+				var missing []string
+				stale, missing, err = verifyPruneCandidates(ctx, c, base+"/vectors/fetch", indexName, namespace, stale, cutoffTime)
+				if err != nil {
+					return err
+				}
+				plan.IDs = stale
+				plan.Count = len(stale)
+				plan.Missing = missing
+				path := base + "/vectors/delete"
 				// batch in chunks of 100
 				deleted := 0
 				for i := 0; i < len(stale); i += 100 {
@@ -163,9 +205,22 @@ Do NOT use this command for arbitrary filter/ID deletion; use 'delete'.`,
 					}
 					deleted += end - i
 				}
-				plan.Applied = true
 				plan.Deleted = deleted
-				plan.DryRun = false
+				if len(missing) > 0 {
+					missingSet := make(map[string]bool, len(missing))
+					for _, id := range missing {
+						missingSet[id] = true
+					}
+					var rows []store.ScopedVectorRow
+					for _, vector := range vecs {
+						if missingSet[vector.ID] {
+							rows = append(rows, store.ScopedVectorRow{StorageID: vector.StorageID, BareID: vector.ID, ExpectedData: vector.RawData})
+						}
+					}
+					if _, err := s.DeleteScopedVectorRows(ctx, indexName, namespace, rows); err != nil {
+						return fmt.Errorf("removing confirmed-absent vectors from local mirror: %w", err)
+					}
+				}
 				if _, err := db.ExecContext(ctx,
 					`INSERT INTO pp_prune_runs (index_name, namespace, ran_at, deleted, ids) VALUES (?, ?, ?, ?, ?)`,
 					indexName, namespace, time.Now().UTC().Format(time.RFC3339), deleted, mustJSON(stale),
@@ -173,10 +228,17 @@ Do NOT use this command for arbitrary filter/ID deletion; use 'delete'.`,
 					return fmt.Errorf("recording prune run: %w", err)
 				}
 			}
+			if apply {
+				plan.Applied = true
+				plan.DryRun = false
+			}
 			if !wantsHumanTable(cmd.OutOrStdout(), flags) {
 				return printJSONFiltered(cmd.OutOrStdout(), plan, flags)
 			}
 			if len(stale) == 0 {
+				if len(plan.Missing) > 0 {
+					fmt.Fprintf(cmd.OutOrStdout(), "Skipped %d vector(s) already absent from the index.\n", len(plan.Missing))
+				}
 				fmt.Fprintln(cmd.OutOrStdout(), "No stale vectors found.")
 				return nil
 			}
@@ -187,6 +249,9 @@ Do NOT use this command for arbitrary filter/ID deletion; use 'delete'.`,
 			fmt.Fprintf(cmd.OutOrStdout(), "%s %d stale vector(s) in %s\n", verb, len(stale), indexName)
 			for _, id := range stale {
 				fmt.Fprintf(cmd.OutOrStdout(), "  %s\n", id)
+			}
+			if len(plan.Missing) > 0 {
+				fmt.Fprintf(cmd.OutOrStdout(), "Skipped %d vector(s) already absent from the index.\n", len(plan.Missing))
 			}
 			if !apply {
 				fmt.Fprintln(cmd.OutOrStdout(), "Re-run with --apply to delete.")

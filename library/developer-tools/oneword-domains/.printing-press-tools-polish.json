@@ -1,0 +1,28 @@
+{
+  "timestamp": "2026-09-24T08:30:11.070574Z",
+  "cli_dir": "\u003ccli-dir\u003e",
+  "findings": [
+    {
+      "kind": "thin-short",
+      "command": "list",
+      "file": "platform_client.go",
+      "line": 517,
+      "evidence": "List client profiles",
+      "status": "accepted",
+      "note": "DO-NOT-EDIT generated file (platform_client.go); 'profile list' is a framework command hidden from MCP, needs generator-template fix for a richer Short"
+    },
+    {
+      "kind": "thin-short",
+      "command": "list",
+      "file": "teach.go",
+      "line": 868,
+      "evidence": "List recorded learnings",
+      "status": "accepted",
+      "note": "DO-NOT-EDIT generated file (teach.go); 'learnings list' Short should name filters and row shape, needs generator-template fix"
+    }
+  ],
+  "scorecard_before": {
+    "mcp_description_quality": 10,
+    "captured": "2026-09-24T08:21:27.629303Z"
+  }
+}

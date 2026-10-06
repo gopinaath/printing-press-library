@@ -44,7 +44,9 @@ func openGranolaCache() (*granola.Cache, error) {
 	// Best-effort document backfill; errors logged but not fatal so
 	// commands that only need transcripts/folders still work when the
 	// store is unavailable.
-	_ = backfillDocumentsFromStore(c)
+	if err := backfillDocumentsFromStore(c); err != nil {
+		stderr("warning: failed to backfill Granola documents from local store: %v", err)
+	}
 	return c, nil
 }
 
@@ -84,10 +86,21 @@ func openGranolaRead(ctx context.Context) (*granolaRead, error) {
 		ctx = context.Background()
 	}
 	v := &granolaRead{ctx: ctx}
-	// A store that exists but fails to open is treated as absent; the cache
-	// fallback below is still worth trying.
-	if s, err := openGranolaStoreRead(ctx); err == nil {
-		v.store = s
+	s, err := openGranolaStoreRead(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("opening local Granola store: %w", err)
+	}
+	if s != nil {
+		ready, readyErr := granola.StoreHasData(ctx, s.DB())
+		if readyErr != nil {
+			s.Close()
+			return nil, fmt.Errorf("probing local Granola store: %w", readyErr)
+		}
+		if ready {
+			v.store = s
+		} else {
+			s.Close()
+		}
 	}
 	// A cache that will not decrypt is the steady state on migrated
 	// installs; the decrypt error is deliberately dropped rather than
@@ -284,8 +297,10 @@ func (v *granolaRead) storeDocuments() map[string]granola.Document {
 	rows, err := v.store.DB().QueryContext(v.ctx, `
 		SELECT id, title, created_at, updated_at,
 		       workspace_id, deleted_at, notes_markdown, notes_plain,
+		       COALESCE(summary_markdown, ''), COALESCE(summary_plain, ''),
 		       creation_source, valid_meeting
 		FROM meetings
+		WHERE deleted_at IS NULL OR deleted_at = ''
 	`)
 	if err != nil {
 		return out
@@ -298,7 +313,7 @@ func (v *granolaRead) storeDocuments() map[string]granola.Document {
 		if err := rows.Scan(
 			&d.ID, &d.Title, &d.CreatedAt, &d.UpdatedAt,
 			&d.WorkspaceID, &deletedAt,
-			&d.NotesMarkdown, &d.NotesPlain,
+			&d.NotesMarkdown, &d.NotesPlain, &d.SummaryMarkdown, &d.SummaryPlain,
 			&d.CreationSource, &validMeeting,
 		); err != nil {
 			return out
@@ -337,6 +352,12 @@ func mergeStoreDocument(base, sd granola.Document) granola.Document {
 	}
 	if sd.NotesPlain != "" {
 		out.NotesPlain = sd.NotesPlain
+	}
+	if sd.SummaryMarkdown != "" {
+		out.SummaryMarkdown = sd.SummaryMarkdown
+	}
+	if sd.SummaryPlain != "" {
+		out.SummaryPlain = sd.SummaryPlain
 	}
 	if sd.CreationSource != "" {
 		out.CreationSource = sd.CreationSource
@@ -384,7 +405,8 @@ func (v *granolaRead) storeTranscript(id string) []granola.TranscriptSegment {
 		return nil
 	}
 	rows, err := v.store.DB().QueryContext(v.ctx, `
-		SELECT source, text, start_ts_ms, end_ts_ms, confidence
+		SELECT source, text, start_ts_ms, end_ts_ms, confidence,
+		       attribution, speaker_name, diarization_label
 		FROM transcript_segments
 		WHERE meeting_id = ?
 		ORDER BY idx ASC
@@ -396,18 +418,21 @@ func (v *granolaRead) storeTranscript(id string) []granola.TranscriptSegment {
 	var out []granola.TranscriptSegment
 	for rows.Next() {
 		var (
-			source, text   sql.NullString
-			startMs, endMs sql.NullInt64
-			confidence     sql.NullFloat64
-			seg            granola.TranscriptSegment
+			source, text, attribution, speakerName, diarizationLabel sql.NullString
+			startMs, endMs                                           sql.NullInt64
+			confidence                                               sql.NullFloat64
+			seg                                                      granola.TranscriptSegment
 		)
-		if err := rows.Scan(&source, &text, &startMs, &endMs, &confidence); err != nil {
+		if err := rows.Scan(&source, &text, &startMs, &endMs, &confidence, &attribution, &speakerName, &diarizationLabel); err != nil {
 			return out
 		}
 		seg.DocumentID = id
 		seg.Source = source.String
 		seg.Text = text.String
 		seg.Confidence = confidence.Float64
+		seg.Attribution = attribution.String
+		seg.SpeakerName = speakerName.String
+		seg.DiarizationLabel = diarizationLabel.String
 		seg.IsFinal = true
 		if startMs.Valid && startMs.Int64 > 0 {
 			seg.StartTimestamp = millisToISO(startMs.Int64)
@@ -981,8 +1006,10 @@ func backfillDocumentsFromStore(c *granola.Cache) error {
 	rows, err := s.DB().QueryContext(ctx, `
 		SELECT id, title, created_at, updated_at, started_at, ended_at,
 		       workspace_id, deleted_at, notes_markdown, notes_plain,
+		       COALESCE(summary_markdown, ''), COALESCE(summary_plain, ''),
 		       creation_source, valid_meeting
 		FROM meetings
+		WHERE deleted_at IS NULL OR deleted_at = ''
 	`)
 	if err != nil {
 		return fmt.Errorf("backfill: query meetings: %w", err)
@@ -999,7 +1026,7 @@ func backfillDocumentsFromStore(c *granola.Cache) error {
 			&d.ID, &d.Title, &d.CreatedAt, &d.UpdatedAt,
 			&startedAt, &endedAt,
 			&d.WorkspaceID, &deletedAt,
-			&d.NotesMarkdown, &d.NotesPlain,
+			&d.NotesMarkdown, &d.NotesPlain, &d.SummaryMarkdown, &d.SummaryPlain,
 			&d.CreationSource, &validMeeting,
 		); err != nil {
 			return fmt.Errorf("backfill: scan meeting: %w", err)

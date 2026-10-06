@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "govspend",
   "cli_name": "govspend-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-02T09:23:11Z",
-  "source_commit": "2fdbf64b90399a6d9e0d9ba2e200c73696160811",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T20:33:09Z",
+  "source_commit": "5652d877a40c8b37b54cf2a1cde96ff072c5d89b",
   "printing_press_version": "4.18.1",
   "run_id": "20260625-govspend",
   "changes": [
     {
-      "title": "feat(govspend): add govspend",
-      "pr": 1359,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1359",
-      "commit": "2fdbf64b90399a6d9e0d9ba2e200c73696160811"
+      "title": "fix(library): reject invalid GovSpend and Greenhouse inputs",
+      "pr": 2119,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2119",
+      "commit": "5652d877a40c8b37b54cf2a1cde96ff072c5d89b"
     }
   ]
 }

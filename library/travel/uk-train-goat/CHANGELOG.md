@@ -2,6 +2,10 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.10.1 - 2026-10-01
+
+- Reject empty UK Train Goat fare feeds (#2126).
+
 ## 2026.9.1 - 2026-09-11
 
 - fix: fail closed on ambiguous fleet write retries (#1978).

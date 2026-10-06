@@ -1,5 +1,8 @@
 # BMW CarData CLI
 
+Created by [@jvm](https://github.com/jvm) (jvm).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 **Your BMW's telemetry, on the command line — live snapshots, charging history, and a local SQLite store for trends and fleet insight no other tool offers.**
 
 BMW CarData is the official, free-for-personal-use API for your own vehicle data. This CLI handles the OAuth device-code onboarding, fetches live telematic snapshots, charging history and tyre diagnosis, then keeps it all in SQLite so you can chart SoC trends (soc-trends), reconcile charging cost against your tariff (charging-cost), and see every vehicle at once (fleet status).
@@ -121,6 +124,8 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ## Authentication
 
 BMW CarData uses an OAuth2 Device Code Flow with PKCE. First, generate a client_id in the BMW CarData portal (My BMW > BMW CarData > Create CarData Client; tick 'Request access to CarData API', and 'CarData Stream' if you want streaming) and save it — the portal hides it on reload. Then run `bmw-cardata-pp-cli auth login`, open the printed verification URL, log in to BMW, and approve. The CLI stores the access and refresh tokens locally and refreshes them automatically. You can also export BMW_CARDATA_CLIENT_ID and run auth login non-interactively. Requires an EU vehicle with an active SIM, a ConnectedDrive contract, and the vehicle mapped to your account as the primary user.
+
+The `stream` command checks the streaming ID token before connecting and renews it when possible. Older logins through a config symlink may have left the streaming session beside that symlink. The CLI migrates sessions from the default config path and `BMW_CARDATA_CONFIG` when either points to the selected config and its saved OAuth tokens still match. If you used a different custom alias, run `stream --config <original-alias> <vin>` once to migrate its session before switching to the target path. If the saved tokens no longer match or BMW does not return a usable replacement, run `auth login` again with the streaming scope. A temporary token service error asks you to retry instead of replacing your saved login.
 
 ## Quick Start
 
@@ -319,7 +324,7 @@ Verifies configuration, credentials, and connectivity to the API.
 
 ## Configuration
 
-Config file: `~/.config/cardata-pp-cli/config.toml`
+Config file: `~/.config/bmw-cardata-pp-cli/config.toml`
 
 Static request headers can be configured under `headers`; per-command header overrides take precedence.
 

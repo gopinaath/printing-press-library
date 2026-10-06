@@ -1,0 +1,359 @@
+{
+  "api_name": "oneword-domains",
+  "base_url": "https://oneword.domains",
+  "description": "Check a word across every TLD with registrar prices, watch the aftermarket, and generate names with DomainsGPT, all from the terminal with a local store the site itself does not offer.",
+  "mcp_ready": "partial",
+  "http_transport": "standard",
+  "auth": {
+    "type": "cookie",
+    "cookie_domain": "oneword.domains",
+    "cookies": [
+      "__Secure-next-auth.session-token"
+    ]
+  },
+  "required_headers": [
+    {
+      "name": "Accept",
+      "value": "application/json"
+    }
+  ],
+  "tools": [
+    {
+      "name": "domains_check",
+      "description": "Check availability, premium flag, price, aftermarket status, and popularity (tldCount) for a dictionary word on one TLD, such as smart.com; words outside the dictionary return HTTP 500. Required: domain. Returns the DomainCheck.",
+      "method": "GET",
+      "path": "/api/domains/{domain}",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "domain",
+          "type": "string",
+          "location": "path",
+          "description": "Full domain, word plus TLD, such as oasis.io",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "domains_count",
+      "description": "Count available one-word domains for a TLD with the same filters as search; returns a bare integer; normally public, but the site sometimes answers 401 to anonymous callers, in which case auth login --chrome supplies the session. Required: tld. Optional: search, category, price (plus 2 more).",
+      "method": "GET",
+      "path": "/api/domains/count",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "tld",
+          "type": "string",
+          "location": "query",
+          "description": "TLD slug such as ai",
+          "required": true
+        },
+        {
+          "name": "search",
+          "type": "string",
+          "location": "query",
+          "description": "Substring match on the word"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "location": "query",
+          "description": "Word category slug"
+        },
+        {
+          "name": "price",
+          "type": "string",
+          "location": "query",
+          "description": "Price filter: available"
+        },
+        {
+          "name": "min-length",
+          "wire_name": "minLength",
+          "type": "int",
+          "location": "query",
+          "description": "Minimum word length"
+        },
+        {
+          "name": "max-length",
+          "wire_name": "maxLength",
+          "type": "int",
+          "location": "query",
+          "description": "Maximum word length"
+        }
+      ]
+    },
+    {
+      "name": "gpt_usage",
+      "description": "Show DomainsGPT usage and quota for the current identity; anonymous callers get 10, signed-in accounts more. Returns the Usage.",
+      "method": "GET",
+      "path": "/api/gpt/usage",
+      "no_auth": true,
+      "params": []
+    },
+    {
+      "name": "listings_count",
+      "description": "Count aftermarket listings matching the filters; returns a bare integer. Optional: tld, registrar, min-length (plus 1 more).",
+      "method": "GET",
+      "path": "/api/listings/count",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "tld",
+          "type": "string",
+          "location": "query",
+          "description": "TLD slug filter"
+        },
+        {
+          "name": "registrar",
+          "type": "string",
+          "location": "query",
+          "description": "Registrar slug filter"
+        },
+        {
+          "name": "min-length",
+          "wire_name": "minLength",
+          "type": "int",
+          "location": "query",
+          "description": "Minimum word length"
+        },
+        {
+          "name": "max-length",
+          "wire_name": "maxLength",
+          "type": "int",
+          "location": "query",
+          "description": "Maximum word length"
+        }
+      ]
+    },
+    {
+      "name": "listings_filters",
+      "description": "List the TLDs that currently have aftermarket listings, with counts. Optional: registrar. Returns array of ListingFilter.",
+      "method": "GET",
+      "path": "/api/listings/filters",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "registrar",
+          "type": "string",
+          "location": "query",
+          "description": "Registrar slug such as godaddy"
+        }
+      ]
+    },
+    {
+      "name": "listings_list",
+      "description": "List aftermarket listings, 100 per page, filtered by TLD, registrar, and word length, sorted by domain, price, bids, or ending time. Optional: tld, registrar, min-length (plus 3 more). Returns array of Listing.",
+      "method": "GET",
+      "path": "/api/listings",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "tld",
+          "type": "string",
+          "location": "query",
+          "description": "TLD slug filter such as co"
+        },
+        {
+          "name": "registrar",
+          "type": "string",
+          "location": "query",
+          "description": "Registrar slug filter; only godaddy has listings today"
+        },
+        {
+          "name": "min-length",
+          "wire_name": "minLength",
+          "type": "int",
+          "location": "query",
+          "description": "Minimum word length"
+        },
+        {
+          "name": "max-length",
+          "wire_name": "maxLength",
+          "type": "int",
+          "location": "query",
+          "description": "Maximum word length"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "query",
+          "description": "Sort key and direction"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Page number (100 rows per page)"
+        }
+      ]
+    },
+    {
+      "name": "tlds_get",
+      "description": "Get one TLD with its description, registrar price list, cheapest registrar, and example sites; unknown TLDs return an empty record. Required: tld. Returns the TldDetail.",
+      "method": "GET",
+      "path": "/api/tlds/{tld}",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "tld",
+          "type": "string",
+          "location": "path",
+          "description": "TLD slug without the dot, such as ai, com, or io",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "tlds_list",
+      "description": "List all 93 TLDs with registration counts, top-10M site counts, page views, and minimum registration price, ordered by popularity unless --sort-alpha is set. Optional: sort-alpha (default: false). Returns array of Tld.",
+      "method": "GET",
+      "path": "/api/tlds",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "sort-alpha",
+          "wire_name": "sortAlpha",
+          "type": "bool",
+          "location": "query",
+          "description": "Sort alphabetically by TLD instead of by popularity"
+        }
+      ]
+    },
+    {
+      "name": "words_count",
+      "description": "Count dictionary words matching the directory filters; returns a bare integer. Optional: contains, category.",
+      "method": "GET",
+      "path": "/api/words/count",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "contains",
+          "type": "string",
+          "location": "query",
+          "description": "Substring filter"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "location": "query",
+          "description": "Category slug filter"
+        }
+      ]
+    },
+    {
+      "name": "words_get",
+      "description": "Get one dictionary word with its category tags. Required: word. Returns the WordDetail.",
+      "method": "GET",
+      "path": "/api/words/{word}",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "word",
+          "type": "string",
+          "location": "path",
+          "description": "Word slug such as smart",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "words_list",
+      "description": "List dictionary words; with --prefix up to 10 autocomplete matches, otherwise a category or substring directory of 100 words per page in alphabetical order with categories. Optional: prefix, contains, category (plus 1 more). Returns array of Word.",
+      "method": "GET",
+      "path": "/api/words",
+      "no_auth": true,
+      "params": [
+        {
+          "name": "prefix",
+          "wire_name": "query",
+          "type": "string",
+          "location": "query",
+          "description": "Prefix autocomplete (max 10 results, slug only)",
+          "aliases": [
+            "query"
+          ]
+        },
+        {
+          "name": "contains",
+          "type": "string",
+          "location": "query",
+          "description": "Substring filter (directory mode)"
+        },
+        {
+          "name": "category",
+          "type": "string",
+          "location": "query",
+          "description": "Category slug filter"
+        },
+        {
+          "name": "page",
+          "type": "int",
+          "location": "query",
+          "description": "Directory page (100 words per page)"
+        }
+      ]
+    }
+  ],
+  "novel_features": [
+    {
+      "name": "Brainstorm pipeline",
+      "command": "brainstorm",
+      "description": "Generate DomainsGPT names, keep only the available ones with price, cheapest registrar, and a dictionary flag, and save the batch locally; one call per TLD, quota 10 anonymous."
+    },
+    {
+      "name": "Shortlist recheck",
+      "command": "recheck",
+      "description": "Re-check every word and TLD you looked up before and report what changed: taken, freed, premium, price, or popularity."
+    },
+    {
+      "name": "Auction ranking",
+      "command": "listings rank",
+      "description": "Rank aftermarket auctions by how contested the word is across TLDs, price relative to fresh registration, and bid pace."
+    },
+    {
+      "name": "Cross-TLD intersection",
+      "command": "domains intersect",
+      "description": "Find dictionary words that are free on every TLD you list, or free on one and taken on another; needs the lifetime-pass session from auth login --chrome or auth login --cookies-file."
+    },
+    {
+      "name": "Dictionary mining",
+      "command": "words mine",
+      "description": "Filter the 27,627-word dictionary by several categories at once, length, prefix, or glob, offline after a one-time words mine --refresh."
+    },
+    {
+      "name": "TLD inventory",
+      "command": "tlds inventory",
+      "description": "Compare how many available one-word domains each TLD still has for a category and length filter, next to its cheapest registration price (public route)."
+    },
+    {
+      "name": "Cross-TLD check",
+      "command": "check",
+      "description": "Check one word, or a file of words, across the most-viewed TLDs or all 93, with availability, premium flag, popularity, and the cheapest registrar price per TLD."
+    },
+    {
+      "name": "Side-by-side compare",
+      "command": "compare",
+      "description": "Compare several full domains in one table: available, premium, price, popularity, and cheapest registrar, with the cheapest available one called out."
+    },
+    {
+      "name": "Domain hacks",
+      "command": "hacks",
+      "description": "Find domain hacks: split a word so its ending is one of the 93 TLDs (sm.art), or list dictionary words ending in a TLD."
+    },
+    {
+      "name": "TLD price drift",
+      "command": "tlds drift",
+      "description": "Record registrar price snapshots for every TLD and report which prices moved since an earlier snapshot."
+    },
+    {
+      "name": "Aftermarket watch",
+      "command": "listings watch",
+      "description": "Diff the aftermarket feed against the last run: new listings, price or bid changes, listings that disappeared, and auctions ending within a window."
+    },
+    {
+      "name": "DomainsGPT generate",
+      "command": "gpt generate",
+      "description": "Run DomainsGPT and get the streamed names back as real JSON, optionally only the available ones."
+    }
+  ]
+}

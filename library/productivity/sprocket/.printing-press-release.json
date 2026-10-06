@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "sprocket",
   "cli_name": "sprocket-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T01:18:59Z",
+  "source_commit": "7f2243fb8f1329f6d958015eb73c5f373380b2f5",
   "printing_press_version": "4.24.0",
   "run_id": "20260617-211906-50f83ca4",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(sprocket): isolate local account state and secure MCP access",
+      "pr": 2199,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2199",
+      "commit": "7f2243fb8f1329f6d958015eb73c5f373380b2f5"
     }
   ]
 }

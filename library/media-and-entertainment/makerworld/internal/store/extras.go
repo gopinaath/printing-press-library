@@ -6,6 +6,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sort"
+	"time"
 )
 
 // migrateExtras runs after the generated store migrations and before the
@@ -75,6 +77,51 @@ func (s *Store) RecordDesignSnapshots(ctx context.Context, syncAt string, rows [
 	}
 	defer tx.Rollback()
 
+	if err := insertDesignSnapshots(ctx, tx, syncAt, rows); err != nil {
+		return err
+	}
+	if err := retainRecentDesignSnapshots(ctx, tx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+// SaveCompletedDesignSync commits a completed designs watermark and its
+// analytics snapshot together. If either write fails, neither becomes visible,
+// so a retry cannot lose the failed run's comparison baseline.
+func (s *Store) SaveCompletedDesignSync(ctx context.Context, count int, rows []SnapshotRow) error {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	syncAt := time.Now().UTC().Format(time.RFC3339Nano)
+	if err := insertDesignSnapshots(ctx, tx, syncAt, rows); err != nil {
+		return err
+	}
+	if err := retainRecentDesignSnapshots(ctx, tx); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx,
+		`INSERT INTO sync_state (resource_type, last_cursor, last_synced_at, total_count)
+		 VALUES ('designs', '', ?, ?)
+		 ON CONFLICT(resource_type) DO UPDATE SET last_cursor = excluded.last_cursor,
+		 last_synced_at = excluded.last_synced_at, total_count = excluded.total_count`,
+		syncAt, count,
+	); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func insertDesignSnapshots(ctx context.Context, tx *sql.Tx, syncAt string, rows []SnapshotRow) error {
+	if syncAt == "" || len(rows) == 0 {
+		return nil
+	}
 	stmt, err := tx.PrepareContext(ctx, `INSERT OR IGNORE INTO design_snapshots
 		(sync_at, design_id, title, creator_id, creator_name, like_count, download_count, print_count, collection_count, comment_count)
 		VALUES (?,?,?,?,?,?,?,?,?,?)`)
@@ -88,5 +135,68 @@ func (s *Store) RecordDesignSnapshots(ctx context.Context, syncAt string, rows [
 			return err
 		}
 	}
-	return tx.Commit()
+	return nil
+}
+
+type snapshotQuerier interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}
+
+// RecentDesignSnapshotTimes returns snapshot batches in actual time order.
+// RFC3339Nano's variable-width fractional seconds are not text-sortable.
+func RecentDesignSnapshotTimes(ctx context.Context, db snapshotQuerier) ([]string, error) {
+	rows, err := db.QueryContext(ctx, `SELECT DISTINCT sync_at FROM design_snapshots`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	type snapshotTime struct {
+		stamp string
+		when  time.Time
+	}
+	var times []snapshotTime
+	for rows.Next() {
+		var stamp string
+		if err := rows.Scan(&stamp); err != nil {
+			return nil, err
+		}
+		when, err := time.Parse(time.RFC3339Nano, stamp)
+		if err != nil {
+			// Unknown legacy data cannot be ordered or pruned safely.
+			return nil, fmt.Errorf("invalid local design snapshot timestamp; repair snapshot history before resync")
+		}
+		times = append(times, snapshotTime{stamp: stamp, when: when})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	sort.Slice(times, func(i, j int) bool {
+		if !times[i].when.Equal(times[j].when) {
+			return times[i].when.After(times[j].when)
+		}
+		return times[i].stamp > times[j].stamp
+	})
+	stamps := make([]string, len(times))
+	for i, snapshot := range times {
+		stamps[i] = snapshot.stamp
+	}
+	return stamps, nil
+}
+
+// Movers and designer deltas compare only the latest two complete batches.
+// Retain them in the same transaction as the new batch and its watermark.
+func retainRecentDesignSnapshots(ctx context.Context, tx *sql.Tx) error {
+	stamps, err := RecentDesignSnapshotTimes(ctx, tx)
+	if err != nil {
+		return err
+	}
+	if len(stamps) <= 2 {
+		return nil
+	}
+	for _, stamp := range stamps[2:] {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM design_snapshots WHERE sync_at = ?`, stamp); err != nil {
+			return err
+		}
+	}
+	return nil
 }

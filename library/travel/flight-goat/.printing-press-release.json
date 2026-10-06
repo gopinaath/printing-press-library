@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "flight-goat",
   "cli_name": "flight-goat-pp-cli",
-  "version": "2026.9.2",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T21:49:09Z",
+  "source_commit": "653e24fa44b47dea577b74d0a29d913036ce6707",
   "printing_press_version": "4.28.0",
   "run_id": "20260712-220852",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "Validate Flight GOAT award search inputs and cabins",
+      "pr": 2153,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2153",
+      "commit": "653e24fa44b47dea577b74d0a29d913036ce6707"
     }
   ]
 }

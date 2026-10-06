@@ -1,5 +1,8 @@
 # MCP Market CLI
 
+Created by [@SomSamantray](https://github.com/SomSamantray) (Som Samantray).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 **Every MCP Market search, leaderboard, and category browse — plus trending deltas, snapshot diffs, and author portfolios no other tool tracks.**
 
 MCP Market has no official CLI today. This one mirrors the public catalog (servers, clients, Agent Skills) locally as you browse it, and because it's stateful across runs, it can answer questions the live website simply cannot: what's trending fastest, what changed since last week, and what one author has shipped across every entity type.
@@ -114,6 +117,8 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 </details>
 
+For HTTP MCP, set `PP_MCP_HTTP_TOKEN` in the server environment and start `mcpmarket-pp-mcp --transport http --addr 127.0.0.1:7777`. Send the same token in each request's `Authorization: Bearer <token>` header. Keep the token out of command-line arguments. A server exposed beyond the local computer also needs `--tls-cert` and `--tls-key`; plaintext HTTP is limited to a verified loopback listener.
+
 ## Quick Start
 
 ```bash
@@ -153,6 +158,8 @@ These capabilities aren't available in any other tool for this API.
   ```bash
   mcpmarket-pp-cli diff --from 2026-08-01 --to 2026-08-27 --json
   ```
+
+  Refreshing a snapshot on the same day replaces that resource type's saved rows, including items removed from the current catalog. History dates for `diff`, `trending`, and `leaderboard` are chosen from the requested resource type.
 - **`author`** — See everything one GitHub org has published across servers, skills, and clients in one view.
 
   _Use this to evaluate an author's full footprint before trusting one of their servers._
@@ -195,8 +202,10 @@ These capabilities aren't available in any other tool for this API.
 
 ### Find the best PDF tool and see what it's related to
 
+`server search` queries the live catalog. The root-level `search` command searches locally synced data.
+
 ```bash
-mcpmarket-pp-cli server search "pdf" --json --select 0.name,0.url
+mcpmarket-pp-cli server search "pdf" --limit 1 --json --select name,url
 ```
 
 narrow a broad search then feed a result's slug into stack
@@ -204,7 +213,7 @@ narrow a broad search then feed a result's slug into stack
 ### Check who's trending in the last week
 
 ```bash
-mcpmarket-pp-cli trending --since 7d --json --select 0.name,0.delta
+mcpmarket-pp-cli trending --since 7d --json --select name,delta
 ```
 
 select just the fields that matter to avoid parsing a verbose payload
@@ -328,6 +337,8 @@ This CLI caches per-question discovery so repeat queries skip the walk and struc
 - **`mcpmarket-pp-cli teach-lookup`** - Add an entity mapping (e.g. country code, team alias) for pattern substitution
 
 Pass `--no-learn` or set `MCPMARKET_NO_LEARN=true` to disable the loop for deterministic flows.
+
+By default, `teach` warns when a query looks like an email address or phone number and still saves it. Set `MCPMARKET_REJECT_PII=1` for an agent session, or pass `--reject-pii` to a teaching command, to refuse detected email and phone patterns before writing local learning or playbook data. The environment setting stays active even if a saved run profile or flag says false. This covers `teach`, `teach-pattern`, `teach-lookup`, `teach-playbook`, and `playbook amend`. An unreadable optional playbook is skipped while a clean resource learning still succeeds. The check only recognizes obvious patterns, so remove other personal details yourself.
 
 The local store's schema version stamp is one-way: once this version of `mcpmarket-pp-cli` opens the database, older binaries refuse it with a version error — upgrade the binary rather than downgrading.
 

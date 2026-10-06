@@ -147,7 +147,7 @@ func runNovita(cmd *cobra.Command, flags *rootFlags, since, dal string, archivi 
 		return report.Archivi[i].Conteggio > report.Archivi[j].Conteggio
 	})
 	if report.Totale == 0 {
-		report.Nota = "nessun documento nella finestra chiesta. Guarda `ritardo_fonte_giorni` archivio per archivio prima di concludere che non sia successo niente: su questa fonte il ritardo di pubblicazione va dai 9 ai 45 giorni."
+		report.Nota = "nessun documento nella finestra chiesta. Guarda `ritardo_fonte_giorni` archivio per archivio prima di concludere che non sia successo niente: su questa fonte il ritardo di pubblicazione cambia molto da un archivio all'altro (misurato il 18/09/2026: 2 giorni sui resoconti, 58 sulle risoluzioni)."
 	}
 	return emitNovita(cmd, flags, report)
 }

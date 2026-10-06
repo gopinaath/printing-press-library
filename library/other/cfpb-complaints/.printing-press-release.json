@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "cfpb-complaints",
   "cli_name": "cfpb-complaints-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T00:38:40Z",
+  "source_commit": "4619c2ea12dd1b5fe47238116e8b9da334bd0c8c",
   "printing_press_version": "4.29.0",
   "run_id": "20260717-002908-c6f34c82",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(cfpb-complaints): sync complaint hits across offset pages",
+      "pr": 2184,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2184",
+      "commit": "4619c2ea12dd1b5fe47238116e8b9da334bd0c8c"
     }
   ]
 }

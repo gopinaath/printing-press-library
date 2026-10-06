@@ -1,0 +1,8 @@
+# Root-anchored so cmd/<binary>/ source stays tracked.
+/oneword-domains-pp-cli
+/oneword-domains-pp-cli.exe
+/oneword-domains-pp-mcp
+/oneword-domains-pp-mcp.exe
+/bin/
+/build/
+/dist/

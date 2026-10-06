@@ -1,0 +1,3504 @@
+{
+  "version": "1",
+  "summary": {
+    "target_url": "https://philonet.ai",
+    "captured_at": "2026-09-30T17:51:08.445Z",
+    "entry_count": 38,
+    "api_entry_count": 38,
+    "noise_entry_count": 0,
+    "host_distribution": {
+      "api.typepilot.app": 38
+    }
+  },
+  "reachability": {
+    "mode": "standard_http",
+    "confidence": 0.65,
+    "reasons": [
+      "no browser-only reachability signals observed"
+    ]
+  },
+  "protocols": [
+    {
+      "label": "rest_json",
+      "confidence": 0.75,
+      "evidence": [
+        {
+          "entry_index": 0,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 1,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 2,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 3,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 4,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/moment",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 5,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/curiosity-sessions/suggested-feed",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 6,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/articles",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 7,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/thoughts",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 8,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/people",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 9,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/articles/29018/comments/26505",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 10,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/subcommentsnewthreadedv2",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 11,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/article",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 12,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/articles/29018/impact",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 13,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myreading/stats",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 14,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/friendsstandings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 15,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myprofilestats",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 16,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/verificationbadge",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 17,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/metrics",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 18,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/mainprofilenew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 19,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversationsnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 20,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/mybookmarks",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 21,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myengagements",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 22,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myawards",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 23,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/spotlightsnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 24,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/topfriends",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 25,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/friendsthinkinglist",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 26,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/readlater",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 27,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/unread",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 28,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/unreadconversations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 29,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/activity",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 30,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversation/inboxnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 31,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/dm/conversations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 32,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/requests",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 33,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/friendsasstories",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 34,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/feed/friend-requests-preview",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 35,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/space/invitations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 36,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/users/onboarding",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 37,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/public/blog",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "candidates": [
+      {
+        "type": "chrome_devtools_session",
+        "confidence": 0.95
+      }
+    ]
+  },
+  "endpoint_clusters": [
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/dm/conversations",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "conversations",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "has_more",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 31,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/dm/conversations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/feed2/forme",
+      "count": 2,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "count",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "engine",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "has_more",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "items",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "meta",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "page",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "pageSize",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 0,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 1,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/friend/feed/friend-requests-preview",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "show",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 34,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/feed/friend-requests-preview",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/friend/friendsasstories",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string",
+            "required": true,
+            "format": "date-time"
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 33,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/friendsasstories",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/friend/requests",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "current_received",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "current_sent",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "include_details",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "received_requests",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "sent_requests",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "total_received",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "total_sent",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "user_profile",
+            "type": "object",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 32,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/requests",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/public/blog",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "blogs",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 37,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/public/blog",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/activity",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "activity",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "has_unread",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "unread_count",
+            "type": "integer",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 29,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/activity",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "POST",
+      "path": "/v1/room/article",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "articleId",
+            "type": "integer",
+            "required": true
+          }
+        ]
+      },
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "article",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "people",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "room_details",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "taggable_users",
+            "type": "array",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 11,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/article",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/articles/{article_id}/comments/{comment_id}",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "article",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "comment",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "user",
+            "type": "object",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 9,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/articles/29018/comments/26505",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/articles/{article_id}/impact",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "impact",
+            "type": "object",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 12,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/articles/29018/impact",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "POST",
+      "path": "/v1/room/conversation/inboxnew",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "muted",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "offset",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "sort",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "unread",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "counts",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "items",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 30,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversation/inboxnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/conversationsnew",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "meta",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 19,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversationsnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/curiosity-sessions/suggested-feed",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "meta",
+            "type": "object",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 5,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/curiosity-sessions/suggested-feed",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/feed/moment",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 4,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/moment",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/feed/unified",
+      "count": 2,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "count",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "filter",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "has_more",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "items",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "meta",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "page",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "pageSize",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 2,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 3,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/friendsstandings",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string",
+            "required": true,
+            "format": "date-time"
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 14,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/friendsstandings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/friendsthinkinglist",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "cached",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "query",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string",
+            "required": true,
+            "format": "date-time"
+          },
+          {
+            "name": "userCount",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "users",
+            "type": "array",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 25,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/friendsthinkinglist",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "POST",
+      "path": "/v1/room/mainprofilenew",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "userId",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "message",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 18,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/mainprofilenew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/metrics",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "metrics",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "timelineStatus",
+            "type": "object",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 17,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/metrics",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/myawards",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "meta",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "top_awards",
+            "type": "array",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 22,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myawards",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/mybookmarks",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "meta",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 20,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/mybookmarks",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/myengagements",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "meta",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 21,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myengagements",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/myprofilestats",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "source",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 15,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myprofilestats",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/myreading/stats",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string",
+            "required": true,
+            "format": "date-time"
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 13,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myreading/stats",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/readlater",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 26,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/readlater",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "POST",
+      "path": "/v1/room/search/articles",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "offset",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "query",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "sort_by",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 6,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/articles",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "POST",
+      "path": "/v1/room/search/people",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "offset",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "query",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 8,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/people",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "POST",
+      "path": "/v1/room/search/thoughts",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "offset",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "query",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "sort_by",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 7,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/thoughts",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/spotlightsnew",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "meta",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 23,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/spotlightsnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/topfriends",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "cached",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "data",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 24,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/topfriends",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/unread",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "friend_read_like_count",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "last_read_at",
+            "type": "string",
+            "required": true,
+            "format": "date-time"
+          },
+          {
+            "name": "pending_invitations_count",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "pending_invitations_unseen",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "total_unread",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "unread_count",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "unread_notif_count",
+            "type": "integer",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 27,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/unread",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/unreadconversations",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "filters",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "timestamp",
+            "type": "string",
+            "required": true,
+            "format": "date-time"
+          },
+          {
+            "name": "unread_counts",
+            "type": "object",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 28,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/unreadconversations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/room/verificationbadge",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "data",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 16,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/verificationbadge",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "POST",
+      "path": "/v1/room/{room_id}",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "articleId",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "includeParentDetails",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "jump_to_latest",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "limit",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "parentCommentId",
+            "type": "integer",
+            "required": true
+          }
+        ]
+      },
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "article_thinking_time",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "article_url",
+            "type": "string",
+            "required": true,
+            "format": "url"
+          },
+          {
+            "name": "comments",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "has_read_article",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "is_member",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "is_private",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "parent_comment_details",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "parent_comment_id",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "performance",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "total_comment_count",
+            "type": "integer",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 10,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/subcommentsnewthreadedv2",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/space/invitations",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "invitations",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "pagination",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "success",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 35,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/space/invitations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "api.typepilot.app",
+      "method": "GET",
+      "path": "/v1/users/onboarding",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "_debug",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "has_interests",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "interests",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "show_friend_suggestions",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "show_onboarding",
+            "type": "boolean",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 36,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/users/onboarding",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    }
+  ],
+  "request_sequences": [
+    {
+      "label": "observed_api_flow",
+      "confidence": 0.35,
+      "evidence": [
+        {
+          "entry_index": 0,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 1,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 2,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 3,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 4,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/moment",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 5,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/curiosity-sessions/suggested-feed",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 6,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/articles",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 7,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/thoughts",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        }
+      ],
+      "notes": [
+        "Capture order used; timing unavailable."
+      ]
+    }
+  ],
+  "pagination": [
+    {
+      "location": "body",
+      "name": "limit",
+      "confidence": 0.65,
+      "evidence": [
+        {
+          "entry_index": 6,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/articles",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like request field"
+        },
+        {
+          "entry_index": 7,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/thoughts",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like request field"
+        },
+        {
+          "entry_index": 8,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/people",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like request field"
+        },
+        {
+          "entry_index": 10,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/subcommentsnewthreadedv2",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like request field"
+        },
+        {
+          "entry_index": 30,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversation/inboxnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like request field"
+        }
+      ]
+    },
+    {
+      "location": "body",
+      "name": "offset",
+      "confidence": 0.65,
+      "evidence": [
+        {
+          "entry_index": 6,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/articles",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like request field"
+        },
+        {
+          "entry_index": 7,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/thoughts",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like request field"
+        },
+        {
+          "entry_index": 8,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/people",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like request field"
+        },
+        {
+          "entry_index": 30,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversation/inboxnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like request field"
+        }
+      ]
+    },
+    {
+      "location": "query",
+      "name": "limit",
+      "confidence": 0.75,
+      "evidence": [
+        {
+          "entry_index": 19,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversationsnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 29,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/activity",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 31,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/dm/conversations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 32,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/requests",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        }
+      ]
+    },
+    {
+      "location": "query",
+      "name": "offset",
+      "confidence": 0.75,
+      "evidence": [
+        {
+          "entry_index": 32,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/requests",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        }
+      ]
+    },
+    {
+      "location": "query",
+      "name": "page",
+      "confidence": 0.75,
+      "evidence": [
+        {
+          "entry_index": 0,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 1,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 2,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 3,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 19,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversationsnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 35,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/space/invitations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        }
+      ]
+    },
+    {
+      "location": "query",
+      "name": "per_page",
+      "confidence": 0.75,
+      "evidence": [
+        {
+          "entry_index": 35,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/space/invitations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        }
+      ]
+    }
+  ],
+  "candidate_commands": [
+    {
+      "name": "create_article",
+      "resource": "article",
+      "confidence": 0.55,
+      "rationale": "Derived from observed POST /v1/room/article traffic.",
+      "evidence": [
+        {
+          "entry_index": 11,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/article",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "create_articles",
+      "resource": "articles",
+      "confidence": 0.55,
+      "rationale": "Derived from observed POST /v1/room/search/articles traffic.",
+      "evidence": [
+        {
+          "entry_index": 6,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/articles",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "create_inboxnew",
+      "resource": "inboxnew",
+      "confidence": 0.55,
+      "rationale": "Derived from observed POST /v1/room/conversation/inboxnew traffic.",
+      "evidence": [
+        {
+          "entry_index": 30,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversation/inboxnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "create_mainprofilenew",
+      "resource": "mainprofilenew",
+      "confidence": 0.55,
+      "rationale": "Derived from observed POST /v1/room/mainprofilenew traffic.",
+      "evidence": [
+        {
+          "entry_index": 18,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/mainprofilenew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "create_people",
+      "resource": "people",
+      "confidence": 0.55,
+      "rationale": "Derived from observed POST /v1/room/search/people traffic.",
+      "evidence": [
+        {
+          "entry_index": 8,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/people",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "create_room",
+      "resource": "room",
+      "confidence": 0.55,
+      "rationale": "Derived from observed POST /v1/room/{room_id} traffic.",
+      "evidence": [
+        {
+          "entry_index": 10,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/subcommentsnewthreadedv2",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "create_thoughts",
+      "resource": "thoughts",
+      "confidence": 0.55,
+      "rationale": "Derived from observed POST /v1/room/search/thoughts traffic.",
+      "evidence": [
+        {
+          "entry_index": 7,
+          "method": "POST",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/search/thoughts",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "get_comments",
+      "resource": "comments",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/articles/{article_id}/comments/{comment_id} traffic.",
+      "evidence": [
+        {
+          "entry_index": 9,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/articles/29018/comments/26505",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "get_impact",
+      "resource": "impact",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/articles/{article_id}/impact traffic.",
+      "evidence": [
+        {
+          "entry_index": 12,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/articles/29018/impact",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_activity",
+      "resource": "activity",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/activity traffic.",
+      "evidence": [
+        {
+          "entry_index": 29,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/activity",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_blog",
+      "resource": "blog",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/public/blog traffic.",
+      "evidence": [
+        {
+          "entry_index": 37,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/public/blog",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_conversations",
+      "resource": "conversations",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/dm/conversations traffic.",
+      "evidence": [
+        {
+          "entry_index": 31,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/dm/conversations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_conversationsnew",
+      "resource": "conversationsnew",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/conversationsnew traffic.",
+      "evidence": [
+        {
+          "entry_index": 19,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/conversationsnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_forme",
+      "resource": "forme",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/feed2/forme traffic.",
+      "evidence": [
+        {
+          "entry_index": 0,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 1,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/feed2/forme",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_friend_requests_preview",
+      "resource": "friend_requests_preview",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/friend/feed/friend-requests-preview traffic.",
+      "evidence": [
+        {
+          "entry_index": 34,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/feed/friend-requests-preview",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_friendsasstories",
+      "resource": "friendsasstories",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/friend/friendsasstories traffic.",
+      "evidence": [
+        {
+          "entry_index": 33,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/friendsasstories",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_friendsstandings",
+      "resource": "friendsstandings",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/friendsstandings traffic.",
+      "evidence": [
+        {
+          "entry_index": 14,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/friendsstandings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_friendsthinkinglist",
+      "resource": "friendsthinkinglist",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/friendsthinkinglist traffic.",
+      "evidence": [
+        {
+          "entry_index": 25,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/friendsthinkinglist",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_invitations",
+      "resource": "invitations",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/space/invitations traffic.",
+      "evidence": [
+        {
+          "entry_index": 35,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/space/invitations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_metrics",
+      "resource": "metrics",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/metrics traffic.",
+      "evidence": [
+        {
+          "entry_index": 17,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/metrics",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_moment",
+      "resource": "moment",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/feed/moment traffic.",
+      "evidence": [
+        {
+          "entry_index": 4,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/moment",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_myawards",
+      "resource": "myawards",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/myawards traffic.",
+      "evidence": [
+        {
+          "entry_index": 22,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myawards",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_mybookmarks",
+      "resource": "mybookmarks",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/mybookmarks traffic.",
+      "evidence": [
+        {
+          "entry_index": 20,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/mybookmarks",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_myengagements",
+      "resource": "myengagements",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/myengagements traffic.",
+      "evidence": [
+        {
+          "entry_index": 21,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myengagements",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_myprofilestats",
+      "resource": "myprofilestats",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/myprofilestats traffic.",
+      "evidence": [
+        {
+          "entry_index": 15,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myprofilestats",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_onboarding",
+      "resource": "onboarding",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/users/onboarding traffic.",
+      "evidence": [
+        {
+          "entry_index": 36,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/users/onboarding",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_readlater",
+      "resource": "readlater",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/readlater traffic.",
+      "evidence": [
+        {
+          "entry_index": 26,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/readlater",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_requests",
+      "resource": "requests",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/friend/requests traffic.",
+      "evidence": [
+        {
+          "entry_index": 32,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/friend/requests",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_spotlightsnew",
+      "resource": "spotlightsnew",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/spotlightsnew traffic.",
+      "evidence": [
+        {
+          "entry_index": 23,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/spotlightsnew",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_stats",
+      "resource": "stats",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/myreading/stats traffic.",
+      "evidence": [
+        {
+          "entry_index": 13,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/myreading/stats",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_suggested_feed",
+      "resource": "suggested_feed",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/curiosity-sessions/suggested-feed traffic.",
+      "evidence": [
+        {
+          "entry_index": 5,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/curiosity-sessions/suggested-feed",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_topfriends",
+      "resource": "topfriends",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/topfriends traffic.",
+      "evidence": [
+        {
+          "entry_index": 24,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/topfriends",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_unified",
+      "resource": "unified",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/feed/unified traffic.",
+      "evidence": [
+        {
+          "entry_index": 2,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 3,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/feed/unified",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_unread",
+      "resource": "unread",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/unread traffic.",
+      "evidence": [
+        {
+          "entry_index": 27,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/unread",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_unreadconversations",
+      "resource": "unreadconversations",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/unreadconversations traffic.",
+      "evidence": [
+        {
+          "entry_index": 28,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/unreadconversations",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_verificationbadge",
+      "resource": "verificationbadge",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /v1/room/verificationbadge traffic.",
+      "evidence": [
+        {
+          "entry_index": 16,
+          "method": "GET",
+          "host": "api.typepilot.app",
+          "path": "/v1/room/verificationbadge",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    }
+  ]
+}

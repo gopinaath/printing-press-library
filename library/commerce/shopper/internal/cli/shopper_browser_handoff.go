@@ -14,6 +14,7 @@ package cli
 import (
 	"fmt"
 
+	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/cliutil"
 	"github.com/spf13/cobra"
 )
@@ -183,6 +184,10 @@ Use --open to launch the card management page in the system browser.`,
 			if storeName == "" {
 				storeName = "programada"
 			}
+			cardPageURL, err := storefrontPageURL(storeName, "/shop-cliente/minha-conta/cartoes/")
+			if err != nil {
+				return err
+			}
 
 			c, err := flags.newClient()
 			if err != nil {
@@ -194,8 +199,6 @@ Use --open to launch the card management page in the system browser.`,
 			if err != nil {
 				params = nil
 			}
-
-			cardPageURL := "https://" + resolveSubdomain(storeName) + ".shopper.com.br/shop-cliente/minha-conta/cartoes/"
 
 			result := map[string]any{
 				"store":               storeName,
@@ -256,6 +259,15 @@ Use this to discover available stores before switching --store.`,
 			if err != nil {
 				return classifyAPIError(err, flags)
 			}
+			// PATCH: store-cluster-truth. cluster_id is not derivable from the
+			// store id, so the CLI's baked table can silently drift from the
+			// API — which is exactly how `unica` and `pet` ended up pinned to
+			// cluster 3 while the API said 1, routing --store reads to a cart
+			// bucket the website never opens. Every `stores` run now compares
+			// the two and names any disagreement on stderr.
+			for _, line := range client.StoreCatalogDrift(data) {
+				fmt.Fprintf(cmd.ErrOrStderr(), "warning: store table drift — %s\n", line)
+			}
 			return printJSONFiltered(cmd.OutOrStdout(), data, flags)
 		},
 	}
@@ -265,11 +277,10 @@ Use this to discover available stores before switching --store.`,
 // openStorefrontPage opens a storefront page path in the system browser.
 // storeName is resolved from --store flag; path is the page path under the subdomain.
 func openStorefrontPage(cmd *cobra.Command, flags *rootFlags, path string) error {
-	storeName := flags.store
-	if storeName == "" {
-		storeName = "programada"
+	url, err := storefrontPageURL(flags.store, path)
+	if err != nil {
+		return err
 	}
-	url := "https://" + resolveSubdomain(storeName) + ".shopper.com.br" + path
 
 	if cliutil.IsVerifyEnv() {
 		return printJSONFiltered(cmd.OutOrStdout(), map[string]any{

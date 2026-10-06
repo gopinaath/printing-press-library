@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -60,6 +61,7 @@ type Client struct {
 	stashMu sync.Mutex
 	stash   [][]byte // event records ("42...") seen while waiting for other packets
 	acks    map[int][]byte
+	stream  *eventStream // active heartbeat collection; backpressure prevents dropped events
 
 	readerMu      sync.Mutex
 	readerRunning bool
@@ -67,6 +69,27 @@ type Client struct {
 	nsConnected   chan struct{}
 	signalNSOnce  sync.Once
 	ackCh         map[int]chan []byte
+}
+
+const maxStashedEvents = 256
+
+type eventStream struct {
+	name        string
+	queue       [][]byte
+	queuedBytes int
+	space       chan struct{}
+	done        chan struct{}
+}
+
+// appendStashedEventLocked retains a bounded tail of server-pushed events.
+// Callers must hold stashMu.
+func (c *Client) appendStashedEventLocked(payload []byte) {
+	payload = append([]byte(nil), payload...)
+	if len(c.stash) >= maxStashedEvents {
+		copy(c.stash, c.stash[len(c.stash)-maxStashedEvents+1:])
+		c.stash = c.stash[:maxStashedEvents-1]
+	}
+	c.stash = append(c.stash, payload)
 }
 
 // noteAck remembers an ACK record seen before its emit was even made (the
@@ -109,7 +132,113 @@ func (c *Client) stashEvents(recs []string) {
 	defer c.stashMu.Unlock()
 	for _, r := range recs {
 		if len(r) > 2 && r[0] == '4' && r[1] == '2' {
-			c.stash = append(c.stash, []byte(r[2:]))
+			c.appendStashedEventLocked([]byte(r[2:]))
+		}
+	}
+}
+
+// beginEventStream registers before the request is emitted, so a whole poll
+// response can arrive without filling and truncating the ordinary stash.
+func (c *Client) beginEventStream(name string) (*eventStream, error) {
+	c.stashMu.Lock()
+	defer c.stashMu.Unlock()
+	if c.stream != nil {
+		return nil, &ProtocolError{Msg: "another heartbeat collection is active"}
+	}
+	stream := &eventStream{name: name, queue: make([][]byte, 0, maxStashedEvents), space: make(chan struct{}, 1), done: make(chan struct{})}
+	c.stream = stream
+	return stream, nil
+}
+
+func (c *Client) endEventStream(stream *eventStream) {
+	c.stashMu.Lock()
+	defer c.stashMu.Unlock()
+	if c.stream == stream {
+		c.stream = nil
+		close(stream.done)
+		for _, p := range stream.queue {
+			c.appendStashedEventLocked(p)
+		}
+		stream.queue = nil
+		stream.queuedBytes = 0
+	}
+}
+
+// drainEventStream frees queue space while preserving the batch for the
+// collector. A waiting reader resumes after the collector takes this batch.
+func (c *Client) drainEventStream(stream *eventStream) [][]byte {
+	c.stashMu.Lock()
+	defer c.stashMu.Unlock()
+	batch := stream.queue
+	stream.queue = nil
+	stream.queuedBytes = 0
+	select {
+	case stream.space <- struct{}{}:
+	default:
+	}
+	return batch
+}
+
+// finishEventStream closes the active stream only when its queue is empty.
+// Sends and teardown use the same mutex, so no event enters an abandoned queue.
+func (c *Client) finishEventStream(stream *eventStream) ([][]byte, bool) {
+	c.stashMu.Lock()
+	defer c.stashMu.Unlock()
+	if len(stream.queue) > 0 {
+		batch := stream.queue
+		stream.queue = nil
+		stream.queuedBytes = 0
+		select {
+		case stream.space <- struct{}{}:
+		default:
+		}
+		return batch, false
+	}
+	if c.stream == stream {
+		c.stream = nil
+		close(stream.done)
+	}
+	return nil, true
+}
+
+func payloadForEvent(p []byte, name string) json.RawMessage {
+	var pair []json.RawMessage
+	if json.Unmarshal(p, &pair) != nil || len(pair) < 2 {
+		return nil
+	}
+	var got string
+	if json.Unmarshal(pair[0], &got) != nil || got != name {
+		return nil
+	}
+	if len(pair) >= 3 {
+		return json.RawMessage(p)
+	}
+	return pair[1]
+}
+
+// routeEvent appends to a bounded active queue. A full queue pauses the reader
+// until the collector drains it, preserving bursts without an unbounded stash.
+func (c *Client) routeEvent(ctx context.Context, p []byte) {
+	for {
+		c.stashMu.Lock()
+		stream := c.stream
+		if stream == nil || payloadForEvent(p, stream.name) == nil {
+			c.appendStashedEventLocked(p)
+			c.stashMu.Unlock()
+			return
+		}
+		if len(stream.queue) < maxStashedEvents && len(p) <= maxCollectedHeartbeatBytes-stream.queuedBytes {
+			stream.queue = append(stream.queue, append([]byte(nil), p...))
+			stream.queuedBytes += len(p)
+			c.stashMu.Unlock()
+			return
+		}
+		c.stashMu.Unlock()
+		select {
+		case <-stream.space:
+		case <-stream.done:
+		case <-ctx.Done():
+			return
 		}
 	}
 }
@@ -160,13 +289,65 @@ func (c *Client) DrainStashedEvents(name string) []json.RawMessage {
 func New(cfg Config) *Client {
 	hc := cfg.HTTPClient
 	if hc == nil {
-		hc = &http.Client{Timeout: 35 * time.Second}
+		// Kuma long polls may remain open for pingInterval+pingTimeout.
+		hc = &http.Client{Timeout: 90 * time.Second}
 	}
+	cfg.HTTPClient = withSafeRedirects(hc)
 	return &Client{
 		cfg:         cfg,
 		nsConnected: make(chan struct{}),
 		ackCh:       map[int]chan []byte{},
 	}
+}
+
+// withSafeRedirects preserves the caller's transport, timeout, and redirect
+// policy while refusing to resend credential-bearing Socket.IO POST bodies
+// to another host or port, or across a TLS downgrade.
+func withSafeRedirects(client *http.Client) *http.Client {
+	safe := *client
+	previous := safe.CheckRedirect
+	safe.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) > 0 {
+			from := via[0].URL
+			if !strings.EqualFold(from.Hostname(), req.URL.Hostname()) || effectivePort(from) != effectivePort(req.URL) {
+				return fmt.Errorf("refusing Socket.IO redirect to a different host or port")
+			}
+			if from.Scheme == "https" && req.URL.Scheme != "https" {
+				return fmt.Errorf("refusing HTTPS-to-HTTP Socket.IO redirect")
+			}
+		}
+		if previous != nil {
+			return previous(req, via)
+		}
+		if len(via) >= 10 {
+			return fmt.Errorf("stopped after 10 redirects")
+		}
+		return nil
+	}
+	return &safe
+}
+
+func effectivePort(u *url.URL) string {
+	if port := u.Port(); port != "" {
+		return port
+	}
+	switch strings.ToLower(u.Scheme) {
+	case "http":
+		return "80"
+	case "https":
+		return "443"
+	default:
+		return ""
+	}
+}
+
+func isLoopbackHost(host string) bool {
+	host = strings.TrimSuffix(strings.ToLower(host), ".")
+	if host == "localhost" || strings.HasSuffix(host, ".localhost") {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
 }
 
 // signalAck wakes anything waiting on ack id (payload is read from c.acks).
@@ -189,6 +370,9 @@ func socketIOParse(base string) (*url.URL, error) {
 	}
 	if u.Scheme != "http" && u.Scheme != "https" {
 		return nil, fmt.Errorf("base URL must be http(s)")
+	}
+	if u.Scheme != "https" && !isLoopbackHost(u.Hostname()) {
+		return nil, fmt.Errorf("refusing to send Uptime Kuma credentials over non-loopback %s transport; use HTTPS", u.Scheme)
 	}
 	q := u.Query()
 	q.Set("EIO", "4")
@@ -274,10 +458,11 @@ func parseEngineIO(payload []byte) []string {
 			break
 		}
 		n, err := strconv.ParseInt(string(payload[:colon]), 10, 64)
-		if err != nil || n < 0 || int(colon)+1+int(n) > len(payload) {
-			// Malformed length; skip one byte to try to resync.
-			payload = payload[1:]
-			continue
+		if err != nil || n < 0 || n > int64(len(payload)-colon-1) {
+			// A numeric prefix claims framing but is invalid. Reject the
+			// remaining payload instead of repeatedly rescanning it or
+			// accepting an attacker-selected suffix as a new record.
+			break
 		}
 		end := int(colon) + 1 + int(n)
 		out = append(out, string(payload[colon+1:end]))
@@ -429,9 +614,7 @@ func (c *Client) startReader(ctx context.Context) {
 					}
 				default:
 					if len(rec) > 1 && rec[0] == '4' && rec[1] == '2' {
-						c.stashMu.Lock()
-						c.stash = append(c.stash, []byte(rec[2:]))
-						c.stashMu.Unlock()
+						c.routeEvent(readerCtx, []byte(rec[2:]))
 					}
 				}
 			}
@@ -444,6 +627,9 @@ func redactURL(u *url.URL) string {
 	if copy.User != nil {
 		copy.User = url.User("REDACTED")
 	}
+	copy.RawQuery = ""
+	copy.ForceQuery = false
+	copy.Fragment = ""
 	return copy.String()
 }
 
@@ -661,10 +847,15 @@ func (c *Client) CallRaw(ctx context.Context, event string, data any) ([]byte, e
 // bare ack, then fails.
 func (c *Client) CallWithPushFallback(ctx context.Context, event string, data any, pushEvent string, pushWait time.Duration) (json.RawMessage, error) {
 	if event == "getHeartbeats" {
+		stream, err := c.beginEventStream(pushEvent)
+		if err != nil {
+			return nil, err
+		}
+		defer c.endEventStream(stream)
 		if err := c.emitNoAck(ctx, event, data); err != nil {
 			return nil, fmt.Errorf("emit %s failed: %w", event, err)
 		}
-		return c.collectStashedEvents(ctx, pushEvent, pushWait)
+		return c.collectStashedEvents(ctx, pushEvent, pushWait, stream)
 	}
 	ack, err := c.emitAck(ctx, event, data)
 	if err != nil {
@@ -729,22 +920,67 @@ func (c *Client) CallWithPushFallback(ctx context.Context, event string, data an
 // pay the worst case. Returning once the burst goes quiet does neither.
 const streamIdleGap = 500 * time.Millisecond
 
-func (c *Client) collectStashedEvents(ctx context.Context, name string, wait time.Duration) (json.RawMessage, error) {
+// A sustained stream fails explicitly instead of growing a result without
+// limit or returning a partial heartbeat report as if it were complete.
+const maxCollectedHeartbeatBytes = 20 << 20
+
+func (c *Client) collectStashedEvents(ctx context.Context, name string, wait time.Duration, stream *eventStream) (json.RawMessage, error) {
 	deadline := time.Now().Add(wait)
 	var payloads []json.RawMessage
 	var lastEvent time.Time
+	collectedBytes := 0
+	appendPayload := func(raw json.RawMessage) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if time.Now().After(deadline) {
+			return &ProtocolError{Msg: fmt.Sprintf("timed out collecting %q heartbeat stream", name)}
+		}
+		if len(raw) > maxCollectedHeartbeatBytes-collectedBytes {
+			return &ProtocolError{Msg: fmt.Sprintf("%q heartbeat stream exceeds %d bytes", name, maxCollectedHeartbeatBytes)}
+		}
+		payloads = append(payloads, raw)
+		collectedBytes += len(raw)
+		lastEvent = time.Now()
+		return nil
+	}
+	appendBatch := func(batch [][]byte) error {
+		for _, p := range batch {
+			if err := appendPayload(payloadForEvent(p, name)); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	for {
 		for {
 			raw := c.takeStashedEvent(name)
 			if raw == nil {
 				break
 			}
-			payloads = append(payloads, raw)
-			lastEvent = time.Now()
+			if err := appendPayload(raw); err != nil {
+				return nil, err
+			}
+		}
+		if err := appendBatch(c.drainEventStream(stream)); err != nil {
+			return nil, err
 		}
 		settled := len(payloads) > 0 && time.Since(lastEvent) >= streamIdleGap
-		if settled || time.Now().After(deadline) {
-			return joinStreamPayloads(name, payloads)
+		if settled {
+			late, finished := c.finishEventStream(stream)
+			if err := appendBatch(late); err != nil {
+				return nil, err
+			}
+			if finished {
+				return joinStreamPayloads(name, payloads)
+			}
+			continue
+		}
+		if time.Now().After(deadline) {
+			if len(payloads) == 0 {
+				return joinStreamPayloads(name, payloads)
+			}
+			return nil, &ProtocolError{Msg: fmt.Sprintf("timed out collecting %q heartbeat stream", name)}
 		}
 		select {
 		case <-ctx.Done():

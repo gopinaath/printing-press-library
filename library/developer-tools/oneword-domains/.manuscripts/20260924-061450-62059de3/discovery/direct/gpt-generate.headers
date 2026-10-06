@@ -1,0 +1,13 @@
+HTTP/2 200 
+access-control-allow-credentials: true
+access-control-allow-headers: X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version
+access-control-allow-methods: GET,OPTIONS,PATCH,DELETE,POST
+access-control-allow-origin: *
+cache-control: public, max-age=0, must-revalidate
+date: Wed, 23 Sep 2026 23:52:44 GMT
+server: Vercel
+strict-transport-security: max-age=63072000
+x-matched-path: /api/gpt/generate
+x-vercel-cache: MISS
+x-vercel-id: sin1:sin1:sin1::sin1::rdb4r-1790207561140-ef0bfe8fa14e
+

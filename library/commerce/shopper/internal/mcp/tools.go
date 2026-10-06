@@ -311,19 +311,19 @@ func makeAPIHandler(method, pathTemplate string, readOnly bool, binaryResponse b
 			case strings.Contains(msg, "HTTP 400") && cliutil.LooksLikeAuthError(msg):
 				return mcpToolError("authentication error: " + cliutil.SanitizeErrorBody(msg) +
 					"\nhint: the API rejected the request — this usually means auth is missing or invalid." +
-					"\n      Set it with: shopper-pp-cli auth set-token <token> or export SHOPPER_TOKEN=\"your-token-here\"" +
+					"\n      Save it with: shopper-pp-cli auth set-token --stdin, or provide SHOPPER_TOKEN through your environment or secret manager" +
 					"\n      See API docs: https://siteapi.shopper.com.br" +
 					"\n      Run 'shopper-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 401"):
 				return mcpToolError("authentication failed: " + cliutil.SanitizeErrorBody(msg) +
 					"\nhint: check your token." +
-					"\n      Set it with: shopper-pp-cli auth set-token <token> or export SHOPPER_TOKEN=\"your-token-here\"" +
+					"\n      Save it with: shopper-pp-cli auth set-token --stdin, or provide SHOPPER_TOKEN through your environment or secret manager" +
 					"\n      See API docs: https://siteapi.shopper.com.br" +
 					"\n      Run 'shopper-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 403"):
 				return mcpToolError("permission denied: " + cliutil.SanitizeErrorBody(msg) +
 					"\nhint: your credentials are valid but lack access to this resource. Check that they have the required permissions and match the API's expected auth scheme." +
-					"\n      Set it with: shopper-pp-cli auth set-token <token> or export SHOPPER_TOKEN=\"your-token-here\"" +
+					"\n      Save it with: shopper-pp-cli auth set-token --stdin, or provide SHOPPER_TOKEN through your environment or secret manager" +
 					"\n      See API docs: https://siteapi.shopper.com.br" +
 					"\n      Run 'shopper-pp-cli doctor' to check auth status."), nil
 			case strings.Contains(msg, "HTTP 404"):
@@ -434,12 +434,15 @@ func newMCPClientFromConfig(cfg *config.Config) *client.Client {
 	return c
 }
 
-func mcpDBPath() (string, error) {
-	dir, err := cliutil.DataDir()
-	if err != nil {
-		return "", err
+func mcpDBPathForContext(ctx context.Context) (string, error) {
+	session := platform.SessionFromContext(ctx)
+	if session == nil || session.GateOutcome != platform.GateVerified {
+		return "", fmt.Errorf("verified client profile is required for local MCP data")
 	}
-	return filepath.Join(dir, "data.db"), nil
+	if strings.TrimSpace(session.Paths.DataFile) == "" {
+		return "", fmt.Errorf("active client profile has no data-file path")
+	}
+	return session.Paths.DataFile, nil
 }
 
 type mcpStoreStatusKind string
@@ -494,7 +497,7 @@ func handleSearch(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.Call
 		limit = int(v)
 	}
 
-	path, err := mcpDBPath()
+	path, err := mcpDBPathForContext(ctx)
 	if err != nil {
 		return mcplib.NewToolResultError(fmt.Sprintf("resolving database: %v", err)), nil
 	}
@@ -697,7 +700,7 @@ func handleSQL(ctx context.Context, req mcplib.CallToolRequest) (*mcplib.CallToo
 		return mcplib.NewToolResultError(err.Error()), nil
 	}
 
-	path, err := mcpDBPath()
+	path, err := mcpDBPathForContext(ctx)
 	if err != nil {
 		return mcplib.NewToolResultError(fmt.Sprintf("resolving database: %v", err)), nil
 	}
@@ -785,19 +788,21 @@ func toolResultJSON(v any) (*mcplib.CallToolResult, error) {
 	return mcplib.NewToolResultText(text), nil
 }
 
-func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
-	paths := map[string]string{}
-	if dir, err := cliutil.ConfigDir(); err == nil {
-		paths["config_dir"] = dir
+func handleContext(requestCtx context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToolResult, error) {
+	session := platform.SessionFromContext(requestCtx)
+	if session == nil || session.GateOutcome != platform.GateVerified {
+		return mcplib.NewToolResultError("verified client profile is required for MCP context"), nil
 	}
-	if dir, err := cliutil.DataDir(); err == nil {
-		paths["data_dir"] = dir
+	for _, path := range []string{session.Paths.ConfigFile, session.Paths.DataFile, session.Paths.StateDir, session.Paths.CacheDir} {
+		if strings.TrimSpace(path) == "" {
+			return mcplib.NewToolResultError("active client profile has incomplete MCP context paths"), nil
+		}
 	}
-	if dir, err := cliutil.StateDir(); err == nil {
-		paths["state_dir"] = dir
-	}
-	if dir, err := cliutil.CacheDir(); err == nil {
-		paths["cache_dir"] = dir
+	paths := map[string]string{
+		"config_dir": filepath.Dir(session.Paths.ConfigFile),
+		"data_dir":   filepath.Dir(session.Paths.DataFile),
+		"state_dir":  session.Paths.StateDir,
+		"cache_dir":  session.Paths.CacheDir,
 	}
 	ctx := map[string]any{
 		"api":         "shopper",

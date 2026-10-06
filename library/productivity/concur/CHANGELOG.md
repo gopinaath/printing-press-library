@@ -2,6 +2,14 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.9.6 - 2026-09-29
+
+- fix+feat(concur): resolve custom-named Chrome profile resolution, add expenses list command (#2078).
+
+## 2026.9.5 - 2026-09-25
+
+- fix(concur): add browser-automation fallbacks for expenses-update and reports-submit backend defects (#2055).
+
 ## 2026.9.4 - 2026-09-16
 
 - fix+feat(concur): correct expenses-create body shape and add browser-automation fallback for its live 404 defect (#2003).

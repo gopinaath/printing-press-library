@@ -1,0 +1,683 @@
+name: oneword-domains
+description: "One Word Domains: TLD intelligence with registrar pricing, one-word domain availability, aftermarket auctions, and DomainsGPT name generation"
+version: "0.1.0"
+base_url: "https://oneword.domains"
+spec_source: sniffed
+category: developer-tools
+cache:
+  enabled: true
+  stale_after: 24h
+  refresh_timeout: 30s
+http_transport: standard
+health_check_path: "/api/tlds"
+required_headers:
+  - name: Accept
+    value: "application/json"
+
+auth:
+  type: cookie
+  cookie_domain: oneword.domains
+  login_url: https://oneword.domains/dashboard
+  login_complete_selector: "button:has-text('Logout'), a[href='/dashboard']"
+  cookies:
+    - __Secure-next-auth.session-token
+  env_vars: []
+
+config:
+  format: toml
+  path: "~/.config/oneword-domains-pp-cli/config.toml"
+
+learn:
+  ticker_patterns:
+    - "^[a-z0-9-]{1,63}\\.[a-z]{2,24}$"
+  stopwords:
+    - domain
+    - domains
+    - tld
+    - tlds
+  synonyms:
+    "cheapest": "min price"
+    "extension": "tld"
+  entity_lookup_seeds:
+    registrar:
+      - canonical: godaddy
+        aliases: [go daddy]
+      - canonical: namecheap
+        aliases: [name cheap]
+      - canonical: porkbun
+        aliases: [pork bun]
+      - canonical: ionos
+        aliases: [1and1, "1&1"]
+      - canonical: gandi
+        aliases: []
+      - canonical: oneohone
+        aliases: [101domain, 101 domain]
+
+resources:
+  tlds:
+    description: "Top-level domains: registrations, top-10M presence, views, per-registrar prices, and the cheapest registrar"
+    endpoints:
+      list:
+        method: GET
+        path: "/api/tlds"
+        no_auth: true
+        description: "List all 93 TLDs with registration counts, top-10M site counts, page views, and minimum registration price, ordered by popularity unless --sort-alpha is set"
+        example: "  oneword-domains-pp-cli tlds list --sort-alpha"
+        params:
+          - name: sortAlpha
+            flag_name: sort-alpha
+            type: bool
+            required: false
+            positional: false
+            default: false
+            description: "Sort alphabetically by TLD instead of by popularity"
+            fields: []
+        body: []
+        response:
+          type: array
+          item: Tld
+        pagination: null
+      get:
+        method: GET
+        path: "/api/tlds/{tld}"
+        no_auth: true
+        description: "Get one TLD with its description, registrar price list, cheapest registrar, and example sites; unknown TLDs return an empty record"
+        example: "  oneword-domains-pp-cli tlds get ai"
+        happy_args: "tld=ai"
+        params:
+          - name: tld
+            type: string
+            required: true
+            positional: true
+            default: null
+            description: "TLD slug without the dot, such as ai, com, or io"
+            fields: []
+        body: []
+        response:
+          type: object
+          item: TldDetail
+        pagination: null
+
+  words:
+    description: "The dictionary behind One Word Domains, 27,627 words tagged with categories"
+    endpoints:
+      list:
+        method: GET
+        path: "/api/words"
+        no_auth: true
+        description: "List dictionary words; with --prefix up to 10 autocomplete matches, otherwise a category or substring directory of 100 words per page in alphabetical order with categories"
+        example: "  oneword-domains-pp-cli words list --category tech --contains art"
+        happy_args: "--category=tech"
+        params:
+          - name: query
+            flag_name: prefix
+            aliases: [query]
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Prefix autocomplete (max 10 results, slug only)"
+            fields: []
+          - name: contains
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Substring filter (directory mode)"
+            fields: []
+          - name: category
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Category slug filter"
+            fields: []
+            enum: [adjectives, adverbs, battleships, collections, french, gods, names, nouns, other, places, positive, scientific, spanish, species, stars, tech, verbs]
+          - name: page
+            type: int
+            required: false
+            positional: false
+            default: 1
+            description: "Directory page (100 words per page)"
+            fields: []
+        body: []
+        response:
+          type: array
+          item: Word
+        pagination: null
+      count:
+        method: GET
+        path: "/api/words/count"
+        no_auth: true
+        description: "Count dictionary words matching the directory filters; returns a bare integer"
+        example: "  oneword-domains-pp-cli words count --category tech"
+        happy_args: "--category=tech"
+        params:
+          - name: contains
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Substring filter"
+            fields: []
+          - name: category
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Category slug filter"
+            fields: []
+            enum: [adjectives, adverbs, battleships, collections, french, gods, names, nouns, other, places, positive, scientific, spanish, species, stars, tech, verbs]
+        body: []
+        response:
+          type: object
+          item: CountValue
+        pagination: null
+      get:
+        method: GET
+        path: "/api/words/{word}"
+        no_auth: true
+        description: "Get one dictionary word with its category tags"
+        example: "  oneword-domains-pp-cli words get smart"
+        happy_args: "word=smart"
+        params:
+          - name: word
+            type: string
+            required: true
+            positional: true
+            default: null
+            description: "Word slug such as smart"
+            fields: []
+        body: []
+        response:
+          type: object
+          item: WordDetail
+        pagination: null
+
+  domains:
+    description: "Availability checks for word plus TLD and the lifetime-pass domain database; search needs auth login --chrome"
+    endpoints:
+      check:
+        method: GET
+        path: "/api/domains/{domain}"
+        no_auth: true
+        description: "Check availability, premium flag, price, aftermarket status, and popularity (tldCount) for a dictionary word on one TLD, such as smart.com; words outside the dictionary return HTTP 500"
+        example: "  oneword-domains-pp-cli domains check smart.com"
+        happy_args: "domain=smart.com"
+        params:
+          - name: domain
+            type: string
+            required: true
+            positional: true
+            default: null
+            description: "Full domain, word plus TLD, such as oasis.io"
+            fields: []
+        body: []
+        response:
+          type: object
+          item: DomainCheck
+        pagination: null
+      search:
+        method: GET
+        path: "/api/domains"
+        description: "Search the 1,380,000-plus available one-word domain database for a TLD with text, category, price, length, sort, and page filters. Requires a logged-in lifetime-pass session (auth login --chrome); returns 401 otherwise"
+        example: "  oneword-domains-pp-cli domains search --tld ai --category adjectives --min-length 4 --max-length 6 --sort popularityDesc"
+        happy_args: "--tld=ai --sort=popularityDesc"
+        params:
+          - name: tld
+            type: string
+            required: true
+            positional: false
+            default: null
+            description: "TLD slug to search, such as ai"
+            example: ai
+            fields: []
+          - name: search
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Substring match on the word"
+            fields: []
+          - name: category
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Word category slug"
+            fields: []
+            enum: [adjectives, adverbs, battleships, collections, french, gods, names, nouns, other, places, positive, scientific, spanish, species, stars, tech, verbs]
+          - name: price
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Price filter; available means standard registration price"
+            fields: []
+            enum: [available]
+          - name: minLength
+            flag_name: min-length
+            type: int
+            required: false
+            positional: false
+            default: null
+            description: "Minimum word length"
+            fields: []
+          - name: maxLength
+            flag_name: max-length
+            type: int
+            required: false
+            positional: false
+            default: null
+            description: "Maximum word length"
+            fields: []
+          - name: sort
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Sort key and direction"
+            fields: []
+            enum: [domainAsc, domainDesc, popularityAsc, popularityDesc, priceAsc, priceDesc]
+          - name: page
+            type: int
+            required: false
+            positional: false
+            default: 1
+            description: "Page number (100 rows per page)"
+            fields: []
+        body: []
+        response:
+          type: array
+          item: DomainRow
+        pagination: null
+      count:
+        method: GET
+        path: "/api/domains/count"
+        no_auth: true
+        description: "Count available one-word domains for a TLD with the same filters as search; returns a bare integer; normally public, but the site sometimes answers 401 to anonymous callers, in which case auth login --chrome supplies the session"
+        example: "  oneword-domains-pp-cli domains count --tld ai --category adjectives"
+        happy_args: "--tld=ai"
+        params:
+          - name: tld
+            type: string
+            required: true
+            positional: false
+            default: null
+            description: "TLD slug such as ai"
+            example: ai
+            fields: []
+          - name: search
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Substring match on the word"
+            fields: []
+          - name: category
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Word category slug"
+            fields: []
+            enum: [adjectives, adverbs, battleships, collections, french, gods, names, nouns, other, places, positive, scientific, spanish, species, stars, tech, verbs]
+          - name: price
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Price filter: available"
+            fields: []
+            enum: [available]
+          - name: minLength
+            flag_name: min-length
+            type: int
+            required: false
+            positional: false
+            default: null
+            description: "Minimum word length"
+            fields: []
+          - name: maxLength
+            flag_name: max-length
+            type: int
+            required: false
+            positional: false
+            default: null
+            description: "Maximum word length"
+            fields: []
+        body: []
+        response:
+          type: object
+          item: CountValue
+        pagination: null
+      saves:
+        method: GET
+        path: "/api/domains/saves"
+        description: "List the domains saved to your One Word Domains account; requires auth login --chrome; row shape unverified because only an empty list was observed"
+        example: "  oneword-domains-pp-cli domains saves"
+        params: []
+        body: []
+        response:
+          type: array
+          item: DomainRow
+        pagination: null
+
+  listings:
+    description: "Aftermarket domain auctions and buy-now listings with price, bids, and end date"
+    endpoints:
+      list:
+        method: GET
+        path: "/api/listings"
+        no_auth: true
+        description: "List aftermarket listings, 100 per page, filtered by TLD, registrar, and word length, sorted by domain, price, bids, or ending time"
+        example: "  oneword-domains-pp-cli listings list --tld co --sort priceAsc --max-length 5"
+        happy_args: "--tld=co --sort=priceAsc"
+        params:
+          - name: tld
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "TLD slug filter such as co"
+            example: co
+            fields: []
+          - name: registrar
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Registrar slug filter; only godaddy has listings today"
+            fields: []
+          - name: minLength
+            flag_name: min-length
+            type: int
+            required: false
+            positional: false
+            default: null
+            description: "Minimum word length"
+            fields: []
+          - name: maxLength
+            flag_name: max-length
+            type: int
+            required: false
+            positional: false
+            default: null
+            description: "Maximum word length"
+            fields: []
+          - name: sort
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Sort key and direction"
+            fields: []
+            enum: [domainAsc, domainDesc, priceAsc, priceDesc, bidsAsc, bidsDesc, endingAsc, endingDesc]
+          - name: page
+            type: int
+            required: false
+            positional: false
+            default: 1
+            description: "Page number (100 rows per page)"
+            fields: []
+        body: []
+        response:
+          type: array
+          item: Listing
+        pagination: null
+      count:
+        method: GET
+        path: "/api/listings/count"
+        no_auth: true
+        description: "Count aftermarket listings matching the filters; returns a bare integer"
+        example: "  oneword-domains-pp-cli listings count --tld co"
+        happy_args: "--tld=co"
+        params:
+          - name: tld
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "TLD slug filter"
+            fields: []
+          - name: registrar
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Registrar slug filter"
+            fields: []
+          - name: minLength
+            flag_name: min-length
+            type: int
+            required: false
+            positional: false
+            default: null
+            description: "Minimum word length"
+            fields: []
+          - name: maxLength
+            flag_name: max-length
+            type: int
+            required: false
+            positional: false
+            default: null
+            description: "Maximum word length"
+            fields: []
+        body: []
+        response:
+          type: object
+          item: CountValue
+        pagination: null
+      filters:
+        method: GET
+        path: "/api/listings/filters"
+        no_auth: true
+        description: "List the TLDs that currently have aftermarket listings, with counts"
+        example: "  oneword-domains-pp-cli listings filters --registrar godaddy"
+        happy_args: "--registrar=godaddy"
+        params:
+          - name: registrar
+            type: string
+            required: false
+            positional: false
+            default: null
+            description: "Registrar slug such as godaddy"
+            fields: []
+        body: []
+        response:
+          type: array
+          item: ListingFilter
+        pagination: null
+
+  gpt:
+    description: "DomainsGPT: AI-generated brandable names with live availability"
+    endpoints:
+      usage:
+        method: GET
+        path: "/api/gpt/usage"
+        no_auth: true
+        description: "Show DomainsGPT usage and quota for the current identity; anonymous callers get 10, signed-in accounts more"
+        example: "  oneword-domains-pp-cli gpt usage"
+        params: []
+        body: []
+        response:
+          type: object
+          item: Usage
+        pagination: null
+      saves:
+        method: GET
+        path: "/api/gpt/saves"
+        description: "List DomainsGPT names saved to your account; requires auth login --chrome; row shape unverified because only an empty list was observed"
+        example: "  oneword-domains-pp-cli gpt saves"
+        params: []
+        body: []
+        response:
+          type: array
+          item: GenerateResult
+        pagination: null
+
+types:
+  Tld:
+    fields:
+      - name: slug
+        type: string
+      - name: type
+        type: string
+      - name: structure
+        type: string
+      - name: description
+        type: string
+      - name: top10m
+        type: int
+      - name: totalReg
+        type: int
+      - name: views
+        type: int
+      - name: minPrice
+        type: string
+  TldDetail:
+    fields:
+      - name: slug
+        type: string
+      - name: type
+        type: string
+      - name: structure
+        type: string
+      - name: description
+        type: string
+      - name: top10m
+        type: int
+      - name: totalReg
+        type: int
+      - name: views
+        type: int
+      - name: namecheap
+        type: string
+      - name: godaddy
+        type: string
+      - name: ionos
+        type: string
+      - name: porkbun
+        type: string
+      - name: gandi
+        type: string
+      - name: oneohone
+        type: string
+      - name: google
+        type: string
+      - name: registrars
+        type: "[]ref:RegistrarPrice"
+      - name: cheapestRegistrar
+        type: "ref:RegistrarPrice"
+      - name: sites
+        type: "[]ref:Site"
+  RegistrarPrice:
+    fields:
+      - name: name
+        type: string
+      - name: price
+        type: string
+  Site:
+    fields:
+      - name: thumbnail
+        type: string
+      - name: domainSlug
+        type: string
+  Word:
+    fields:
+      - name: slug
+        type: string
+      - name: categories
+        type: "[]ref:WordCategory"
+  WordCategory:
+    fields:
+      - name: categorySlug
+        type: string
+  WordDetail:
+    fields:
+      - name: slug
+        type: string
+      - name: categories
+        type: "[]ref:WordCategoryDetail"
+  WordCategoryDetail:
+    fields:
+      - name: wordSlug
+        type: string
+      - name: categorySlug
+        type: string
+      - name: updatedAt
+        type: string
+        format: date-time
+  DomainCheck:
+    fields:
+      - name: slug
+        type: string
+      - name: available
+        type: bool
+      - name: premium
+        type: bool
+      - name: price
+        type: string
+      - name: word
+        type: "ref:WordStats"
+      - name: tldSlug
+        type: string
+      - name: aftermarket
+        type: bool
+      - name: tldCount
+        type: int
+      - name: registrars
+        type: "[]ref:RegistrarPrice"
+      - name: cheapestRegistrar
+        type: "ref:RegistrarPrice"
+  WordStats:
+    fields:
+      - name: tldCount
+        type: int
+  DomainRow:
+    fields:
+      - name: slug
+        type: string
+      - name: tldCount
+        type: int
+      - name: premium
+        type: bool
+      - name: price
+        type: string
+  Listing:
+    fields:
+      - name: domain
+        type: string
+      - name: type
+        type: string
+      - name: userId
+        type: string
+      - name: price
+        type: string
+      - name: bidCount
+        type: int
+      - name: endDate
+        type: string
+        format: date-time
+  ListingFilter:
+    fields:
+      - name: tld
+        type: string
+      - name: _count
+        type: int
+  Usage:
+    fields:
+      - name: usage
+        type: string
+      - name: quota
+        type: string
+  GenerateResult:
+    fields:
+      - name: domain
+        type: string
+      - name: available
+        type: bool
+  CountValue:
+    fields:
+      - name: count
+        type: int

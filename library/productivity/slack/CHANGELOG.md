@@ -2,6 +2,18 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.10.3 - 2026-10-01
+
+- Read existing Slack DMs without creating conversations (#2157).
+
+## 2026.10.2 - 2026-10-01
+
+- Scope Slack sync and report verifier canvas no-ops (#2156).
+
+## 2026.10.1 - 2026-10-01
+
+- Keep legacy Slack nested command aliases (#2158).
+
 ## 2026.9.1 - 2026-09-11
 
 - fix: fail closed on ambiguous fleet write retries (#1978).

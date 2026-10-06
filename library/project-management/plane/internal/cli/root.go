@@ -24,7 +24,7 @@ import (
 
 // version is stamped by the public library's release ledger; the declaration
 // stays in root.go (base layout) so the ledger guard finds it across reprints.
-var version = "2026.9.1"
+var version = "2026.10.1"
 
 type rootFlags struct {
 	asJSON        bool

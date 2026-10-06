@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "aol-puglia",
   "cli_name": "aol-puglia-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T23:58:28Z",
+  "source_commit": "0c90d943ec3f25528175bb91d90a3fe23d686fda",
   "printing_press_version": "4.30.3",
   "run_id": "20260617-160648",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "Keep AOL Puglia verify transport tests offline",
+      "pr": 2175,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2175",
+      "commit": "0c90d943ec3f25528175bb91d90a3fe23d686fda"
     }
   ]
 }

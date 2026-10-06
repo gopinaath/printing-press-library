@@ -1,0 +1,13 @@
+HTTP/2 400 
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain; charset=utf-8
+date: Wed, 23 Sep 2026 23:52:40 GMT
+etag: "lqhhl7m93t1s"
+server: Vercel
+strict-transport-security: max-age=63072000
+x-matched-path: /api/auth/[...nextauth]
+x-vercel-cache: MISS
+x-vercel-id: sin1::iad1::pmqrq-1790207559938-400739190490
+content-length: 64
+

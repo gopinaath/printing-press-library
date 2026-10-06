@@ -1,0 +1,13 @@
+{
+  "schema_version": 2,
+  "id": "upstream-field-semantics-caveats",
+  "applied_at": "2026-09-21",
+  "base_run_id": "20260714-231159",
+  "base_printing_press_version": "4.28.0",
+  "summary": "Documents five upstream (Peloton API) field-semantics quirks confirmed as raw passthrough behavior, not server-side bugs: account_show's last_workout_at observed stale by years; workouts_performance's split seconds pace-normalized (not elapsed) on a partial split, alongside a note that heart rate zones are Peloton's own %maxHR model; device_time_created_at (workouts_list/workouts_show) encoding local wall time rather than true UTC; and workouts_list mixing non-Peloton-originated workouts (device_type != peloton) into history. Hybrid documentation: a short caveat clause on each affected tool's own description pointing to context, plus the full explanation as query_tips entries in the context tool's payload. A regen must keep both halves in sync -- the short clause is useless without the context entry it points to, and vice versa loses at-point-of-use visibility for an agent that never calls context first.",
+  "reason": "A live verification round against the real account found these five upstream data quirks. Traced each one through the code before documenting: none involve any server-side caching, field mapping, or date-math logic that could be fixed here -- last_workout_at is a zero-processing passthrough of /api/me, this server does not itself sort or compare by device_time_created_at anywhere (workouts_list requests sort=-start_time upstream; grep confirms no code reference to the field outside a bound.go comment describing Peloton's own default collection order), and splits/HR-zone shape comes straight from performance_graph. Confirmed genuinely upstream, so the fix is documentation, not code. A Greptile review caught an initial drafting error: the first version claimed device_time_created_at was 'safe to sort by' despite noting its offset varies by timezone/DST in the same breath -- corrected to advise against sorting or comparing by it at all, pointing to created_at/start_time instead.",
+  "files": [
+    "internal/mcp/tools.go"
+  ],
+  "validated_outcome": "go build/vet/test and verify_skill.py all green. Pure documentation change (tool description strings and context payload query_tips entries) -- no data or behavior affected, so not separately live-tested beyond confirming the server builds and starts correctly with the new strings."
+}

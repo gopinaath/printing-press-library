@@ -1,0 +1,14 @@
+HTTP/2 401 
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain; charset=utf-8
+date: Wed, 23 Sep 2026 23:52:38 GMT
+server: Vercel
+set-cookie: __Host-next-auth.csrf-token=<redacted>; Path=/; HttpOnly; Secure; SameSite=Lax
+set-cookie: __Secure-next-auth.callback-url=<redacted>; Path=/; HttpOnly; Secure; SameSite=Lax
+strict-transport-security: max-age=63072000
+x-matched-path: /api/domains/saves
+x-vercel-cache: MISS
+x-vercel-id: sin1::iad1::hd8mb-1790207557863-a1b6194e6028
+content-length: 12
+

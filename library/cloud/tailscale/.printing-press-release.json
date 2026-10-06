@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "tailscale",
+  "cli_name": "tailscale-pp-cli",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T14:38:16Z",
+  "source_commit": "4a2759019541195b426f7435f46dabe57c94f2f6",
+  "printing_press_version": "4.32.6",
+  "run_id": "20260930-211646-7f8c7bd3",
+  "changes": [
+    {
+      "title": "feat(tailscale): add tailscale",
+      "pr": 2110,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2110",
+      "commit": "4a2759019541195b426f7435f46dabe57c94f2f6"
+    }
+  ]
+}

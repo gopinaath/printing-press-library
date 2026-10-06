@@ -1,0 +1,55 @@
+version: 2
+project_name: oneword-domains-pp-cli
+changelog:
+  disable: true
+builds:
+  - id: oneword-domains-pp-cli
+    main: ./cmd/oneword-domains-pp-cli
+    binary: oneword-domains-pp-cli
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X github.com/mvanhorn/printing-press-library/library/developer-tools/oneword-domains/internal/cli.version={{ .Version }}
+    targets:
+      - darwin_amd64
+      - darwin_arm64
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+      - windows_arm64
+  - id: oneword-domains-pp-mcp
+    main: ./cmd/oneword-domains-pp-mcp
+    binary: oneword-domains-pp-mcp
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
+    targets:
+      - darwin_amd64
+      - darwin_arm64
+      - linux_amd64
+      - linux_arm64
+      - windows_amd64
+      - windows_arm64
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+checksum:
+  name_template: checksums.txt
+brews:
+  - name: oneword-domains-pp-cli
+    repository:
+      owner: devacto
+      name: homebrew-tap
+    homepage: "https://github.com/mvanhorn/printing-press-library"
+    description: "Check a word across every TLD with registrar prices, watch the aftermarket, and generate names with DomainsGPT, all from the terminal with a local store the site itself does not offer."
+    install: |
+      bin.install "oneword-domains-pp-cli"
+      bin.install "oneword-domains-pp-mcp"

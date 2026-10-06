@@ -8,6 +8,12 @@
     "handle": "alkhamis-80",
     "name": "Mohammed Al Khamis"
   },
+  "contributors": [
+    {
+      "handle": "bobeglz",
+      "name": "bobeglz"
+    }
+  ],
   "printer": "alkhamis-80",
   "printer_name": "Mohammed Al Khamis",
   "category": "social-and-messaging",

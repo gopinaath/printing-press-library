@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "gfonts",
   "cli_name": "gfonts-pp-cli",
-  "version": "2026.8.1",
-  "released_at": "2026-08-22T09:29:16Z",
-  "source_commit": "e33580be02b5f0a3a47c4145397ce553c6f2bf64",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T01:13:40Z",
+  "source_commit": "cdaf846a5874b6d2d62504bfebf057ef214fb58d",
   "printing_press_version": "4.29.0",
   "run_id": "20260719-182127",
   "changes": [
     {
-      "title": "feat(gfonts): add gfonts",
-      "pr": 1548,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1548",
-      "commit": "e33580be02b5f0a3a47c4145397ce553c6f2bf64"
+      "title": "fix(gfonts): reliable cache, downloads, and canonical command layout",
+      "pr": 2195,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2195",
+      "commit": "cdaf846a5874b6d2d62504bfebf057ef214fb58d"
     }
   ]
 }

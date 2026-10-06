@@ -7,6 +7,7 @@ A fast, scriptable, agent-native CLI for Ride with GPS with a local SQLite mirro
 Learn more at [Ride with GPS](https://ridewithgps.com/api).
 
 Created by [@stellato](https://github.com/stellato) (Greg Stellato).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
 
 ## Install
 
@@ -170,6 +171,8 @@ These capabilities aren't available in any other tool for this API.
 - **`gear`** — Per-bike accumulated mileage from your logged rides, plus maintenance-due flags against wear thresholds.
 
   _Reach for this to answer 'how many miles since my last chain swap' or 'which bike needs service' without a spreadsheet._
+
+  The default scans the 100 most recent synced trips and labels totals as partial when older trips remain. Use `--max-scan-trips=0` for a complete scan; it reads detail for every synced trip, using cached responses where available. Add `--no-cache` when fresh detail is required.
 
   ```bash
   ridewithgps-pp-cli gear --due-km 4000 --agent

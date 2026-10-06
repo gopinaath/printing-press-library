@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "utah-pmn",
   "cli_name": "utah-pmn-pp-cli",
-  "version": "2026.9.2",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T01:06:55Z",
+  "source_commit": "3821ebe0abdd33312109ef7e7f464e99939f479c",
   "printing_press_version": "4.25.0",
   "run_id": "20260626-230015-d1a83064",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(utah-pmn): keep notice filters and retry failed deliveries",
+      "pr": 2190,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2190",
+      "commit": "3821ebe0abdd33312109ef7e7f464e99939f479c"
     }
   ]
 }

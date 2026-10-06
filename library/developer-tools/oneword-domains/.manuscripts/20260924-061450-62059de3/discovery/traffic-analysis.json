@@ -1,0 +1,2793 @@
+{
+  "version": "1",
+  "summary": {
+    "target_url": "https://oneword.domains/tlds",
+    "captured_at": "2026-09-23T23:59:46Z",
+    "entry_count": 56,
+    "api_entry_count": 55,
+    "noise_entry_count": 1,
+    "host_distribution": {
+      "api.oneword.domains": 1,
+      "oneword.domains": 55
+    }
+  },
+  "secondary_hosts": [
+    {
+      "host": "api.oneword.domains",
+      "count": 1,
+      "reason": "non-primary host"
+    }
+  ],
+  "reachability": {
+    "mode": "standard_http",
+    "confidence": 0.65,
+    "reasons": [
+      "no browser-only reachability signals observed"
+    ],
+    "evidence": [
+      {
+        "entry_index": 13,
+        "method": "GET",
+        "host": "oneword.domains",
+        "path": "/api/domains/zzqqxx.com",
+        "status": 500,
+        "content_type": "text/html; charset=utf-8",
+        "reason": "browser-rendered page marker"
+      }
+    ]
+  },
+  "protocols": [
+    {
+      "label": "rest_json",
+      "confidence": 0.75,
+      "evidence": [
+        {
+          "entry_index": 0,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 1,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 2,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/ai",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 3,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/com",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 4,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/zzzz",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 5,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 6,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 7,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 8,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 9,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 10,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words/smart",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 11,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/smart.com",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 12,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/oasis.ai",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 14,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 15,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 16,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 17,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings/filters",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 18,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/gpt/usage",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 19,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/logs",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 21,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 25,
+          "method": "POST",
+          "host": "api.oneword.domains",
+          "path": "/gpt/generate",
+          "status": 200,
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 26,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/_next/data/qzfSin9peIEieIakzu-ki/tlds/ai.json",
+          "status": 200,
+          "content_type": "application/json",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 27,
+          "method": "POST",
+          "host": "oneword.domains",
+          "path": "/api/tlds/ai/view",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 28,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/saves",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 29,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/gpt/usage",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 31,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 32,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 33,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 34,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 35,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 36,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 37,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 38,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 39,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 40,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 41,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 42,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 43,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 44,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 45,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 46,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 47,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 48,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 49,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 50,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 51,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 52,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 53,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/gpt/saves",
+          "status": 200,
+          "content_type": "application/json",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        },
+        {
+          "entry_index": 54,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/logs",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "JSON HTTP request/response without specialized protocol markers"
+        }
+      ]
+    },
+    {
+      "label": "browser_rendered",
+      "confidence": 0.7,
+      "evidence": [
+        {
+          "entry_index": 13,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/zzqqxx.com",
+          "status": 500,
+          "content_type": "text/html; charset=utf-8",
+          "reason": "browser-rendered page marker"
+        }
+      ]
+    },
+    {
+      "label": "html_scrape",
+      "confidence": 0.55,
+      "evidence": [
+        {
+          "entry_index": 13,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/zzqqxx.com",
+          "status": 500,
+          "content_type": "text/html; charset=utf-8",
+          "reason": "HTML response observed"
+        }
+      ]
+    }
+  ],
+  "auth": {
+    "candidates": [
+      {
+        "type": "chrome_mcp_session",
+        "confidence": 0.95
+      }
+    ]
+  },
+  "endpoint_clusters": [
+    {
+      "host": "api.oneword.domains",
+      "method": "POST",
+      "path": "/gpt/generate",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "size_class": "small",
+      "request_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "maxLength",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "minLength",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "position",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "tld",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "word",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "response_shape": {
+        "kind": "unknown"
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 25,
+          "method": "POST",
+          "host": "api.oneword.domains",
+          "path": "/gpt/generate",
+          "status": 200,
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/_next/data/qzfSin9peIEieIakzu-ki/tlds/ai.json",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json"
+      ],
+      "size_class": "medium",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "pageProps",
+            "type": "object",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 26,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/_next/data/qzfSin9peIEieIakzu-ki/tlds/ai.json",
+          "status": 200,
+          "content_type": "application/json",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/auth/api-key",
+      "count": 2,
+      "statuses": [
+        400
+      ],
+      "content_types": [
+        "text/plain; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "unknown"
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 24,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/auth/api-key",
+          "status": 400,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 30,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/auth/api-key",
+          "status": 400,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/domains",
+      "count": 12,
+      "statuses": [
+        200,
+        401
+      ],
+      "content_types": [
+        "application/json; charset=utf-8",
+        "text/plain; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "array",
+        "fields": [
+          {
+            "name": "premium",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "slug",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "tldCount",
+            "type": "integer",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "mixed-content-types"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 20,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 401,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 31,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 33,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 35,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 37,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 39,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 41,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 43,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 45,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 47,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 49,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 51,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/domains/count",
+      "count": 12,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "unknown"
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 21,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 32,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 34,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 36,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 38,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 40,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 42,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 44,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 46,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 48,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 50,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 52,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/domains/oasis.ai",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "aftermarket",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "available",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "premium",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "registrars",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "slug",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "tldCount",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "tldSlug",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "word",
+            "type": "object",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 12,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/oasis.ai",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/domains/saves",
+      "count": 2,
+      "statuses": [
+        200,
+        401
+      ],
+      "content_types": [
+        "application/json; charset=utf-8",
+        "text/plain; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "unknown"
+      },
+      "normalization_flags": [
+        "mixed-content-types"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 22,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/saves",
+          "status": 401,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 28,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/saves",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/domains/smart.com",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "aftermarket",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "available",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "premium",
+            "type": "boolean",
+            "required": true
+          },
+          {
+            "name": "registrars",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "slug",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "tldCount",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "tldSlug",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "word",
+            "type": "object",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 11,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/smart.com",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "POST",
+      "path": "/api/gpt/generate",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "size_class": "small",
+      "request_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "context",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "maxLength",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "minLength",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "tld",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "response_shape": {
+        "kind": "unknown"
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 55,
+          "method": "POST",
+          "host": "oneword.domains",
+          "path": "/api/gpt/generate",
+          "status": 200,
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/gpt/saves",
+      "count": 2,
+      "statuses": [
+        200,
+        401
+      ],
+      "content_types": [
+        "application/json",
+        "text/plain;charset=UTF-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "unknown"
+      },
+      "normalization_flags": [
+        "mixed-content-types"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 23,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/gpt/saves",
+          "status": 401,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 53,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/gpt/saves",
+          "status": 200,
+          "content_type": "application/json",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/gpt/usage",
+      "count": 2,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "text/plain;charset=UTF-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "quota",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "usage",
+            "type": "integer",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 18,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/gpt/usage",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 29,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/gpt/usage",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/listings",
+      "count": 2,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "array",
+        "fields": [
+          {
+            "name": "bidCount",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "domain",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "endDate",
+            "type": "string",
+            "required": true,
+            "format": "date-time"
+          },
+          {
+            "name": "price",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "userId",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 14,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 15,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/listings/count",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "unknown"
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 16,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/listings/filters",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "array",
+        "fields": [
+          {
+            "name": "_count",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "tld",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 17,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings/filters",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/logs",
+      "count": 2,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "text/plain;charset=UTF-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "unknown"
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 19,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/logs",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 54,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/logs",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/tlds",
+      "count": 2,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "array",
+        "fields": [
+          {
+            "name": "description",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "minPrice",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "slug",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "structure",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "top10m",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "totalReg",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "views",
+            "type": "integer",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 0,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 1,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/tlds/ai",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "cheapestRegistrar",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "registrars",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "sites",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "slug",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "structure",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "top10m",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "totalReg",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 2,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/ai",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "POST",
+      "path": "/api/tlds/ai/view",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "description",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "godaddy",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "namecheap",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "oneohone",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "porkbun",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "slug",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "structure",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "top10m",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "totalReg",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "updatedAt",
+            "type": "string",
+            "required": true,
+            "format": "date-time"
+          },
+          {
+            "name": "views",
+            "type": "integer",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 27,
+          "method": "POST",
+          "host": "oneword.domains",
+          "path": "/api/tlds/ai/view",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/tlds/com",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "cheapestRegistrar",
+            "type": "object",
+            "required": true
+          },
+          {
+            "name": "description",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "registrars",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "sites",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "slug",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "structure",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "top10m",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "totalReg",
+            "type": "integer",
+            "required": true
+          },
+          {
+            "name": "type",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 3,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/com",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/tlds/zzzz",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "registrars",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "sites",
+            "type": "array",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 4,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/zzzz",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/words",
+      "count": 3,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "medium",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "array",
+        "fields": [
+          {
+            "name": "categories",
+            "type": "array"
+          },
+          {
+            "name": "slug",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 5,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 6,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 7,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/words/count",
+      "count": 2,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "unknown"
+      },
+      "normalization_flags": [
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 8,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 9,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "host": "oneword.domains",
+      "method": "GET",
+      "path": "/api/words/smart",
+      "count": 1,
+      "statuses": [
+        200
+      ],
+      "content_types": [
+        "application/json; charset=utf-8"
+      ],
+      "size_class": "small",
+      "request_shape": {},
+      "response_shape": {
+        "kind": "object",
+        "fields": [
+          {
+            "name": "categories",
+            "type": "array",
+            "required": true
+          },
+          {
+            "name": "slug",
+            "type": "string",
+            "required": true
+          }
+        ]
+      },
+      "normalization_flags": [
+        "single-sample",
+        "single-status"
+      ],
+      "confidence": "low",
+      "evidence": [
+        {
+          "entry_index": 10,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words/smart",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    }
+  ],
+  "request_sequences": [
+    {
+      "label": "observed_api_flow",
+      "confidence": 0.35,
+      "evidence": [
+        {
+          "entry_index": 0,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 1,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 2,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/ai",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 3,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/com",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 4,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/zzzz",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 5,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 6,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        },
+        {
+          "entry_index": 7,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "observed API request order"
+        }
+      ],
+      "notes": [
+        "Capture order used; timing unavailable."
+      ]
+    }
+  ],
+  "pagination": [
+    {
+      "location": "query",
+      "name": "page",
+      "confidence": 0.75,
+      "evidence": [
+        {
+          "entry_index": 6,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 14,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 33,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 34,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 51,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        },
+        {
+          "entry_index": 52,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "pagination-like query parameter"
+        }
+      ]
+    }
+  ],
+  "candidate_commands": [
+    {
+      "name": "create_generate",
+      "resource": "generate",
+      "confidence": 0.55,
+      "rationale": "Derived from observed POST /gpt/generate traffic.",
+      "evidence": [
+        {
+          "entry_index": 25,
+          "method": "POST",
+          "host": "api.oneword.domains",
+          "path": "/gpt/generate",
+          "status": 200,
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "create_view",
+      "resource": "view",
+      "confidence": 0.55,
+      "rationale": "Derived from observed POST /api/tlds/ai/view traffic.",
+      "evidence": [
+        {
+          "entry_index": 27,
+          "method": "POST",
+          "host": "oneword.domains",
+          "path": "/api/tlds/ai/view",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_ai",
+      "resource": "ai",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/tlds/ai traffic.",
+      "evidence": [
+        {
+          "entry_index": 2,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/ai",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_ai.json",
+      "resource": "ai.json",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /_next/data/qzfSin9peIEieIakzu-ki/tlds/ai.json traffic.",
+      "evidence": [
+        {
+          "entry_index": 26,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/_next/data/qzfSin9peIEieIakzu-ki/tlds/ai.json",
+          "status": 200,
+          "content_type": "application/json",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_api_key",
+      "resource": "api_key",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/auth/api-key traffic.",
+      "evidence": [
+        {
+          "entry_index": 24,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/auth/api-key",
+          "status": 400,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 30,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/auth/api-key",
+          "status": 400,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_com",
+      "resource": "com",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/tlds/com traffic.",
+      "evidence": [
+        {
+          "entry_index": 3,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/com",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_count",
+      "resource": "count",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/domains/count traffic.",
+      "evidence": [
+        {
+          "entry_index": 21,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 32,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 34,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 36,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 38,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 40,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 42,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 44,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 46,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 48,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 50,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 52,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/count",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_domains",
+      "resource": "domains",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/domains traffic.",
+      "evidence": [
+        {
+          "entry_index": 20,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 401,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 31,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 33,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 35,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 37,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 39,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 41,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 43,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 45,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 47,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 49,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 51,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_filters",
+      "resource": "filters",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/listings/filters traffic.",
+      "evidence": [
+        {
+          "entry_index": 17,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings/filters",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_listings",
+      "resource": "listings",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/listings traffic.",
+      "evidence": [
+        {
+          "entry_index": 14,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 15,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/listings",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_logs",
+      "resource": "logs",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/logs traffic.",
+      "evidence": [
+        {
+          "entry_index": 19,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/logs",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 54,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/logs",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_oasis.ai",
+      "resource": "oasis.ai",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/domains/oasis.ai traffic.",
+      "evidence": [
+        {
+          "entry_index": 12,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/oasis.ai",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_saves",
+      "resource": "saves",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/domains/saves traffic.",
+      "evidence": [
+        {
+          "entry_index": 22,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/saves",
+          "status": 401,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 28,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/saves",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_smart",
+      "resource": "smart",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/words/smart traffic.",
+      "evidence": [
+        {
+          "entry_index": 10,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words/smart",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_smart.com",
+      "resource": "smart.com",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/domains/smart.com traffic.",
+      "evidence": [
+        {
+          "entry_index": 11,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/domains/smart.com",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_tlds",
+      "resource": "tlds",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/tlds traffic.",
+      "evidence": [
+        {
+          "entry_index": 0,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 1,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_usage",
+      "resource": "usage",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/gpt/usage traffic.",
+      "evidence": [
+        {
+          "entry_index": 18,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/gpt/usage",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 29,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/gpt/usage",
+          "status": 200,
+          "content_type": "text/plain;charset=UTF-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_words",
+      "resource": "words",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/words traffic.",
+      "evidence": [
+        {
+          "entry_index": 5,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 6,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 7,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/words",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    },
+    {
+      "name": "list_zzzz",
+      "resource": "zzzz",
+      "confidence": 0.55,
+      "rationale": "Derived from observed GET /api/tlds/zzzz traffic.",
+      "evidence": [
+        {
+          "entry_index": 4,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/tlds/zzzz",
+          "status": 200,
+          "content_type": "application/json; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    }
+  ],
+  "generation_hints": [
+    "requires_js_rendering"
+  ],
+  "warnings": [
+    {
+      "type": "error_status_cluster",
+      "message": "Endpoint cluster only observed error HTTP statuses.",
+      "confidence": 0.7,
+      "evidence": [
+        {
+          "entry_index": 24,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/auth/api-key",
+          "status": 400,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        },
+        {
+          "entry_index": 30,
+          "method": "GET",
+          "host": "oneword.domains",
+          "path": "/api/auth/api-key",
+          "status": 400,
+          "content_type": "text/plain; charset=utf-8",
+          "reason": "endpoint cluster member"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "iko-yo",
+  "cli_name": "iko-yo-pp-cli",
+  "version": "2026.10.2",
+  "released_at": "2026-10-04T08:52:41Z",
+  "source_commit": "cff8c54cbdbb8b640f45b14c3265cb17ddeb4635",
+  "printing_press_version": "4.33.0",
+  "run_id": "20261003-135827-6ec7d5b4",
+  "changes": [
+    {
+      "title": "fix(iko-yo): preserve comparisons and cache integrity",
+      "pr": 2254,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2254",
+      "commit": "cff8c54cbdbb8b640f45b14c3265cb17ddeb4635"
+    }
+  ]
+}

@@ -4,6 +4,7 @@
 /anac-pubblicita-pp-cli
 build/
 dist/
+bin/
 
 # Database locale sincronizzato e file di lavoro
 *.db

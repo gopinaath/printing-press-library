@@ -1,0 +1,767 @@
+{
+  "api_name": "philonet",
+  "base_url": "https://api.typepilot.app",
+  "description": "Your Philonet reading life in the terminal: feed, threads, streaks and friends, plus a local history the web app does not keep.",
+  "mcp_ready": "full",
+  "http_transport": "standard",
+  "auth": {
+    "type": "bearer_token",
+    "header": "Authorization",
+    "format": "Bearer {PHILONET_TOKEN}",
+    "in": "header",
+    "env_vars": [
+      "PHILONET_TOKEN"
+    ],
+    "env_var_specs": [
+      {
+        "name": "PHILONET_TOKEN",
+        "kind": "per_call",
+        "required": true,
+        "sensitive": true,
+        "inferred": true
+      }
+    ]
+  },
+  "required_headers": [],
+  "tools": [
+    {
+      "name": "blog_list",
+      "description": "Philonet public blog posts (no auth needed). Returns array of Blog. (public)",
+      "method": "GET",
+      "path": "/v1/public/blog",
+      "no_auth": true,
+      "params": []
+    },
+    {
+      "name": "feed_for_me",
+      "description": "Personalized 'For You' / friends feed (feed2 engine). filter=forme|friends. Optional: filter, page, pageSize. Returns array of FormeItem.",
+      "method": "GET",
+      "path": "/v1/feed2/forme",
+      "params": [
+        {
+          "name": "filter",
+          "type": "string",
+          "location": "query"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "location": "query"
+        },
+        {
+          "name": "pageSize",
+          "type": "integer",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "feed_moment",
+      "description": "Featured 'moment' card. Returns the Moment.",
+      "method": "GET",
+      "path": "/v1/room/feed/moment",
+      "params": []
+    },
+    {
+      "name": "feed_suggested",
+      "description": "Suggested curiosity-session feed. Returns the SuggestedFeed.",
+      "method": "GET",
+      "path": "/v1/room/curiosity-sessions/suggested-feed",
+      "params": []
+    },
+    {
+      "name": "feed_unified",
+      "description": "Unified feed. filter=discover|friends. Optional: filter, page, pageSize. Returns array of UnifiedItem.",
+      "method": "GET",
+      "path": "/v1/room/feed/unified",
+      "params": [
+        {
+          "name": "filter",
+          "type": "string",
+          "location": "query"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "location": "query"
+        },
+        {
+          "name": "pageSize",
+          "type": "integer",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "find_articles",
+      "description": "Search articles (POST body: query, sort_by, limit, offset). Required: query. Optional: limit (default: 20), offset (default: 0), sort_by (default: relevance). Returns the new Article3.",
+      "method": "POST",
+      "path": "/v1/room/search/articles",
+      "params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "location": "body"
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "location": "body"
+        },
+        {
+          "name": "query",
+          "type": "string",
+          "location": "body",
+          "required": true
+        },
+        {
+          "name": "sort_by",
+          "type": "string",
+          "location": "body"
+        }
+      ]
+    },
+    {
+      "name": "find_people",
+      "description": "Search people. Required: query. Optional: limit (default: 20), offset (default: 0). Returns the new People.",
+      "method": "POST",
+      "path": "/v1/room/search/people",
+      "params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "location": "body"
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "location": "body"
+        },
+        {
+          "name": "query",
+          "type": "string",
+          "location": "body",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "find_thoughts",
+      "description": "Search thoughts/comments. Required: query. Optional: limit (default: 20), offset (default: 0), sort_by (default: relevance). Returns the new Thought.",
+      "method": "POST",
+      "path": "/v1/room/search/thoughts",
+      "params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "location": "body"
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "location": "body"
+        },
+        {
+          "name": "query",
+          "type": "string",
+          "location": "body",
+          "required": true
+        },
+        {
+          "name": "sort_by",
+          "type": "string",
+          "location": "body"
+        }
+      ]
+    },
+    {
+      "name": "friends_requests",
+      "description": "Friend requests (type=received|sent|all). Optional: limit, offset, type. Returns the Request.",
+      "method": "GET",
+      "path": "/v1/friend/requests",
+      "params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "location": "query"
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "location": "query"
+        },
+        {
+          "name": "type",
+          "type": "string",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "friends_requests_preview",
+      "description": "Friend requests preview. Returns the FriendRequestsPreview.",
+      "method": "GET",
+      "path": "/v1/friend/feed/friend-requests-preview",
+      "params": []
+    },
+    {
+      "name": "friends_respond",
+      "description": "Accept or decline a friend request (action=accept|decline). Required: request_id, action. Returns the updated Object.",
+      "method": "PUT",
+      "path": "/v1/friend/request/{request_id}",
+      "params": [
+        {
+          "name": "request_id",
+          "type": "string",
+          "location": "path",
+          "description": "Request id (or sender user id)",
+          "required": true
+        },
+        {
+          "name": "action",
+          "type": "string",
+          "location": "body",
+          "description": "accept or decline",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "friends_send_request",
+      "description": "Send a friend request. Required: target_user_id. Returns the new Object.",
+      "method": "POST",
+      "path": "/v1/friend/request",
+      "params": [
+        {
+          "name": "target_user_id",
+          "type": "string",
+          "location": "body",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "friends_stories",
+      "description": "Friends activity as stories. Optional: forme, unread_only. Returns the Friendsasstory.",
+      "method": "GET",
+      "path": "/v1/friend/friendsasstories",
+      "params": [
+        {
+          "name": "forme",
+          "type": "boolean",
+          "location": "query"
+        },
+        {
+          "name": "unread_only",
+          "type": "boolean",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "friends_thinking",
+      "description": "Friends/contacts thinking list with presence. Returns array of FriendsthinkinglistUser.",
+      "method": "GET",
+      "path": "/v1/room/friendsthinkinglist",
+      "params": []
+    },
+    {
+      "name": "friends_top",
+      "description": "Top friends. Returns the Topfriend.",
+      "method": "GET",
+      "path": "/v1/room/topfriends",
+      "params": []
+    },
+    {
+      "name": "friends_withdraw",
+      "description": "Withdraw a sent friend request. Required: user_id. Returns the Object. Destructive.",
+      "method": "DELETE",
+      "path": "/v1/friend/request/withdraw/{user_id}",
+      "params": [
+        {
+          "name": "user_id",
+          "type": "string",
+          "location": "path",
+          "description": "Target user id",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "inbox_activity",
+      "description": "Notifications / activity log. Optional: limit. Returns the Activity.",
+      "method": "GET",
+      "path": "/v1/room/activity",
+      "params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "inbox_discussions",
+      "description": "Discussions inbox (POST, read-only). Optional: limit (default: 20), muted (default: all), offset (default: 0) (plus 2 more). Returns the new Inboxnew.",
+      "method": "POST",
+      "path": "/v1/room/conversation/inboxnew",
+      "params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "location": "body"
+        },
+        {
+          "name": "muted",
+          "type": "string",
+          "location": "body"
+        },
+        {
+          "name": "offset",
+          "type": "integer",
+          "location": "body"
+        },
+        {
+          "name": "sort",
+          "type": "string",
+          "location": "body"
+        },
+        {
+          "name": "unread",
+          "type": "boolean",
+          "location": "body"
+        }
+      ]
+    },
+    {
+      "name": "inbox_dms",
+      "description": "Direct-message conversations. Optional: limit. Returns the Conversation.",
+      "method": "GET",
+      "path": "/v1/dm/conversations",
+      "params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "inbox_invitations",
+      "description": "Space invitations. Optional: page, per_page. Returns the Invitation.",
+      "method": "GET",
+      "path": "/v1/space/invitations",
+      "params": [
+        {
+          "name": "page",
+          "type": "integer",
+          "location": "query"
+        },
+        {
+          "name": "per_page",
+          "type": "integer",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "inbox_unread",
+      "description": "Unread counters (notifications, invitations, total). Returns the Unread.",
+      "method": "GET",
+      "path": "/v1/room/unread",
+      "params": []
+    },
+    {
+      "name": "inbox_unread_conversations",
+      "description": "Unread discussion counters. Returns the Unreadconversation.",
+      "method": "GET",
+      "path": "/v1/room/unreadconversations",
+      "params": []
+    },
+    {
+      "name": "invite_send",
+      "description": "Invite a user to share thoughts on an article. Required: url, title, target_user_id. Returns the new Object.",
+      "method": "POST",
+      "path": "/v1/room/thinking-invite",
+      "params": [
+        {
+          "name": "url",
+          "type": "string",
+          "location": "body",
+          "description": "Article URL",
+          "required": true
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "location": "body",
+          "description": "Article title",
+          "required": true
+        },
+        {
+          "name": "target_user_id",
+          "type": "string",
+          "location": "body",
+          "description": "User to invite",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "invite_users",
+      "description": "Search users to invite. Required: query. Returns the new Object.",
+      "method": "POST",
+      "path": "/v1/room/search-users?query={query}",
+      "params": [
+        {
+          "name": "query",
+          "type": "string",
+          "location": "path",
+          "description": "Name to search for",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "me_awards",
+      "description": "Awards/stars received. Returns the Myaward.",
+      "method": "GET",
+      "path": "/v1/room/myawards",
+      "params": []
+    },
+    {
+      "name": "me_badge",
+      "description": "Verification / top-learner badge for a user. Optional: userId. Returns the Verificationbadge.",
+      "method": "GET",
+      "path": "/v1/room/verificationbadge",
+      "params": [
+        {
+          "name": "userId",
+          "type": "string",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "me_bookmarks",
+      "description": "Bookmarked thoughts. Returns the Mybookmark.",
+      "method": "GET",
+      "path": "/v1/room/mybookmarks",
+      "params": []
+    },
+    {
+      "name": "me_engagements",
+      "description": "My engagements. Returns the Myengagement.",
+      "method": "GET",
+      "path": "/v1/room/myengagements",
+      "params": []
+    },
+    {
+      "name": "me_metrics",
+      "description": "My verified categories, stars, streak. Returns the Metric.",
+      "method": "GET",
+      "path": "/v1/room/metrics",
+      "params": []
+    },
+    {
+      "name": "me_onboarding",
+      "description": "Onboarding state and interests. Returns the Onboarding.",
+      "method": "GET",
+      "path": "/v1/users/onboarding",
+      "params": []
+    },
+    {
+      "name": "me_profile",
+      "description": "Full profile for a user (POST, read-only). Optional: userId. Returns the new Mainprofilenew.",
+      "method": "POST",
+      "path": "/v1/room/mainprofilenew",
+      "params": [
+        {
+          "name": "userId",
+          "type": "string",
+          "location": "body"
+        }
+      ]
+    },
+    {
+      "name": "me_profile_stats",
+      "description": "Streak and reading totals for a user. Optional: userId. Returns the Myprofilestat.",
+      "method": "GET",
+      "path": "/v1/room/myprofilestats",
+      "params": [
+        {
+          "name": "userId",
+          "type": "string",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "me_read_later",
+      "description": "Read-later saved articles. Returns the Readlater.",
+      "method": "GET",
+      "path": "/v1/room/readlater",
+      "params": []
+    },
+    {
+      "name": "me_reading_stats",
+      "description": "My reading stats: last 7 days, goals, personal bests. Returns the Stat.",
+      "method": "GET",
+      "path": "/v1/room/myreading/stats",
+      "params": []
+    },
+    {
+      "name": "me_spotlights",
+      "description": "Spotlights. Returns the Spotlightsnew.",
+      "method": "GET",
+      "path": "/v1/room/spotlightsnew",
+      "params": []
+    },
+    {
+      "name": "me_standings",
+      "description": "Friends thinking-time leaderboard. Returns the Friendsstanding.",
+      "method": "GET",
+      "path": "/v1/room/friendsstandings",
+      "params": []
+    },
+    {
+      "name": "me_thoughts",
+      "description": "A user's thoughts (paged). Optional: limit, page. Returns the Conversationsnew.",
+      "method": "GET",
+      "path": "/v1/room/conversationsnew",
+      "params": [
+        {
+          "name": "limit",
+          "type": "integer",
+          "location": "query"
+        },
+        {
+          "name": "page",
+          "type": "integer",
+          "location": "query"
+        }
+      ]
+    },
+    {
+      "name": "post_link",
+      "description": "Add a link as an article so you can post a thought on it. Required: url, title, description. Returns the new Object.",
+      "method": "POST",
+      "path": "/v1/room/addtorooms",
+      "params": [
+        {
+          "name": "url",
+          "type": "string",
+          "location": "body",
+          "required": true
+        },
+        {
+          "name": "title",
+          "type": "string",
+          "location": "body",
+          "required": true
+        },
+        {
+          "name": "description",
+          "type": "string",
+          "location": "body",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "post_reply",
+      "description": "Reply to a thought. Required: parentCommentId, content. Returns the new Object.",
+      "method": "POST",
+      "path": "/v1/room/addcommentnewreply",
+      "params": [
+        {
+          "name": "parentCommentId",
+          "type": "integer",
+          "location": "body",
+          "description": "Thought id to reply to",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "string",
+          "location": "body",
+          "description": "Reply text",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "post_thought",
+      "description": "Post a thought (comment) on an article by article id. Required: articleId, content. Returns the new Object.",
+      "method": "POST",
+      "path": "/v1/room/addcommentnew",
+      "params": [
+        {
+          "name": "articleId",
+          "type": "integer",
+          "location": "body",
+          "description": "Article id",
+          "required": true
+        },
+        {
+          "name": "content",
+          "type": "string",
+          "location": "body",
+          "description": "Thought text",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "react_bookmark",
+      "description": "Toggle bookmark on a thought. Required: comment_id. Returns the new Object.",
+      "method": "POST",
+      "path": "/v1/room/bookmarkconversation",
+      "params": [
+        {
+          "name": "comment_id",
+          "type": "integer",
+          "location": "body",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "react_star",
+      "description": "Star a thought. Required: comment_id. Returns the new Object.",
+      "method": "POST",
+      "path": "/v1/room/starinsight",
+      "params": [
+        {
+          "name": "comment_id",
+          "type": "integer",
+          "location": "body",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "thread_article",
+      "description": "Get article detail, members and people (POST, read-only). Required: articleId. Returns array of ArticlePeople.",
+      "method": "POST",
+      "path": "/v1/room/article",
+      "params": [
+        {
+          "name": "articleId",
+          "type": "integer",
+          "location": "body",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "thread_get",
+      "description": "Get one thought (comment) with article context and star quota. Required: article_id, comment_id. Returns the Comment.",
+      "method": "GET",
+      "path": "/v1/room/articles/{article_id}/comments/{comment_id}",
+      "params": [
+        {
+          "name": "article_id",
+          "type": "string",
+          "location": "path",
+          "description": "The article_id path segment",
+          "required": true
+        },
+        {
+          "name": "comment_id",
+          "type": "string",
+          "location": "path",
+          "description": "The comment_id path segment",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "thread_impact",
+      "description": "Reader impact stats for an article. Required: article_id. Returns the Impact.",
+      "method": "GET",
+      "path": "/v1/room/articles/{article_id}/impact",
+      "params": [
+        {
+          "name": "article_id",
+          "type": "string",
+          "location": "path",
+          "description": "The article_id path segment",
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "thread_replies",
+      "description": "List replies in a thought thread (POST, read-only). Required: articleId, parentCommentId. Optional: includeParentDetails (default: true), jump_to_latest (default: true), limit (default: 20). Returns the new Room.",
+      "method": "POST",
+      "path": "/v1/room/subcommentsnewthreadedv2",
+      "params": [
+        {
+          "name": "articleId",
+          "type": "integer",
+          "location": "body",
+          "required": true
+        },
+        {
+          "name": "includeParentDetails",
+          "type": "boolean",
+          "location": "body"
+        },
+        {
+          "name": "jump_to_latest",
+          "type": "boolean",
+          "location": "body"
+        },
+        {
+          "name": "limit",
+          "type": "integer",
+          "location": "body"
+        },
+        {
+          "name": "parentCommentId",
+          "type": "integer",
+          "location": "body",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "novel_features": [
+    {
+      "name": "Today briefing",
+      "command": "today",
+      "description": "One snapshot of your streak, reading time, friends thinking now, unread counts and pending requests."
+    },
+    {
+      "name": "Reading rhythm",
+      "command": "rhythm",
+      "description": "Weekly and monthly reading minutes, longest streak and rank-vs-friends trend, accumulated from your own runs (history starts at the first run)."
+    },
+    {
+      "name": "Friends digest",
+      "command": "digest",
+      "description": "Friends' thoughts this CLI first saw recently, grouped by friend; 'recently' is relative to when the CLI saw them."
+    },
+    {
+      "name": "Owed replies",
+      "command": "owed",
+      "description": "Threads among your recent thoughts where someone replied and you have not answered yet."
+    },
+    {
+      "name": "Voices",
+      "command": "voices",
+      "description": "Rank people from your stored For You feed cards by thoughts on a topic, filtered by alma mater or employer badge."
+    },
+    {
+      "name": "Reading queue",
+      "command": "queue",
+      "description": "Read-later and bookmarks that fit your free minutes (items with unknown length are dropped unless --include-unknown), flagged when discussed."
+    },
+    {
+      "name": "Resonance",
+      "command": "resonance",
+      "description": "Which of your thoughts earned stars and insightful reactions, by tag and week."
+    }
+  ]
+}

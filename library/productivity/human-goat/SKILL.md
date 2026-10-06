@@ -18,6 +18,9 @@ metadata:
 
 # Human-Goat — Printing Press CLI
 
+Created by [@mvanhorn](https://github.com/mvanhorn) (Matt Van Horn).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 ## Prerequisites: Install the CLI
 
 This skill drives the `human-goat-pp-cli` binary. **You must verify the CLI is installed before invoking any command from this skill.** If it is missing, install it first:
@@ -173,7 +176,7 @@ Cancels, re-reads status, and reports cancelled plus whether it was inside the f
 ### Dispatch a remote errand
 
 ```bash
-human-goat-pp-cli call 5209076052 "when does the jewelry store open"
+human-goat-pp-cli call 5555550123 "when does the jewelry store open"
 ```
 
 Sends a phone-call task to Magic and returns a request id to track; the answer comes back in the conversation.

@@ -1,5 +1,7 @@
 // Copyright 2026 Cathryn Lavery and contributors. Licensed under Apache-2.0. See LICENSE.
 
+// pp:data-source live
+
 package cli
 
 import (
@@ -31,9 +33,11 @@ type variantsFlags struct {
 func newVariantsCmd(flags *rootFlags) *cobra.Command {
 	var vf variantsFlags
 	cmd := &cobra.Command{
-		Use:   "variants",
-		Short: "Produce controlled variations of one base shot",
-		Long:  "Sweep one dimension (seed, style, or model) off a base shot to produce comparable outputs with side-by-side metadata an agent can pick from.",
+		Use:         "variants",
+		Annotations: map[string]string{"pp:live-happy-path": "true", "pp:happy-args": "--prompt=a red circle on white;--model=pruna-ai/p-image/text-to-image;--count=2;--max-cost=0.02"},
+		Example:     "  wavespeed-pp-cli variants --prompt \"a red mug on oak\" --model wavespeed-ai/z-image/turbo --vary seed --count 3 --agent --dry-run",
+		Short:       "Produce controlled variations of one base shot",
+		Long:        "Sweep one dimension (seed, style, or model) off a base shot to produce comparable outputs with side-by-side metadata an agent can pick from.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			base, err := variantBaseShot(vf)
 			if err != nil {
@@ -74,6 +78,7 @@ func newVariantsCmd(flags *rootFlags) *cobra.Command {
 			if flags.dryRun {
 				env := newEnvelope("variants")
 				env.DryRun = true
+				env.Action = fmt.Sprintf("submit %d variant predictions", len(shots))
 				for i, s := range shots {
 					env.Results = append(env.Results, map[string]any{
 						"variant": i, "vary": vary, "model": s.Model, "seed": s.Seed, "params": s.toModelInputs(),
@@ -210,6 +215,7 @@ func variantsExecute(cmd *cobra.Command, c *client.Client, project wavespeedProj
 				for _, d := range res.Downloads {
 					oc.Files = append(oc.Files, d.Path)
 				}
+				noteDownloadFailure(&oc, res)
 				if res.Failed {
 					oc.Err = fmt.Sprintf("prediction failed with status %q", res.Status)
 				}
@@ -219,7 +225,7 @@ func variantsExecute(cmd *cobra.Command, c *client.Client, project wavespeedProj
 			if vf.maxCost > 0 && spent >= vf.maxCost {
 				aborted = true
 			}
-			if oc.Err != "" {
+			if oc.Err != "" || oc.DownloadFailed {
 				anyFailed = true
 			}
 			results[i] = oc
@@ -230,6 +236,7 @@ func variantsExecute(cmd *cobra.Command, c *client.Client, project wavespeedProj
 				if len(oc.Files) > 0 {
 					g.Path = oc.Files[0]
 				}
+				g.Data = oc.recoveryData()
 				if rerr := recordGeneration(g); rerr != nil {
 					mu.Lock()
 					recordErrs = append(recordErrs, rerr.Error())
@@ -246,11 +253,17 @@ func variantsExecute(cmd *cobra.Command, c *client.Client, project wavespeedProj
 	for i := range results {
 		env.Results = append(env.Results, map[string]any{"variant": i, "vary": vary, "outcome": results[i]})
 	}
+	for i := range results {
+		if results[i].DownloadFailed {
+			env.Warnings = append(env.Warnings, results[i].Warning)
+		}
+	}
 	if anyFailed {
 		env.PartialFailure = true
-		env.RecommendedAction = "one or more variants failed; surviving variants are recorded and available to compare"
-	} else {
-		env.RecommendedAction = "compare variants and pick one to scale via pack"
+		env.RecommendedAction = "one or more variants failed or were not saved locally; surviving variants are recorded and available to compare"
+		_ = emitEnvelope(cmd.OutOrStdout(), env)
+		return partialFailureErr(fmt.Errorf("variants incomplete: one or more variants failed or were not downloaded"))
 	}
+	env.RecommendedAction = "compare variants and pick one to scale via pack"
 	return emitEnvelope(cmd.OutOrStdout(), env)
 }

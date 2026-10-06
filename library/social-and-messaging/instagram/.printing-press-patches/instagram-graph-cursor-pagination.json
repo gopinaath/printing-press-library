@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "id": "instagram-graph-cursor-pagination",
+  "applied_at": "2026-09-28",
+  "base_run_id": "20260606-183021",
+  "base_printing_press_version": "4.20.1",
+  "summary": "media list --all follows Graph paging.next, sending its after= cursor, instead of stopping after page 1 while reporting complete; a walk cut short by the page cap or a cursorless next link never reports complete.",
+  "reason": "The generator dropped the spec's cursor_field and passed paging.next (a URL) as a boolean has_more_field, so --all silently returned only the first page and single-page reads never emitted the truncation hint.",
+  "files": [
+    "internal/cli/media_list.go",
+    "internal/cli/helpers.go",
+    "internal/cli/pagination_graph_test.go"
+  ],
+  "call_sites": [
+    "flagAll, \"after\", \"cursor\", \"limit\", \"paging.next\"",
+    "cursorTokenFromMaybeURL(token, cursorParam)",
+    "} else if !truncated {"
+  ],
+  "validated_outcome": "Two-page Graph fixture test drives the real media list command and fails on both the old call site and a helper without the URL-to-cursor reduction; a never-ending fixture stops at the 100-page cap with max_pages_cap_hit and no complete event; live --all on a ~1.9k-media business account returns every item at --limit 25 (75 pages) and 100 (19 pages), identical to a manual --after walk.",
+  "deferred_to_upstream": [
+    {
+      "feature": "Regenerate once the generator reads a URL-valued has_more_field (Graph paging.next) as a next link (cli-printing-press#4836), or from a spec whose Graph list endpoints declare cursor_param: after, limit_param: limit, next_cursor_path: paging.next.",
+      "reason": "#3801 only restores cursor_field; the spec's has_more_field: paging.next is a URL, not a boolean, and the generator template still reads it as a failed bool, so a regen from the current spec would still mis-wire the call site."
+    }
+  ],
+  "upstream_issue": "https://github.com/mvanhorn/cli-printing-press/issues/4836"
+}

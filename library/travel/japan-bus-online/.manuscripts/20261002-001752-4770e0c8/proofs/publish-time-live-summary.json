@@ -1,0 +1,17 @@
+{
+  "started_at": "2026-10-02T02:19:18.830638+00:00",
+  "completed_at": "2026-10-02T02:19:51.951217+00:00",
+  "exit_code": 0,
+  "failed_tests": [],
+  "level": "full",
+  "live": true,
+  "acceptance": {
+    "status": "pass",
+    "level": "full",
+    "matrix_size": 92,
+    "tests_passed": 92,
+    "tests_skipped": 84,
+    "tests_unverified": 84,
+    "source_fingerprint": "c31cbfdc8667f50f166ac5ab774092c3b9fb08bcd8466a4ffe58e6f2b300770e"
+  }
+}

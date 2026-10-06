@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "id": "drafts-new-mcp-attach-documents",
+  "applied_at": "2026-09-28",
+  "base_run_id": "20260925-192552-b6baa964",
+  "base_printing_press_version": "4.32.4",
+  "summary": "feat(thunderbird): expose drafts new --attach to MCP, limited to files inside the user's Documents folder",
+  "reason": "Agents need to prepare a compose window with a document attached. The attach flag was hidden from the MCP schema to stop agents reading arbitrary local files; it is now exposed, and when the CLI runs under the MCP surface (THUNDERBIRD_LEARN_SURFACE=mcp or a bound MCP client profile) every attachment is resolved to its final path (GetFinalPathNameByHandle on Windows, so symlinks and junctions are followed) and rejected unless it lies inside the Documents known folder. The MCP bridge serializes arrays as one comma-joined value, so under MCP the value is split on commas. --body-file stays hidden. Terminal behaviour is unchanged.",
+  "files": [
+    "internal/cli/tb_drafts.go",
+    "internal/cli/tb_attach_guard.go",
+    "internal/cli/tb_attach_guard_windows.go",
+    "internal/cli/tb_attach_guard_other.go"
+  ],
+  "call_sites": ["tbResolveMCPAttachment(a)", "GetFinalPathNameByHandle"],
+  "validated_outcome": "go test ./... passes; guard tests cover inside Documents, outside, sibling prefix, .. traversal, symlink and junction escapes, terminal unrestricted; mutation checks detected by the targeted tests",
+  "findings_addressed": ["F1"]
+}

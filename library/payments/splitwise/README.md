@@ -2,6 +2,9 @@
 
 **Every Splitwise feature, plus an offline SQLite ledger that powers balance, debt-aging, spend analytics, fairness, and full-text search no other Splitwise tool has.**
 
+Created by [@vinnyp](https://github.com/vinnyp) (Vinny Pasceri).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 splitwise-pp-cli wraps the full Splitwise API — expenses, groups, friends, comments, settle-ups — and keeps a local copy of your whole ledger. That local store powers a net `balances` view, `debts --aged` (who never pays you back), `spend` rollups by category or month, offline `search`, a group `ledger` with running balances, `fairness` and `net` for who's carrying cost and how balances collapse across groups, and a `settle-up` plan that minimizes transfers. `brief` gives an agent one bounded state digest, and `reconcile` verifies the local store still matches Splitwise before you trust any of it. Fuzzy name resolution means you never paste a numeric ID.
 
 ## Install
@@ -109,6 +112,8 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ```
 
 </details>
+
+Typed MCP category, comment, currency, friend, and group lists return `next_cursor` when more data is available. Continue with the same tool and arguments plus that cursor. If the list changed, restart without a cursor. An item too large for one result is returned as numbered `item_fragment_base64` chunks; decode and join the chunks by `item_index` and `item_fragment_offset` before parsing the item as JSON.
 
 ## Authentication
 

@@ -110,6 +110,19 @@ func (s *Store) migrateExtras(ctx context.Context, conn *sql.Conn) error {
 			updated_at TEXT NOT NULL DEFAULT '',
 			PRIMARY KEY (apply_id, chunk_no)
 		)`,
+		// mail_apply_items: per-message intent/completion state for trash
+		// chunks. Chunk-level 'applying' is not enough to distinguish an
+		// untouched message from one that was trashed and then manually
+		// untrashed before crash recovery. Recovery only retries 'pending';
+		// ambiguous or externally changed items become conflicts.
+		`CREATE TABLE IF NOT EXISTS mail_apply_items (
+			apply_id INTEGER NOT NULL,
+			chunk_no INTEGER NOT NULL,
+			id TEXT NOT NULL,
+			state TEXT NOT NULL DEFAULT 'pending',
+			updated_at TEXT NOT NULL DEFAULT '',
+			PRIMARY KEY (apply_id, chunk_no, id)
+		)`,
 		// mail_ledger + mail_ledger_entries: the delta ledger undo replays.
 		// Entries record only the INTRODUCED deltas (grill R1-C6): for trash
 		// the +TRASH delta plus the INBOX/CATEGORY_* placement the store
@@ -133,6 +146,7 @@ func (s *Store) migrateExtras(ctx context.Context, conn *sql.Conn) error {
 			old_name TEXT NOT NULL DEFAULT '',
 			new_name TEXT NOT NULL DEFAULT '',
 			undone TEXT NOT NULL DEFAULT '',
+			untrash_labels TEXT NOT NULL DEFAULT '',
 			created_at TEXT NOT NULL DEFAULT '',
 			PRIMARY KEY (ledger_id, id)
 		)`,
@@ -197,6 +211,9 @@ func (s *Store) migrateExtras(ctx context.Context, conn *sql.Conn) error {
 		if err := s.ensureColumn(ctx, conn, "mail_meta", col.name, col.decl); err != nil {
 			return err
 		}
+	}
+	if err := s.ensureColumn(ctx, conn, "mail_ledger_entries", "untrash_labels", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
 	}
 	return nil
 }

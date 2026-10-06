@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -134,10 +135,12 @@ func nccplRequestBody(r nccplResource, date string) map[string]any {
 	}
 }
 
-// nccplRowKey composes a stable within-date key from the resource's key fields.
-// Falls back to the row's ordinal when no key field is present, and disambiguates
-// collisions the same way, so an upsert never silently overwrites a sibling row.
-func nccplRowKey(r nccplResource, row map[string]any, index int, seen map[string]bool) string {
+// nccplRowKey composes a stable within-date key from the resource's key fields
+// and a canonical hash of the complete row. Different rows that share the
+// declared fields keep distinct IDs even when the API reorders them. Exact
+// duplicates use their occurrence within the identical-row group, so an
+// unrelated row moving ahead of them cannot change their IDs.
+func nccplRowKey(r nccplResource, row map[string]any, seen map[string]int) string {
 	parts := make([]string, 0, len(r.KeyParts))
 	for _, f := range r.KeyParts {
 		if v, ok := row[f]; ok {
@@ -149,12 +152,16 @@ func nccplRowKey(r nccplResource, row map[string]any, index int, seen map[string
 	}
 	key := strings.Join(parts, "|")
 	if key == "" {
-		key = fmt.Sprintf("#%d", index)
+		key = "row"
 	}
-	if seen[key] {
-		key = fmt.Sprintf("%s#%d", key, index)
+	encoded, _ := json.Marshal(row) // Rows came from JSON, so every value is encodable.
+	digest := sha256.Sum256(encoded)
+	key = fmt.Sprintf("%s#%x", key, digest[:8])
+	count := seen[key]
+	seen[key] = count + 1
+	if count > 0 {
+		key = fmt.Sprintf("%s#%d", key, count)
 	}
-	seen[key] = true
 	return key
 }
 
@@ -223,13 +230,13 @@ func nccplFetchDate(ctx context.Context, c *client.Client, r nccplResource, date
 	}
 
 	rows := make([]store.NCCPLRow, 0, len(objs))
-	seen := map[string]bool{}
+	seen := map[string]int{}
 	for i, o := range objs {
 		encoded, err := json.Marshal(o)
 		if err != nil {
 			return nil, nil, fmt.Errorf("%s %s: encode row %d: %w", r.Name, date, i, err)
 		}
-		rows = append(rows, store.NCCPLRow{Key: nccplRowKey(r, o, i, seen), Payload: string(encoded)})
+		rows = append(rows, store.NCCPLRow{Key: nccplRowKey(r, o, seen), Payload: string(encoded)})
 	}
 	return rows, objs, nil
 }

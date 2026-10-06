@@ -16,8 +16,8 @@ import (
 )
 
 type ashbyBoardResponse struct {
-	APIVersion string            `json:"apiVersion"`
-	Jobs       []ashbyJobPosting `json:"jobs"`
+	APIVersion string          `json:"apiVersion"`
+	Jobs       json.RawMessage `json:"jobs"`
 }
 
 type ashbyJobPosting struct {
@@ -112,6 +112,15 @@ func newAshbyPostingsListCmd(flags *rootFlags) *cobra.Command {
 		SilenceUsage: true,
 		Annotations:  map[string]string{"pp:endpoint": "postings.list", "pp:method": "GET", "pp:path": "/posting-api/job-board/{jobBoardName}", "pp:happy-args": "<job-board-name>=ashby", "pp:typed-exit-codes": "0,2,3", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if dryRunOK(flags) {
+				if err := validateAshbyBoardName(args[0]); err != nil {
+					return usageErr(err)
+				}
+				if _, err := parseAshbyPublishedSince(filter.PublishedSince); err != nil {
+					return usageErr(err)
+				}
+				return writeAshbyPostingsDryRun(cmd, flags, "postings list", args[0], "", includeCompensation || filter.HasCompensation || filter.SalaryMin > 0 || filter.SalaryMax > 0 || filter.Currency != "", filter)
+			}
 			jobs, err := fetchAshbyJobs(cmd, flags, args[0], includeCompensation || filter.HasCompensation || filter.SalaryMin > 0 || filter.SalaryMax > 0 || filter.Currency != "")
 			if err != nil {
 				return classifyAPIError(cmd.OutOrStdout(), err, flags)
@@ -139,6 +148,12 @@ func newAshbyPostingsGetCmd(flags *rootFlags) *cobra.Command {
 		SilenceUsage: true,
 		Annotations:  map[string]string{"pp:endpoint": "postings.get", "pp:method": "GET", "pp:path": "/posting-api/job-board/{jobBoardName}", "mcp:read-only": "true"},
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if dryRunOK(flags) {
+				if err := validateAshbyBoardName(args[0]); err != nil {
+					return usageErr(err)
+				}
+				return writeAshbyPostingsDryRun(cmd, flags, "postings get", args[0], args[1], includeCompensation, ashbyPostingFilter{})
+			}
 			jobs, err := fetchAshbyJobs(cmd, flags, args[0], includeCompensation)
 			if err != nil {
 				return classifyAPIError(cmd.OutOrStdout(), err, flags)
@@ -203,25 +218,18 @@ func newAshbySyncCmd(flags *rootFlags) *cobra.Command {
 func persistAshbyBoardSnapshot(db *store.Store, board string, jobs []ashbyJobPosting) (int, int, error) {
 	listed := listedAshbyJobs(jobs)
 	items := make([]json.RawMessage, 0, len(listed))
-	seenIDs := make([]string, 0, len(listed))
 	for _, job := range listed {
+		if strings.TrimSpace(job.ID) == "" {
+			return 0, 0, errors.New("listed Ashby posting is missing an id")
+		}
 		raw, err := json.Marshal(job)
 		if err != nil {
 			return 0, 0, err
 		}
 		items = append(items, raw)
-		seenIDs = append(seenIDs, job.ID)
 	}
 	scoped := "postings:" + strings.ToLower(board)
-	stored, _, err := db.UpsertBatch(scoped, items)
-	if err != nil {
-		return 0, 0, err
-	}
-	removed, err := db.ReconcileAll(scoped, seenIDs, "", nil)
-	if err != nil {
-		return 0, 0, err
-	}
-	return stored, removed, nil
+	return db.ReplaceGenericSnapshot(scoped, items)
 }
 
 // pp:data-source local
@@ -259,8 +267,8 @@ func newAshbySearchCmd(flags *rootFlags) *cobra.Command {
 }
 
 func fetchAshbyJobs(cmd *cobra.Command, flags *rootFlags, board string, includeCompensation bool) ([]ashbyJobPosting, error) {
-	if strings.TrimSpace(board) == "" || strings.ContainsAny(board, "/?#") {
-		return nil, usageErr(fmt.Errorf("invalid job board name %q", board))
+	if err := validateAshbyBoardName(board); err != nil {
+		return nil, usageErr(err)
 	}
 	c, err := flags.newClient()
 	if err != nil {
@@ -275,11 +283,86 @@ func fetchAshbyJobs(cmd *cobra.Command, flags *rootFlags, board string, includeC
 	if err != nil {
 		return nil, err
 	}
+	return decodeAshbyBoardJobs(raw)
+}
+
+func validateAshbyBoardName(board string) error {
+	if strings.TrimSpace(board) == "" || strings.ContainsAny(board, "/?#") {
+		return fmt.Errorf("invalid job board name %q", board)
+	}
+	return nil
+}
+
+func writeAshbyPostingsDryRun(cmd *cobra.Command, flags *rootFlags, action, board, postingID string, includeCompensation bool, filter ashbyPostingFilter) error {
+	query := map[string]string{}
+	if includeCompensation {
+		query["includeCompensation"] = "true"
+	}
+	preview := map[string]any{
+		"dry_run": true,
+		"action":  action,
+		"would":   "fetch the public board and filter listed jobs; no request sent",
+		"method":  "GET",
+		"path":    replacePathParam("/posting-api/job-board/{jobBoardName}", "jobBoardName", board),
+		"query":   query,
+		"board":   board,
+	}
+	if action == "postings get" {
+		preview["posting_id"] = postingID
+	}
+	if action == "postings list" {
+		preview["filters"] = map[string]any{
+			"query": filter.Query, "department": filter.Department, "team": filter.Team,
+			"location": filter.Location, "workplace": filter.Workplace,
+			"employment_type": filter.EmploymentType, "currency": filter.Currency,
+			"published_since": filter.PublishedSince, "salary_min": filter.SalaryMin,
+			"salary_max": filter.SalaryMax, "remote": filter.Remote,
+			"has_compensation": filter.HasCompensation, "limit": filter.Limit,
+		}
+	}
+	if flags != nil && flags.asJSON {
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(preview)
+	}
+	detail := fmt.Sprintf("filters %v", preview["filters"])
+	if action == "postings get" {
+		detail = fmt.Sprintf("posting ID %q", postingID)
+	}
+	_, err := fmt.Fprintf(cmd.OutOrStdout(), "dry-run: would GET %s with query %v, then %s by %s; no request sent\n", preview["path"], query, action, detail)
+	return err
+}
+
+func decodeAshbyBoardJobs(raw json.RawMessage) ([]ashbyJobPosting, error) {
 	var response ashbyBoardResponse
 	if err := json.Unmarshal(raw, &response); err != nil {
 		return nil, fmt.Errorf("decode Ashby job board response: %w", err)
 	}
-	return response.Jobs, nil
+	jobsJSON := strings.TrimSpace(string(response.Jobs))
+	if jobsJSON == "" || jobsJSON == "null" {
+		return nil, errors.New("decode Ashby job board response: missing complete jobs array")
+	}
+	var rows []json.RawMessage
+	if err := json.Unmarshal(response.Jobs, &rows); err != nil {
+		return nil, fmt.Errorf("decode Ashby job board jobs: %w", err)
+	}
+	for i, row := range rows {
+		var fields map[string]json.RawMessage
+		if err := json.Unmarshal(row, &fields); err != nil || fields == nil {
+			return nil, fmt.Errorf("decode Ashby job board jobs: row %d is not a job object", i)
+		}
+		var id string
+		if err := json.Unmarshal(fields["id"], &id); err != nil || strings.TrimSpace(id) == "" {
+			return nil, fmt.Errorf("decode Ashby job board jobs: row %d has no id", i)
+		}
+		listed := strings.TrimSpace(string(fields["isListed"]))
+		if listed != "true" && listed != "false" {
+			return nil, fmt.Errorf("decode Ashby job board jobs: row %d has no listing state", i)
+		}
+	}
+	var jobs []ashbyJobPosting
+	if err := json.Unmarshal(response.Jobs, &jobs); err != nil {
+		return nil, fmt.Errorf("decode Ashby job board jobs: %w", err)
+	}
+	return jobs, nil
 }
 
 func listedAshbyJobs(jobs []ashbyJobPosting) []ashbyJobPosting {
@@ -293,15 +376,16 @@ func listedAshbyJobs(jobs []ashbyJobPosting) []ashbyJobPosting {
 }
 
 func filterAshbyJobs(jobs []ashbyJobPosting, filter ashbyPostingFilter) ([]ashbyJobPosting, error) {
-	var since time.Time
-	var err error
-	if filter.PublishedSince != "" {
-		since, err = time.Parse("2006-01-02", filter.PublishedSince)
-		if err != nil {
-			return nil, fmt.Errorf("invalid --published-since value %q: use YYYY-MM-DD", filter.PublishedSince)
-		}
+	since, err := parseAshbyPublishedSince(filter.PublishedSince)
+	if err != nil {
+		return nil, err
 	}
-	result := make([]ashbyJobPosting, 0, len(jobs))
+	type datedJob struct {
+		job       ashbyJobPosting
+		published time.Time
+		valid     bool
+	}
+	result := make([]datedJob, 0, len(jobs))
 	for _, job := range jobs {
 		if !job.IsListed || (filter.Remote && !job.IsRemote) || !containsFold(job.Department, filter.Department) || !containsFold(job.Team, filter.Team) || !containsFold(job.Location, filter.Location) || !containsFold(job.WorkplaceType, filter.Workplace) || !containsFold(job.EmploymentType, filter.EmploymentType) {
 			continue
@@ -309,22 +393,43 @@ func filterAshbyJobs(jobs []ashbyJobPosting, filter ashbyPostingFilter) ([]ashby
 		if filter.Query != "" && !containsFold(strings.Join([]string{job.Title, job.Department, job.Team, job.Location, job.Description}, " "), filter.Query) {
 			continue
 		}
-		if !since.IsZero() {
-			published, parseErr := time.Parse(time.RFC3339Nano, job.PublishedAt)
-			if parseErr != nil || published.Before(since) {
-				continue
-			}
+		published, parseErr := time.Parse(time.RFC3339Nano, job.PublishedAt)
+		if !since.IsZero() && (parseErr != nil || published.Before(since)) {
+			continue
 		}
 		if !matchesAshbyCompensation(job.Compensation, filter) {
 			continue
 		}
-		result = append(result, job)
-		if filter.Limit > 0 && len(result) >= filter.Limit {
-			break
-		}
+		result = append(result, datedJob{job: job, published: published, valid: parseErr == nil})
 	}
-	sort.SliceStable(result, func(i, j int) bool { return result[i].PublishedAt > result[j].PublishedAt })
-	return result, nil
+	sort.SliceStable(result, func(i, j int) bool {
+		if result[i].valid && result[j].valid {
+			return result[i].published.After(result[j].published)
+		}
+		if result[i].valid || result[j].valid {
+			return result[i].valid
+		}
+		return result[i].job.PublishedAt > result[j].job.PublishedAt
+	})
+	if filter.Limit > 0 && len(result) > filter.Limit {
+		result = result[:filter.Limit]
+	}
+	filtered := make([]ashbyJobPosting, len(result))
+	for i, item := range result {
+		filtered[i] = item.job
+	}
+	return filtered, nil
+}
+
+func parseAshbyPublishedSince(value string) (time.Time, error) {
+	if value == "" {
+		return time.Time{}, nil
+	}
+	since, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid --published-since value %q: use YYYY-MM-DD", value)
+	}
+	return since, nil
 }
 
 func containsFold(value, wanted string) bool {

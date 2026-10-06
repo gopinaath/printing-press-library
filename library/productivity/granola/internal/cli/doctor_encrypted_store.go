@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/mvanhorn/printing-press-library/library/productivity/granola/internal/granola"
@@ -37,6 +38,13 @@ func collectEncryptedStoreReport(report map[string]any) {
 	supabaseEncPath := filepath.Join(supportDir, "supabase.json.enc")
 	cacheEncPresent := fileExists(encPath)
 	supabaseEncPresent := fileExists(supabaseEncPath)
+	recoveredKeyOverrideConfigured := strings.TrimSpace(os.Getenv("GRANOLA_SAFESTORAGE_KEY_OVERRIDE")) != ""
+	// Current Granola builds migrate the DEK into an entitlement-gated
+	// data-protection keychain and remove storage.dek. This file-shape probe is
+	// live, requires no Keychain prompt, and prevents a stale sync-state record
+	// from prescribing an approval flow that can no longer succeed. A recovered
+	// key override remains a supported decryption path even without storage.dek.
+	liveSchemeMigrated := cacheEncPresent && !fileExists(filepath.Join(supportDir, "storage.dek")) && !recoveredKeyOverrideConfigured
 
 	if !cacheEncPresent && !supabaseEncPresent {
 		report["encrypted_store"] = "INFO not in use (Granola pre-encryption)"
@@ -46,6 +54,14 @@ func collectEncryptedStoreReport(report map[string]any) {
 	// Both .enc paths exist (or at least one). Consult sync state.
 	state, err := granola.ReadSyncState()
 	if granola.IsSyncStateMissing(err) {
+		if recoveredKeyOverrideConfigured {
+			reportRecoveredKeyOverride(report)
+			return
+		}
+		if liveSchemeMigrated {
+			reportMigratedStore(report, "")
+			return
+		}
 		report["encrypted_store"] = "INFO present; run `granola-pp-cli sync` to authorize Keychain access"
 		report["encrypted_store_hint"] = "First sync triggers the macOS Keychain prompt. Click Always Allow."
 		return
@@ -77,16 +93,12 @@ func collectEncryptedStoreReport(report map[string]any) {
 		// permanent, expected state, not a failure to act on. Reporting it as
 		// ERROR alongside a working CLI session read as "the CLI is broken"
 		// when meetings were syncing fine.
-		if state.LastDecryptErrorClass == "scheme_migrated" {
-			report["encrypted_store"] = "DEGRADED desktop cache unreadable (Granola moved the key out of reach); meetings sync over the API"
-			if granola.HasCLISession() {
-				report["encrypted_store_hint"] = "Nothing to do. Transcripts, folders, recipes, panels and chats stay empty unless you supply GRANOLA_SAFESTORAGE_KEY_OVERRIDE from a pre-migration storage.dek."
-			} else {
-				report["encrypted_store_hint"] = "Run `granola-pp-cli auth login` so the CLI can fetch meetings over the API."
-			}
-			if state.LastDecryptErrorMsg != "" {
-				report["encrypted_store_error"] = state.LastDecryptErrorMsg
-			}
+		if state.LastDecryptErrorClass == "scheme_migrated" && recoveredKeyOverrideConfigured {
+			reportRecoveredKeyOverride(report)
+			return
+		}
+		if state.LastDecryptErrorClass == "scheme_migrated" || liveSchemeMigrated {
+			reportMigratedStore(report, state.LastDecryptErrorMsg)
 			return
 		}
 		msg := "ERROR last sync failed to decrypt"
@@ -107,6 +119,23 @@ func collectEncryptedStoreReport(report map[string]any) {
 		}
 	default:
 		report["encrypted_store"] = fmt.Sprintf("INFO sync state status: %q", state.LastDecryptStatus)
+	}
+}
+
+func reportRecoveredKeyOverride(report map[string]any) {
+	report["encrypted_store"] = "INFO recovered key override configured; run `granola-pp-cli sync` to validate cache access"
+	report["encrypted_store_hint"] = "GRANOLA_SAFESTORAGE_KEY_OVERRIDE provides the cache key; a successful sync will confirm that it matches this encrypted store."
+}
+
+func reportMigratedStore(report map[string]any, detail string) {
+	report["encrypted_store"] = "DEGRADED desktop cache unreadable (Granola moved the key out of reach); meetings sync over the API"
+	if granola.HasCLISession() || os.Getenv("GRANOLA_API_KEY") != "" {
+		report["encrypted_store_hint"] = "Nothing to do for the desktop cache. Continue syncing through the API; a pre-migration storage.dek can still be supplied with GRANOLA_SAFESTORAGE_KEY_OVERRIDE."
+	} else {
+		report["encrypted_store_hint"] = "Run `granola-pp-cli auth login` or configure GRANOLA_API_KEY so the CLI can sync through the API."
+	}
+	if detail != "" {
+		report["encrypted_store_error"] = detail
 	}
 }
 

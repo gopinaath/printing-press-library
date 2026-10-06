@@ -1559,6 +1559,53 @@ func (s *Store) upsertTextToSpeechTx(tx *sql.Tx, id string, obj map[string]any, 
 	return nil
 }
 
+// removeLegacyDictionaryKeysTx removes older dictionary rows keyed by name
+// before writing the same dictionary under its stable dictionary_id. Match
+// the ID in stored JSON so a voice with the same name is never removed.
+func removeLegacyDictionaryKeysTx(tx *sql.Tx, id string, obj map[string]any) error {
+	dictionaryID := scalarIDString(lookupFieldValue(obj, "dictionary_id"))
+	if dictionaryID == "" || id != dictionaryID {
+		return nil
+	}
+	rows, err := tx.Query(
+		`SELECT id FROM resources
+		 WHERE resource_type = ? AND id <> ?
+		   AND (CASE WHEN json_valid(data) THEN json_extract(data, '$.dictionary_id') END) = ?`,
+		"text-to-speech", id, dictionaryID,
+	)
+	if err != nil {
+		return fmt.Errorf("finding legacy dictionary rows: %w", err)
+	}
+	var legacyIDs []string
+	for rows.Next() {
+		var legacyID string
+		if err := rows.Scan(&legacyID); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		legacyIDs = append(legacyIDs, legacyID)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return err
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	for _, legacyID := range legacyIDs {
+		if _, err := tx.Exec(`DELETE FROM "text_to_speech" WHERE id = ?`, legacyID); err != nil {
+			return fmt.Errorf("removing legacy dictionary typed row: %w", err)
+		}
+		if _, err := tx.Exec(`DELETE FROM resources_fts WHERE rowid = ?`, ftsRowID("text-to-speech", legacyID)); err != nil {
+			return fmt.Errorf("removing legacy dictionary search row: %w", err)
+		}
+		if _, err := tx.Exec(`DELETE FROM resources WHERE resource_type = ? AND id = ?`, "text-to-speech", legacyID); err != nil {
+			return fmt.Errorf("removing legacy dictionary row: %w", err)
+		}
+	}
+	return nil
+}
+
 // UpsertTextToSpeech inserts or updates a text_to_speech record with domain-specific columns.
 func (s *Store) UpsertTextToSpeech(data json.RawMessage) error {
 	obj, err := DecodeJSONObject(data)
@@ -1566,7 +1613,7 @@ func (s *Store) UpsertTextToSpeech(data json.RawMessage) error {
 		return fmt.Errorf("unmarshaling text_to_speech: %w", err)
 	}
 
-	id := extractObjectID(obj)
+	id := ExtractResourceID("text-to-speech", obj)
 	if id == "" {
 		return fmt.Errorf("missing id for text_to_speech")
 	}
@@ -1579,6 +1626,9 @@ func (s *Store) UpsertTextToSpeech(data json.RawMessage) error {
 		return err
 	}
 	defer tx.Rollback()
+	if err := removeLegacyDictionaryKeysTx(tx, storageID, obj); err != nil {
+		return err
+	}
 
 	if err := s.upsertGenericResourceTx(tx, "text-to-speech", storageID, data); err != nil {
 		return err
@@ -1712,6 +1762,18 @@ var resourceIDFieldOverrides = map[string]string{
 	"text-to-speech": "name",
 }
 
+// Some Sarvam response items use request- or job-scoped identifiers without
+// a generic id. Keep these fallbacks resource-scoped, after stable IDs and
+// declared overrides, so a foreign request_id cannot key an unrelated row.
+var resourceIDAlternativeFields = map[string][]string{
+	"doc-ai":         {"job_id", "upload_id"},
+	"speech-to-text": {"request_id", "job_id"},
+	"text-lid":       {"request_id"},
+	"text-to-speech": {"dictionary_id", "request_id"},
+	"translate":      {"request_id"},
+	"transliterate":  {"request_id"},
+}
+
 // Generic ID fields are split around the resource-specific suffix probe.
 // Stable vendor identifiers win first; then fields derived from the resource
 // name (accountId, workspaceId); descriptive fallbacks are last. Keeping name
@@ -1736,6 +1798,14 @@ var resourceParentKeyColumns = map[string][]string{}
 // Callers that need to gate best-effort writes can use this to avoid passing
 // non-entity envelopes into the batch path.
 func ExtractResourceID(resourceType string, obj map[string]any) string {
+	// Pronunciation dictionaries use dictionary_id on create and may add a
+	// name on later reads. Use the same key for both shapes; ordinary TTS
+	// items still use their declared name override.
+	if resourceType == "text-to-speech" {
+		if s := scalarIDString(lookupFieldValue(obj, "dictionary_id")); s != "" && s != "<nil>" {
+			return s
+		}
+	}
 	if override, ok := resourceIDFieldOverrides[resourceType]; ok && override != "" {
 		if v := lookupFieldValue(obj, override); v != nil {
 			s := ResourceIDString(v)
@@ -1754,6 +1824,14 @@ func ExtractResourceID(resourceType string, obj map[string]any) string {
 	}
 	if s := suffixIDFieldFallback(resourceType, obj); s != "" {
 		return s
+	}
+	for _, key := range resourceIDAlternativeFields[resourceType] {
+		if v := lookupFieldValue(obj, key); v != nil {
+			s := ResourceIDString(v)
+			if s != "" && s != "<nil>" {
+				return s
+			}
+		}
 	}
 	for _, key := range genericDescriptiveIDFieldFallbacks {
 		if v := lookupFieldValue(obj, key); v != nil {
@@ -2010,6 +2088,11 @@ func (s *Store) UpsertBatch(resourceType string, items []json.RawMessage) (int, 
 			continue
 		}
 		storageID := resourceStorageID(resourceType, id, obj)
+		if resourceType == "text-to-speech" {
+			if err := removeLegacyDictionaryKeysTx(tx, storageID, obj); err != nil {
+				return 0, extractFailures, fmt.Errorf("migrating %s/%s: %w", resourceType, storageID, err)
+			}
+		}
 
 		if err := s.upsertGenericResourceTx(tx, resourceType, storageID, item); err != nil {
 			// A non-nil error aborts this transaction through the deferred

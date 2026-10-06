@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "kuma",
   "cli_name": "kuma-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-01T09:10:07Z",
-  "source_commit": "78c5c4c057194cbb2ae266b188a7859c442ec05b",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T21:04:57Z",
+  "source_commit": "4bab09a5027a4a28141df6e41d5b4ab980dab5dc",
   "printing_press_version": "4.31.1",
   "run_id": "20260826-180632",
   "changes": [
     {
-      "title": "fix(kuma): document kumactl HTTP MCP and bound Socket.IO reads",
-      "pr": 1886,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1886",
-      "commit": "78c5c4c057194cbb2ae266b188a7859c442ec05b"
+      "title": "Protect Kuma credentials and monitor identity",
+      "pr": 2129,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2129",
+      "commit": "4bab09a5027a4a28141df6e41d5b4ab980dab5dc"
     }
   ]
 }

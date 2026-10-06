@@ -14,6 +14,7 @@ install:
 
 clean:
 	rm -rf bin/
+	rm -f ars-sicilia-pp-cli ars-sicilia-pp-mcp
 
 build-mcp:
 	go build -o bin/ars-sicilia-pp-mcp ./cmd/ars-sicilia-pp-mcp

@@ -516,9 +516,10 @@ func (c *Client) doRead(ctx context.Context, method, path string, params map[str
 // operations like GraphQL queries) to skip the mutating-verb verify-mode
 // gate. Plain do() callers leave it false and get the usual short-circuit.
 func (c *Client) doInternal(ctx context.Context, method, path string, params map[string]string, body any, headerOverrides map[string]string, readOnlyIntent bool) (json.RawMessage, int, error) {
-	// Keep authentication and rate-limit recovery available; only ambiguous
+	// PATCH(ambiguous-write-retries-disabled): keep authentication and
+	// rate-limit recovery available; only ambiguous
 	// transport/server failures must not replay an unprotected write.
-	canRetryAmbiguousFailure := readOnlyIntent || method == http.MethodGet || method == http.MethodHead || method == http.MethodOptions
+	canRetryAmbiguousFailure := retrySafeRequest(method, readOnlyIntent)
 
 	// Verify-mode transport-layer gate. When the verifier (or any consumer
 	// that sets PRINTING_PRESS_VERIFY=1) drives a mutating verb without
@@ -568,6 +569,9 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 	}
 
 	maxRetries := clientMaxRetries()
+	// A 429 response explicitly refused the request, so a bounded retry is
+	// safe even for writes. Transport failures and 5xx remain ambiguous and
+	// are never retried for writes below.
 	var lastErr error
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
@@ -627,6 +631,7 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 				return nil, 0, ctxErr
 			}
 			lastErr = fmt.Errorf("%s %s: %w", method, c.displayURL(path, authHeader), c.maskError(err, authHeader))
+			// PATCH(ambiguous-write-retries-disabled): never replay a write after a transport error.
 			if !canRetryAmbiguousFailure {
 				return nil, 0, lastErr
 			}
@@ -683,6 +688,7 @@ func (c *Client) doInternal(ctx context.Context, method, path string, params map
 		}
 
 		// Server error - retry with backoff
+		// PATCH(ambiguous-write-retries-disabled): 5xx is retried only for reads.
 		if resp.StatusCode >= 500 && attempt < maxRetries && canRetryAmbiguousFailure {
 			wait := time.Duration(math.Pow(2, float64(attempt))) * time.Second
 			fmt.Fprintf(os.Stderr, "server error %d, retrying in %s (attempt %d/%d)\n", resp.StatusCode, wait, attempt+1, maxRetries)
@@ -1009,4 +1015,16 @@ func clientMaxRetries() int {
 		return 0
 	}
 	return 3
+}
+
+func retrySafeRequest(method string, readOnlyIntent bool) bool {
+	if readOnlyIntent {
+		return true
+	}
+	switch strings.ToUpper(method) {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+		return true
+	default:
+		return false
+	}
 }

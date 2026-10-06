@@ -1,0 +1,15 @@
+{
+  "schema_version": 2,
+  "id": "oneword-domains-gpt-generate-direct-wiring",
+  "applied_at": "2026-09-24",
+  "base_run_id": "20260924-061450-62059de3",
+  "base_printing_press_version": "4.32.4",
+  "summary": "gpt registers generate with cmd.AddCommand instead of addNovelCommandIfAbsent.",
+  "reason": "The library's static SKILL verifier cannot see commands added through the helper and rejected the documented gpt generate --tld example.",
+  "files": [
+    "internal/cli/gpt.go"
+  ],
+  "call_sites": [
+    "cmd.AddCommand(newNovelGptGenerateCmd(flags))"
+  ]
+}

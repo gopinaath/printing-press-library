@@ -33,11 +33,15 @@ func newMediaListCmd(flags *rootFlags) *cobra.Command {
 
 			path := "/{ig_user_id}/media"
 			path = replacePathParam(path, "ig_user_id", args[0])
+			// PATCH(instagram-graph-cursor-pagination): the generator dropped the
+			// spec's cursor_field and passed paging.next as a boolean has-more
+			// field, so --all stopped after page 1. Graph has more pages exactly
+			// while paging.next is present; its after= value is the cursor.
 			data, prov, err := resolvePaginatedReadWithStrategy(cmd.Context(), c, flags, "auto", "media", path, map[string]string{
 				"fields": fmt.Sprintf("%v", flagFields),
 				"limit":  fmt.Sprintf("%v", flagLimit),
 				"after":  fmt.Sprintf("%v", flagAfter),
-			}, nil, flagAll, "", "cursor", "", "", "paging.next", cmd.ErrOrStderr())
+			}, nil, flagAll, "after", "cursor", "limit", "paging.next", "", cmd.ErrOrStderr())
 			if err != nil {
 				return classifyAPIError(err, flags)
 			}

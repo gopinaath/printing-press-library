@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/client"
 	"github.com/spf13/cobra"
 )
 
@@ -71,6 +72,10 @@ Run 'shopper-pp-cli checkout open --store <store>' to open the checkout page.`,
 			if storeName == "" {
 				storeName = "programada"
 			}
+			checkoutURL, err := storefrontPageURL(storeName, "/shop/checkout")
+			if err != nil {
+				return err
+			}
 
 			c, err := flags.newClient()
 			if err != nil {
@@ -79,7 +84,7 @@ Run 'shopper-pp-cli checkout open --store <store>' to open the checkout page.`,
 
 			view := checkoutPreviewView{
 				Store:           storeName,
-				CheckoutURL:     "https://" + resolveSubdomain(storeName) + ".shopper.com.br/shop/checkout",
+				CheckoutURL:     checkoutURL,
 				BrowserRequired: "Order confirmation requires a browser session. Run 'shopper-pp-cli checkout open --store " + storeName + "' to open the checkout page.",
 			}
 
@@ -96,20 +101,19 @@ Run 'shopper-pp-cli checkout open --store <store>' to open the checkout page.`,
 			// If cart and delivery both failed (most likely cause: no auth token),
 			// add a note so the caller understands which fields are absent and why.
 			if cartErr != nil && delivErr != nil {
-				view.Note = "cart, delivery, and payment data unavailable — authenticate first: shopper-pp-cli auth set-token <token>"
+				view.Note = "cart, delivery, and payment data unavailable — authenticate first: shopper-pp-cli auth set-token --stdin"
 			}
 
+			// Subscription storefronts only grow a charge calendar when delivery
+			// summary succeeded. A delivery error must not fall through into the
+			// one-off/unica label — that branch is only for non-subscription stores.
+			var nextDelivery *chargeCalendarEntry
 			if isSubscriptionStore(storeName) && delivErr == nil {
 				calData, _ := c.Get(cmd.Context(), "/delivery/v2/calendar", nil)
 				cal := buildChargeCalendar(delivData, calData, 0, false)
-				view.ChargeCalendar = cal.NextDelivery
-			} else if !isSubscriptionStore(storeName) {
-				if view.Delivery == nil {
-					view.Delivery = &checkoutDelivery{}
-				}
-				view.Delivery.IsUltraFast = true
-				view.Note = "Ultra-fast delivery (now/now-bebidas): delivery slot is selected at checkout in the browser."
+				nextDelivery = cal.NextDelivery
 			}
+			applyCheckoutStoreMode(&view, storeName, delivErr, nextDelivery)
 
 			storesData, storesErr := c.Get(cmd.Context(), "/features/stores", nil)
 			if storesErr == nil {
@@ -221,32 +225,91 @@ func extractPaymentParams(data json.RawMessage, storeName string) *checkoutPayme
 	return nil
 }
 
-// isSubscriptionStore returns true for stores with recurring basket cycles.
-func isSubscriptionStore(s string) bool {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "programada", "mensal", "1", "fresh", "2", "pet", "5":
-		return true
+// applyCheckoutStoreMode attaches the charge calendar for a subscription
+// storefront when delivery summary succeeded, and labels non-subscription
+// storefronts as ultra-fast or one-off. A delivery failure on a subscription
+// store leaves notes and delivery alone, so a transient /delivery/summary
+// error is not reported as "One-off store (unica)".
+func applyCheckoutStoreMode(view *checkoutPreviewView, storeName string, delivErr error, nextDelivery *chargeCalendarEntry) {
+	if isSubscriptionStore(storeName) {
+		if delivErr == nil {
+			view.ChargeCalendar = nextDelivery
+		}
+		return
 	}
-	return false
+	// PATCH: store-cluster-truth. Ultra-fast is a property of the
+	// storefront (is_ultra_fast_delivery), not the inverse of
+	// "has a recurring basket". `unica` is neither a subscription
+	// store nor ultra-fast.
+	if view.Delivery == nil {
+		view.Delivery = &checkoutDelivery{}
+	}
+	if isUltraFastStore(storeName) {
+		view.Delivery.IsUltraFast = true
+		view.Note = "Ultra-fast delivery (now/now-bebidas): delivery slot is selected at checkout in the browser."
+	} else {
+		view.Delivery.IsUltraFast = false
+		view.Note = "One-off store (unica): no recurring cycle or charge calendar; the delivery slot is chosen at checkout in the browser."
+	}
 }
 
-// resolveSubdomain maps a store name to its web subdomain.
-func resolveSubdomain(s string) string {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "programada", "mensal", "1":
-		return "programada"
-	case "fresh", "2":
-		return "fresh"
-	case "unica", "pontual", "3":
-		return "unica"
-	case "pet", "5":
-		return "pet"
-	case "now", "6":
-		return "now"
-	case "now-bebidas", "nowbebidas", "8":
-		return "now-bebidas"
+// isSubscriptionStore returns true for stores with recurring basket cycles.
+//
+// PATCH: store-cluster-truth. Was a local switch duplicating the store table in
+// internal/client. It now reads with_recurrence from the single source of truth,
+// so adding or re-classifying a storefront cannot leave this predicate behind.
+func isSubscriptionStore(s string) bool {
+	return client.StoreFor(s).WithRecurrence
+}
+
+// isUltraFastStore returns true only for the storefronts the API itself marks
+// is_ultra_fast_delivery (now, now-bebidas).
+//
+// PATCH: store-cluster-truth. checkout preview used to treat "not a subscription
+// store" as "ultra fast", which wrongly reported is_ultra_fast=true for `unica`
+// — a one-off store that the API reports as is_ultra_fast_delivery=false.
+func isUltraFastStore(s string) bool {
+	return client.StoreFor(s).UltraFast
+}
+
+// resolveSubdomain maps a known store selector to its web subdomain.
+// Unknown selectors are an error so browser handoffs cannot silently open
+// Programada. StoreFor's unknown-selector fallback is intentionally not used
+// here. A known storefront with an empty subdomain still falls back to
+// programada so the host label is never blank.
+//
+// PATCH: store-cluster-truth. Delegates to the single store table rather than
+// carrying its own copy of the name/id aliases.
+func resolveSubdomain(s string) (string, error) {
+	st, ok := client.ResolveStore(s)
+	if !ok {
+		return "", fmt.Errorf("unknown store %q: choose one of %s, or a known store id", s, strings.Join(client.StoreNames(), ", "))
+	}
+	return knownStoreSubdomain(st), nil
+}
+
+// knownStoreSubdomain is the host label for a store ResolveStore already
+// accepted. An empty subdomain (no current storefront) stays on programada
+// rather than producing https://.shopper.com.br.
+func knownStoreSubdomain(st client.Store) string {
+	if st.Subdomain != "" {
+		return st.Subdomain
 	}
 	return "programada"
+}
+
+// storefrontPageURL builds https://<subdomain>.shopper.com.br<path>.
+// A blank selector is the default storefront (programada). Any other unknown
+// selector fails closed instead of opening Programada.
+func storefrontPageURL(storeName, path string) (string, error) {
+	if strings.TrimSpace(storeName) == "" {
+		storeName = "programada"
+	}
+	sub, err := resolveSubdomain(storeName)
+	if err != nil {
+		return "", err
+	}
+	return "https://" + sub + ".shopper.com.br" + path, nil
 }
 
 // storeMatchesSubdomain checks if an API internal store name matches a user input.

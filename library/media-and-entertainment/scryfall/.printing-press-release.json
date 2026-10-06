@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "scryfall",
   "cli_name": "scryfall-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T00:26:51Z",
+  "source_commit": "b43482a2dcb43bde229b5d23d9824877b96d0738",
   "printing_press_version": "4.29.0",
   "run_id": "20260821-194838",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(scryfall): keep local card reads semantically correct",
+      "pr": 2180,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2180",
+      "commit": "b43482a2dcb43bde229b5d23d9824877b96d0738"
     }
   ]
 }

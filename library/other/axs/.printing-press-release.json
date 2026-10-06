@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "axs",
   "cli_name": "axs-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T21:14:25Z",
+  "source_commit": "88b42442e5b980174f228c9bb0a2e7d654b9aae7",
   "printing_press_version": "4.24.0",
   "run_id": "20260614-174950-dcc2e342",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(axs): secure HTTP MCP transport",
+      "pr": 2133,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2133",
+      "commit": "88b42442e5b980174f228c9bb0a2e7d654b9aae7"
     }
   ]
 }

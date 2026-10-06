@@ -7,11 +7,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -53,6 +55,79 @@ func TestTruncateBody(t *testing.T) {
 				t.Fatalf("unexpected trailing %q in %q", "...", got)
 			}
 		})
+	}
+}
+
+func TestRedirectPolicyStaysOnConfiguredOrigin(t *testing.T) {
+	c := New(&config.Config{BaseURL: "https://mcpmarket.com"}, time.Second, 0)
+	policy := c.HTTPClient.CheckRedirect
+	if policy == nil {
+		t.Fatal("redirect policy is not configured")
+	}
+
+	request := func(rawURL string) *http.Request {
+		t.Helper()
+		req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+		if err != nil {
+			t.Fatalf("new request: %v", err)
+		}
+		return req
+	}
+	via := []*http.Request{request("https://mcpmarket.com/server")}
+	for _, rawURL := range []string{
+		"https://mcpmarket.com:443/leaderboards",
+		"https://MCPMARKET.COM/daily",
+	} {
+		if err := policy(request(rawURL), via); err != nil {
+			t.Errorf("same-origin redirect %q rejected: %v", rawURL, err)
+		}
+	}
+	for _, rawURL := range []string{
+		"http://mcpmarket.com/server",
+		"https://www.mcpmarket.com/server",
+		"https://mcpmarket.com:444/server",
+		"http://127.0.0.1/internal",
+	} {
+		if err := policy(request(rawURL), via); !errors.Is(err, errCrossOriginRedirect) {
+			t.Errorf("cross-origin redirect %q error = %v, want permanent refusal", rawURL, err)
+		}
+	}
+	limitVia := make([]*http.Request, 10)
+	for i := range limitVia {
+		limitVia[i] = via[0]
+	}
+	if err := policy(request("https://mcpmarket.com/next"), limitVia); !errors.Is(err, errRedirectLimit) {
+		t.Errorf("redirect limit error = %v, want permanent refusal", err)
+	}
+}
+
+func TestCrossOriginRedirectRefusalIsNotRetried(t *testing.T) {
+	t.Setenv("PRINTING_PRESS_VERIFY", "")
+	t.Setenv("PRINTING_PRESS_DOGFOOD", "")
+	var originRequests atomic.Int32
+	var otherOriginRequests atomic.Int32
+	otherOrigin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		otherOriginRequests.Add(1)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer otherOrigin.Close()
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		originRequests.Add(1)
+		http.Redirect(w, r, otherOrigin.URL+"/private", http.StatusFound)
+	}))
+	defer origin.Close()
+
+	c := New(&config.Config{BaseURL: origin.URL}, 2*time.Second, 0)
+	c.NoCache = true
+	_, err := c.GetNoCache(context.Background(), "/listing", nil)
+	if !errors.Is(err, errCrossOriginRedirect) {
+		t.Fatalf("redirect error = %v, want cross-origin refusal", err)
+	}
+	if got := originRequests.Load(); got != 1 {
+		t.Fatalf("origin received %d requests, want one without retry", got)
+	}
+	if got := otherOriginRequests.Load(); got != 0 {
+		t.Fatalf("other origin received %d requests, want none", got)
 	}
 }
 

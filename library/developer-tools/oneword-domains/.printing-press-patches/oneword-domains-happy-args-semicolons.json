@@ -1,0 +1,15 @@
+{
+  "schema_version": 2,
+  "applied_at": "2026-09-24",
+  "base_run_id": "20260924-061450-62059de3",
+  "base_printing_press_version": "4.32.4",
+  "id": "oneword-domains-happy-args-semicolons",
+  "summary": "domains search pp:happy-args uses semicolon separators.",
+  "reason": "The generator emitted a space-separated value but the verifier splits tokens on semicolons.",
+  "files": [
+    "internal/cli/domains_search.go"
+  ],
+  "call_sites": [
+    "--tld=ai;--sort=popularityDesc"
+  ]
+}

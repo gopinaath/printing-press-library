@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "id": "workouts-list-user-id-live-default",
+  "applied_at": "2026-09-20",
+  "base_run_id": "20260714-231159",
+  "base_printing_press_version": "4.28.0",
+  "summary": "workouts_list's user_id is optional: omitted, it resolves via a live /api/me lookup and never overrides an explicit value. The lookup is memoized per access token (not unconditionally), with the lock held across the network call. A regen must keep both properties -- an uncached per-call lookup and an unconditional cache both regress fixed bugs (request-volume waste, and stale results across an account switch, respectively).",
+  "reason": "account_show already returns the authenticated profile's id, but workouts_list required a caller to separately know or fetch it -- a two-hop call an agent can't anticipate from the schema alone, already flagged as deferred work in the tool description (\"until U3 links the profile fact\"). Live validation then caught two follow-on bugs in the first cache: it cached unconditionally (stale across an account switch) and released the lock before the network call (duplicate concurrent cold lookups).",
+  "files": [
+    "internal/mcp/tools.go",
+    "internal/mcp/tools_test.go"
+  ],
+  "validated_outcome": "go build/vet/test (including -race on internal/mcp) and verify_skill.py all green. Live-tested: no user_id resolves and returns real workout data; explicit user_id produces a byte-identical response to the resolved path; a garbage user_id surfaces a genuine provider 400 with the literal value echoed in the upstream path; account_show/classes_search unaffected. Unit tests: TestResolveLiveProfileIDFetchesFromAPIMe, TestResolveLiveProfileIDSurfacesMissingID, TestResolveLiveProfileBindingsInjectsMissingUserID, TestResolveLiveProfileBindingsRespectsExplicitValue, TestResolveLiveProfileBindingsSurfacesLookupFailure, TestResolveLiveProfileIDIsMemoizedAcrossCalls, TestResolveLiveProfileIDDoesNotCacheFailure, TestResolveLiveProfileIDCacheInvalidatesOnAccessTokenChange (a token change is treated as a cold miss, not a stale hit), TestResolveLiveProfileIDSerializesConcurrentColdLookups (exactly one request across 10 concurrent cold callers)."
+}

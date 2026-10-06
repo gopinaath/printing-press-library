@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "bonusly",
   "cli_name": "bonusly-pp-cli",
-  "version": "2026.9.3",
-  "released_at": "2026-09-18T09:08:45Z",
-  "source_commit": "252cfd068f6c489bd49248f651cc2beb30e44139",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T00:21:51Z",
+  "source_commit": "7dcf246029698892b6fae4a2871bcb16b2eb6483",
   "printing_press_version": "4.30.1",
   "run_id": "20260810-153232-4e95f81e",
   "changes": [
     {
-      "title": "feat(bonusly): add redemptions suggest, ranking rewards from history against your point balance",
-      "pr": 2014,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/2014",
-      "commit": "252cfd068f6c489bd49248f651cc2beb30e44139"
+      "title": "fix(bonusly): isolate redemption suggestions by account",
+      "pr": 2181,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2181",
+      "commit": "7dcf246029698892b6fae4a2871bcb16b2eb6483"
     }
   ]
 }

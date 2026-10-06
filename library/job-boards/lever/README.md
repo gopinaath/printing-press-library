@@ -1,5 +1,9 @@
 # Lever CLI
 
+Created by [@veltri-23](https://github.com/veltri-23) (Hunter Veltri).
+
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 Public Lever postings API (https://api.lever.co/v0/postings). Every Lever
 customer exposes an open job board at api.lever.co/v0/postings/{company}
 with mode=json, no authentication. The company slug is a path segment
@@ -132,6 +136,8 @@ lever-pp-cli doctor
 ```
 
 This checks your configuration.
+
+To mirror one employer's open jobs locally, run `lever-pp-cli sync <company>`. A complete sync replaces that company's prior snapshot, so jobs Lever has closed disappear from offline results. A failed or incomplete fetch leaves the prior snapshot intact.
 
 ### 3. Try Your First Command
 

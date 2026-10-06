@@ -1,0 +1,72 @@
+{
+  "passed": true,
+  "exit_code": 0,
+  "verdict": "PASS",
+  "started_at": "2026-10-02T16:47:11Z",
+  "elapsed_ms": 20350,
+  "legs": [
+    {
+      "name": "verify",
+      "exit_code": 0,
+      "passed": true,
+      "verdict": "PASS",
+      "started_at": "2026-10-02T16:47:11Z",
+      "elapsed_ms": 10005,
+      "command": "<home>/go/bin/cli-printing-press verify --dir <run-dir>/working/airport-limousine-pp-cli --write-manifest <run-dir>/working/airport-limousine-pp-cli/.printing-press.json --spec <run-dir>/research/airport-limousine-spec.yaml"
+    },
+    {
+      "name": "validate-narrative",
+      "exit_code": 0,
+      "passed": true,
+      "verdict": "PASS",
+      "started_at": "2026-10-02T16:47:21Z",
+      "elapsed_ms": 151,
+      "command": "<home>/go/bin/cli-printing-press validate-narrative --strict --full-examples --research <run-dir>/research.json --binary <run-dir>/working/airport-limousine-pp-cli/build/stage/bin/airport-limousine-pp-cli"
+    },
+    {
+      "name": "dogfood",
+      "exit_code": 0,
+      "passed": true,
+      "verdict": "PASS",
+      "started_at": "2026-10-02T16:47:21Z",
+      "elapsed_ms": 3280,
+      "command": "<home>/go/bin/cli-printing-press dogfood --dir <run-dir>/working/airport-limousine-pp-cli --spec <run-dir>/research/airport-limousine-spec.yaml --research-dir <run-dir>"
+    },
+    {
+      "name": "workflow-verify",
+      "exit_code": 0,
+      "passed": true,
+      "verdict": "PASS",
+      "started_at": "2026-10-02T16:47:25Z",
+      "elapsed_ms": 3127,
+      "command": "<home>/go/bin/cli-printing-press workflow-verify --dir <run-dir>/working/airport-limousine-pp-cli"
+    },
+    {
+      "name": "apify-audit",
+      "exit_code": 0,
+      "passed": true,
+      "verdict": "PASS",
+      "started_at": "2026-10-02T16:47:28Z",
+      "elapsed_ms": 49,
+      "command": "<home>/go/bin/cli-printing-press apify-audit --dir <run-dir>/working/airport-limousine-pp-cli --research-dir <run-dir>"
+    },
+    {
+      "name": "verify-skill",
+      "exit_code": 0,
+      "passed": true,
+      "verdict": "PASS",
+      "started_at": "2026-10-02T16:47:28Z",
+      "elapsed_ms": 1784,
+      "command": "<home>/go/bin/cli-printing-press verify-skill --dir <run-dir>/working/airport-limousine-pp-cli"
+    },
+    {
+      "name": "scorecard",
+      "exit_code": 0,
+      "passed": true,
+      "verdict": "PASS",
+      "started_at": "2026-10-02T16:47:30Z",
+      "elapsed_ms": 1950,
+      "command": "<home>/go/bin/cli-printing-press scorecard --dir <run-dir>/working/airport-limousine-pp-cli --write-manifest <run-dir>/working/airport-limousine-pp-cli/.printing-press.json --research-dir <run-dir> --spec <run-dir>/research/airport-limousine-spec.yaml --live-check"
+    }
+  ]
+}

@@ -2,6 +2,10 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.10.1 - 2026-10-01
+
+- Protect Kuma credentials and monitor identity (#2129).
+
 ## 2026.9.1 - 2026-09-01
 
 - fix(kuma): document kumactl HTTP MCP and bound Socket.IO reads (#1886).

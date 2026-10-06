@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "philonet",
+  "cli_name": "philonet-pp-cli",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T08:53:48Z",
+  "source_commit": "3650c337ca5ef7cd8b302d5797015b39344d9a4a",
+  "printing_press_version": "4.32.6",
+  "run_id": "20260930-231529-697aab83",
+  "changes": [
+    {
+      "title": "feat(philonet): add philonet",
+      "pr": 2112,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2112",
+      "commit": "3650c337ca5ef7cd8b302d5797015b39344d9a4a"
+    }
+  ]
+}

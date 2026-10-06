@@ -96,8 +96,10 @@ func newAiCreateExternalPageCmd(flags *rootFlags) *cobra.Command {
 				if bodyLocale != "" {
 					bodyMap["locale"] = bodyLocale
 				}
-				if bodySourceId != "" {
-					bodyMap["source_id"] = bodySourceId
+				if cmd.Flags().Changed("source-id") || bodySourceId != "" {
+					if err := setJSONBodyScalar(bodyMap, "source_id", "source-id", "int", bodySourceId); err != nil {
+						return err
+					}
 				}
 				if bodyTitle != "" {
 					bodyMap["title"] = bodyTitle

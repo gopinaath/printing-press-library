@@ -1,0 +1,37 @@
+{
+  "schema_version": 2,
+  "id": "public-travel-commands",
+  "applied_at": "2026-09-27",
+  "base_run_id": "20260927-220715-9b0c397a",
+  "base_printing_press_version": "4.32.5",
+  "summary": "Preserve explicit anonymous public Travel command wiring, exact dated offer identity, per-room whole-stay quote units, bounded coverage, and live/cache provenance.",
+  "reason": "Public HTML plan pages contain multiple room tuples per source plan, with explicit uniform per-room party and query echoes; generic endpoint output and compact filtering can erase quote units or silently substitute an offer. Reprints must retain bounded comparisons, exact inspection, stderr-only cache-write warnings, and explicit rejection of receipt options until focused commands truly write receipts.",
+  "files": [
+    "internal/cli/root.go",
+    "internal/cli/public_travel.go",
+    "internal/cli/public_areas.go",
+    "internal/cli/public_hotels.go",
+    "internal/cli/offers.go",
+    "internal/cli/offers_search.go",
+    "internal/cli/offers_show.go",
+    "internal/cli/compare.go",
+    "internal/cli/which.go",
+    "internal/cli/public_travel_test.go",
+    "internal/cli/public_travel_transport_test.go",
+    "internal/cli/public_offers_transport_test.go",
+    "scripts/live_verify.py",
+    "scripts/measure.py",
+    "workflow_verify.yaml",
+    "internal/cli/public_cache_warning_test.go",
+    "internal/cli/public_receipt_test.go"
+  ],
+  "call_sites": [
+    "rootCmd.AddCommand(newNovelOffersCmd(flags))",
+    "rootCmd.AddCommand(newPublicHotelsCmd(flags))",
+    "offersGroupCmd.AddCommand(newNovelOffersShowCmd(flags))",
+    "bindTravelOfferQuery(cmd, &query, false)\n\tbindTravelParty(cmd, &query)",
+    "OnCacheWriteError: func(err error)",
+    "rejectPublicTravelReceiptOptions(cmd, flags)"
+  ],
+  "validated_outcome": "Real-client tests preserve exact offer identity, price units, bounded comparison statuses and valid live JSON under blocked cache persistence; warnings stay on stderr and --no-cache remains silent. All six focused leaves reject explicit receipt options before dry-run or source construction, including inactive flag spellings and active profile values; usage exits 2 with empty stdout and no artifacts. Raw generated route receipt handling remains untouched."
+}

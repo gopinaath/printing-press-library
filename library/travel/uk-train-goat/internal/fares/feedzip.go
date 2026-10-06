@@ -120,5 +120,24 @@ func ParseFeedZip(zipPath string) (*FeedData, error) {
 			// unknown extension: skip
 		}
 	}
-	return &data, nil
+	if len(data.Locations) == 0 || len(data.Flows) == 0 || len(data.Fares) == 0 || len(data.Tickets) == 0 {
+		return nil, fmt.Errorf(
+			"fares: ParseFeedZip: archive has no usable core fare data (locations=%d, flows=%d, fares=%d, tickets=%d)",
+			len(data.Locations), len(data.Flows), len(data.Fares), len(data.Tickets),
+		)
+	}
+	flows := make(map[string]bool, len(data.Flows))
+	for _, flow := range data.Flows {
+		flows[flow.FlowID] = true
+	}
+	tickets := make(map[string]bool, len(data.Tickets))
+	for _, ticket := range data.Tickets {
+		tickets[ticket.Code] = true
+	}
+	for _, fare := range data.Fares {
+		if flows[fare.FlowID] && tickets[fare.TicketCode] {
+			return &data, nil
+		}
+	}
+	return nil, fmt.Errorf("fares: ParseFeedZip: archive has no fare linked to both a flow and a ticket type")
 }

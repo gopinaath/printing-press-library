@@ -4,9 +4,12 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 
 	"github.com/mvanhorn/printing-press-library/library/ai/sarvam/internal/cliutil"
 	"github.com/spf13/cobra"
@@ -39,7 +42,7 @@ func newChatPromotedCmd(flags *rootFlags) *cobra.Command {
 		Short:       "Creates a model response for the given chat conversation. Serves sarvam-105b and sarvam-105b-conversations models.",
 		Long:        "Creates a model response for the given chat conversation. Serves sarvam-105b and sarvam-105b-conversations models.",
 		Example:     "  sarvam-pp-cli chat --model sarvam-105b",
-		Annotations: map[string]string{"pp:endpoint": "chat.completions", "pp:method": "POST", "pp:path": "/v1/chat/completions"},
+		Annotations: map[string]string{"pp:endpoint": "chat.completions", "pp:method": "POST", "pp:path": "/v1/chat/completions", "mcp:read-only": "false"},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Bare invocation of a command with a required flag/body prints help
 			// instead of pflag's terse "required flag not set" error. Optional-
@@ -201,9 +204,22 @@ func newChatPromotedCmd(flags *rootFlags) *cobra.Command {
 				partialFailure = detectPartialFailure(data)
 			}
 			if !flags.dryRun && statusCode >= 200 && statusCode < 300 && (partialFailure == nil || flags.allowPartialFailure) {
-				writeMutationResponseToStore(cmd.Context(), "chat", data, "choices")
+				messages, _ := bodyMap["messages"].([]any)
+				model, _ := bodyMap["model"].(string)
+				if persistErr := persistChatConversation(cmd.Context(), data, messages, model); persistErr != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "warning: chat succeeded but local history was not saved: %v\n", persistErr)
+				}
 			}
 			outputData := data
+			if bodyStream && !json.Valid(data) {
+				// The transport returns SSE bytes, while the shared CLI output
+				// pipeline requires JSON. Keep both the complete event stream
+				// and structured fields for callers that select id or choices.
+				outputData, err = streamedChatOutput(data)
+				if err != nil {
+					return fmt.Errorf("encoding streamed chat output: %w", err)
+				}
+			}
 			// Print provenance to stderr for human-facing output only.
 			// Machine-format flags (--json, --csv, --compact, --quiet, --plain,
 			// --select) and piped stdout suppress this line; the JSON envelope
@@ -223,7 +239,7 @@ func newChatPromotedCmd(flags *rootFlags) *cobra.Command {
 			// opt out of the auto-JSON path so piped consumers that asked for a
 			// non-JSON format reach the standard pipeline below.
 			if flags.asJSON || (!isTerminal(cmd.OutOrStdout()) && !flags.csv && !flags.quiet && !flags.plain) {
-				filtered := data
+				filtered := outputData
 				if flags.selectFields != "" {
 					filtered = filterFields(filtered, flags.selectFields)
 				} else if flags.compact {
@@ -251,11 +267,7 @@ func newChatPromotedCmd(flags *rootFlags) *cobra.Command {
 					return nil
 				}
 			}
-			formatData := data
-			if flags.csv || flags.plain {
-				formatData = outputData
-			}
-			return printOutputWithFlagsMeta(cmd.OutOrStdout(), formatData, flags, map[string]any{"source": "live"})
+			return printOutputWithFlagsMeta(cmd.OutOrStdout(), outputData, flags, map[string]any{"source": "live"})
 		},
 	}
 	cmd.Flags().Float64Var(&bodyFrequencyPenalty, "frequency-penalty", 0.000000, "Penalize repeated tokens (-2.0 to 2.0)")
@@ -283,4 +295,100 @@ func newChatPromotedCmd(flags *rootFlags) *cobra.Command {
 	addNovelCommandIfAbsent(cmd, newNovelChatResumeCmd(flags))
 
 	return cmd
+}
+
+// streamedChatOutput reconstructs the fields machine callers commonly select
+// while retaining every original SSE event, including fields that cannot be
+// safely merged across deltas. Malformed or incomplete streams remain visible
+// as raw event text without presenting a partial completion as final.
+func streamedChatOutput(response []byte) (json.RawMessage, error) {
+	result := map[string]any{"stream": string(response)}
+	type choiceState struct {
+		role         string
+		content      strings.Builder
+		finishReason json.RawMessage
+	}
+	choices := map[int]*choiceState{}
+	var id string
+	var usage json.RawMessage
+	completed := false
+	for _, line := range bytes.Split(response, []byte("\n")) {
+		line = bytes.TrimSpace(line)
+		if !bytes.HasPrefix(line, []byte("data:")) {
+			continue
+		}
+		payload := bytes.TrimSpace(line[len("data:"):])
+		if bytes.Equal(payload, []byte("[DONE]")) {
+			completed = true
+			break
+		}
+		var chunk struct {
+			ID      string          `json:"id"`
+			Usage   json.RawMessage `json:"usage"`
+			Choices []struct {
+				Index        int             `json:"index"`
+				FinishReason json.RawMessage `json:"finish_reason"`
+				Delta        struct {
+					Role      string          `json:"role"`
+					Content   string          `json:"content"`
+					ToolCalls json.RawMessage `json:"tool_calls"`
+				} `json:"delta"`
+			} `json:"choices"`
+		}
+		if err := json.Unmarshal(payload, &chunk); err != nil || (id != "" && chunk.ID != "" && id != chunk.ID) {
+			return json.Marshal(result)
+		}
+		if chunk.ID != "" {
+			id = chunk.ID
+		}
+		if len(chunk.Usage) > 0 && !bytes.Equal(chunk.Usage, []byte("null")) {
+			usage = chunk.Usage
+		}
+		for _, part := range chunk.Choices {
+			toolCalls := bytes.TrimSpace(part.Delta.ToolCalls)
+			if len(toolCalls) > 0 && !bytes.Equal(toolCalls, []byte("null")) && !bytes.Equal(toolCalls, []byte("[]")) {
+				// Tool calls can arrive in multiple fragments. Keep the full
+				// wire response instead of publishing a partial message.
+				return json.Marshal(result)
+			}
+			state := choices[part.Index]
+			if state == nil {
+				state = &choiceState{}
+				choices[part.Index] = state
+			}
+			if part.Delta.Role != "" {
+				state.role = part.Delta.Role
+			}
+			state.content.WriteString(part.Delta.Content)
+			if len(part.FinishReason) > 0 && !bytes.Equal(part.FinishReason, []byte("null")) {
+				state.finishReason = part.FinishReason
+			}
+		}
+	}
+	if completed && id != "" {
+		result["id"] = id
+		indices := make([]int, 0, len(choices))
+		for index := range choices {
+			indices = append(indices, index)
+		}
+		sort.Ints(indices)
+		structured := make([]map[string]any, 0, len(indices))
+		for _, index := range indices {
+			state := choices[index]
+			role := state.role
+			if role == "" {
+				role = "assistant"
+			}
+			choice := map[string]any{"index": index, "message": map[string]any{"role": role, "content": state.content.String()}}
+			if len(state.finishReason) > 0 {
+				choice["finish_reason"] = state.finishReason
+			}
+			structured = append(structured, choice)
+		}
+		result["choices"] = structured
+		if len(usage) > 0 {
+			result["usage"] = usage
+		}
+	}
+	return json.Marshal(result)
 }

@@ -1,0 +1,765 @@
+name: oneword-domains
+description: Discovered API spec for oneword
+version: 0.1.0
+base_url: https://oneword.domains
+spec_source: sniffed
+auth:
+    type: none
+    header: ""
+    format: ""
+    env_vars: []
+auth_warnings:
+    - 'rejected auth candidate "page" from query: search input'
+    - 'rejected auth candidate "query" from query: search input'
+    - 'rejected auth candidate "search" from query: search input'
+    - 'rejected auth candidate "sort" from query: search input'
+config:
+    format: toml
+    path: ~/.config/oneword-domains-pp-cli/config.toml
+resources:
+    _next:
+        description: Operations on ai.json
+        endpoints:
+            list_ai.json:
+                method: GET
+                path: /_next/data/qzfSin9peIEieIakzu-ki/tlds/ai.json
+                description: GET /_next/data/qzfSin9peIEieIakzu-ki/tlds/ai.json
+                params:
+                    - name: tld
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                body: []
+                response:
+                    type: object
+                    item: AiJson
+                pagination: null
+    auth:
+        description: Operations on api-key
+        endpoints:
+            list_api_key:
+                method: GET
+                path: /api/auth/api-key
+                description: GET /api/auth/api-key
+                params: []
+                body: []
+                response:
+                    type: object
+                    item: api_key
+                pagination: null
+    domains:
+        description: Operations on smart.com
+        endpoints:
+            list_count:
+                method: GET
+                path: /api/domains/count
+                description: GET /api/domains/count
+                params:
+                    - name: category
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: maxLength
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: minLength
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: page
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: price
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: search
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: sort
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: tld
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                body: []
+                response:
+                    type: object
+                    item: count
+                pagination: null
+            list_domains:
+                method: GET
+                path: /api/domains
+                description: GET /api/domains
+                params:
+                    - name: category
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: maxLength
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: minLength
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: page
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: price
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: search
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: sort
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: tld
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                body: []
+                response:
+                    type: array
+                    item: Domain
+                pagination: null
+            list_oasis.ai:
+                method: GET
+                path: /api/domains/oasis.ai
+                description: GET /api/domains/oasis.ai
+                params: []
+                body: []
+                response:
+                    type: object
+                    item: OasisAi
+                pagination: null
+            list_saves:
+                method: GET
+                path: /api/domains/saves
+                description: GET /api/domains/saves
+                params: []
+                body: []
+                response:
+                    type: array
+                    item: saves
+                pagination: null
+            list_smart.com:
+                method: GET
+                path: /api/domains/smart.com
+                description: GET /api/domains/smart.com
+                params: []
+                body: []
+                response:
+                    type: object
+                    item: SmartCom
+                pagination: null
+    gpt:
+        description: Operations on usage
+        endpoints:
+            create_generate:
+                method: POST
+                path: /gpt/generate
+                base_url: https://api.oneword.domains
+                description: POST /gpt/generate
+                params: []
+                body:
+                    - name: maxLength
+                      type: integer
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: minLength
+                      type: integer
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: position
+                      type: string
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: tld
+                      type: string
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: type
+                      type: string
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: word
+                      type: string
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                request_content_type: application/json
+                response:
+                    type: object
+                    item: generate
+                pagination: null
+            create_generate_2:
+                method: POST
+                path: /api/gpt/generate
+                description: POST /api/gpt/generate
+                params: []
+                body:
+                    - name: context
+                      type: string
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: maxLength
+                      type: integer
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: minLength
+                      type: integer
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: tld
+                      type: string
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: type
+                      type: string
+                      required: true
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                request_content_type: application/json
+                response:
+                    type: object
+                    item: generate
+                pagination: null
+            list_saves:
+                method: GET
+                path: /api/gpt/saves
+                description: GET /api/gpt/saves
+                params: []
+                body: []
+                response:
+                    type: array
+                    item: saves
+                pagination: null
+            list_usage:
+                method: GET
+                path: /api/gpt/usage
+                description: GET /api/gpt/usage
+                params: []
+                body: []
+                response:
+                    type: object
+                    item: Usage
+                pagination: null
+    listings:
+        description: Operations on listings
+        endpoints:
+            list_count:
+                method: GET
+                path: /api/listings/count
+                description: GET /api/listings/count
+                params:
+                    - name: tld
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                body: []
+                response:
+                    type: object
+                    item: count
+                pagination: null
+            list_filters:
+                method: GET
+                path: /api/listings/filters
+                description: GET /api/listings/filters
+                params:
+                    - name: registrar
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                body: []
+                response:
+                    type: array
+                    item: Filter
+                pagination: null
+            list_listings:
+                method: GET
+                path: /api/listings
+                description: GET /api/listings
+                params:
+                    - name: maxLength
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: minLength
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: page
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: sort
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: tld
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                body: []
+                response:
+                    type: array
+                    item: Listing
+                pagination: null
+    logs:
+        description: Operations on logs
+        endpoints:
+            list_logs:
+                method: GET
+                path: /api/logs
+                description: GET /api/logs
+                params: []
+                body: []
+                response:
+                    type: array
+                    item: logs
+                pagination: null
+    tlds:
+        description: Operations on tlds
+        endpoints:
+            create_view:
+                method: POST
+                path: /api/tlds/ai/view
+                description: POST /api/tlds/ai/view
+                params: []
+                body: []
+                response:
+                    type: object
+                    item: View
+                pagination: null
+            list_ai:
+                method: GET
+                path: /api/tlds/ai
+                description: GET /api/tlds/ai
+                params: []
+                body: []
+                response:
+                    type: array
+                    item: AiRegistrar
+                pagination: null
+                response_path: registrars
+            list_com:
+                method: GET
+                path: /api/tlds/com
+                description: GET /api/tlds/com
+                params: []
+                body: []
+                response:
+                    type: array
+                    item: ComRegistrar
+                pagination: null
+                response_path: registrars
+            list_tlds:
+                method: GET
+                path: /api/tlds
+                description: GET /api/tlds
+                params:
+                    - name: sortAlpha
+                      type: boolean
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                body: []
+                response:
+                    type: array
+                    item: Tld
+                pagination: null
+            list_zzzz:
+                method: GET
+                path: /api/tlds/zzzz
+                description: GET /api/tlds/zzzz
+                params: []
+                body: []
+                response:
+                    type: object
+                    item: Zzzz
+                pagination: null
+    words:
+        description: Operations on words
+        endpoints:
+            list_count:
+                method: GET
+                path: /api/words/count
+                description: GET /api/words/count
+                params:
+                    - name: category
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                body: []
+                response:
+                    type: object
+                    item: count
+                pagination: null
+            list_smart:
+                method: GET
+                path: /api/words/smart
+                description: GET /api/words/smart
+                params: []
+                body: []
+                response:
+                    type: array
+                    item: SmartCategory
+                pagination: null
+                response_path: categories
+            list_words:
+                method: GET
+                path: /api/words
+                description: GET /api/words
+                params:
+                    - name: category
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: contains
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: page
+                      type: integer
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                    - name: query
+                      type: string
+                      required: false
+                      positional: false
+                      default: null
+                      description: ""
+                      fields: []
+                body: []
+                response:
+                    type: array
+                    item: WordCategory
+                pagination: null
+                response_path: categories
+types:
+    AiJson:
+        fields:
+            - name: pageProps
+              type: ref:PageProps
+    AiRegistrar:
+        fields:
+            - name: name
+              type: string
+            - name: price
+              type: string
+    CategoryFilter:
+        fields:
+            - name: count
+              type: integer
+            - name: name
+              type: string
+            - name: slug
+              type: string
+    ComRegistrar:
+        fields:
+            - name: name
+              type: string
+            - name: price
+              type: string
+    Domain:
+        fields:
+            - name: premium
+              type: bool
+            - name: slug
+              type: string
+            - name: tldCount
+              type: integer
+    Domain2:
+        fields:
+            - name: premium
+              type: bool
+            - name: slug
+              type: string
+            - name: tldCount
+              type: integer
+    Filter:
+        fields:
+            - name: _count
+              type: integer
+            - name: tld
+              type: string
+    Listing:
+        fields:
+            - name: bidCount
+              type: integer
+            - name: domain
+              type: string
+            - name: endDate
+              type: string
+              format: date-time
+            - name: price
+              type: string
+            - name: type
+              type: string
+            - name: userId
+              type: string
+    OasisAi:
+        fields:
+            - name: aftermarket
+              type: bool
+            - name: available
+              type: bool
+            - name: premium
+              type: bool
+            - name: registrars
+              type: array
+            - name: slug
+              type: string
+            - name: tldCount
+              type: integer
+            - name: tldSlug
+              type: string
+            - name: word
+              type: ref:Word2
+    PageProps:
+        fields:
+            - name: categoryFilters
+              type: '[]ref:CategoryFilter'
+            - name: count
+              type: integer
+            - name: domains
+              type: '[]ref:Domain2'
+            - name: key
+              type: string
+            - name: premiumFilters
+              type: '[]ref:PremiumFilter'
+            - name: tldData
+              type: string
+    PremiumFilter:
+        fields:
+            - name: count
+              type: integer
+            - name: name
+              type: string
+            - name: slug
+              type: string
+    SmartCategory:
+        fields:
+            - name: categorySlug
+              type: string
+            - name: updatedAt
+              type: string
+              format: date-time
+            - name: wordSlug
+              type: string
+    SmartCom:
+        fields:
+            - name: aftermarket
+              type: bool
+            - name: available
+              type: bool
+            - name: premium
+              type: bool
+            - name: registrars
+              type: array
+            - name: slug
+              type: string
+            - name: tldCount
+              type: integer
+            - name: tldSlug
+              type: string
+            - name: word
+              type: ref:Word
+    Tld:
+        fields:
+            - name: description
+              type: string
+            - name: minPrice
+              type: string
+            - name: slug
+              type: string
+            - name: structure
+              type: string
+            - name: top10m
+              type: integer
+            - name: totalReg
+              type: integer
+            - name: type
+              type: string
+            - name: views
+              type: integer
+    Usage:
+        fields:
+            - name: quota
+              type: integer
+            - name: usage
+              type: integer
+    View:
+        fields:
+            - name: description
+              type: string
+            - name: godaddy
+              type: string
+            - name: namecheap
+              type: string
+            - name: oneohone
+              type: string
+            - name: porkbun
+              type: string
+            - name: slug
+              type: string
+            - name: structure
+              type: string
+            - name: top10m
+              type: integer
+            - name: totalReg
+              type: integer
+            - name: type
+              type: string
+            - name: updatedAt
+              type: string
+              format: date-time
+            - name: views
+              type: integer
+    Word:
+        fields:
+            - name: tldCount
+              type: integer
+    Word2:
+        fields:
+            - name: tldCount
+              type: integer
+    WordCategory:
+        fields:
+            - name: categorySlug
+              type: string
+    Zzzz:
+        fields:
+            - name: registrars
+              type: array
+            - name: sites
+              type: array

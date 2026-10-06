@@ -8,15 +8,22 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/mvanhorn/printing-press-library/library/health/peloton/internal/cli"
+	"github.com/mvanhorn/printing-press-library/library/health/peloton/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/health/peloton/internal/cliutil"
+	"github.com/mvanhorn/printing-press-library/library/health/peloton/internal/config"
 	"github.com/mvanhorn/printing-press-library/library/health/peloton/internal/mcp/bound"
 	"github.com/mvanhorn/printing-press-library/library/health/peloton/internal/store"
 )
@@ -846,7 +853,7 @@ func TestMCPToolPageResultTextArrayFieldHintHandlesResidualInstructorsArray(t *t
 	}
 
 	pageConfig := mcpPageConfig{CursorParam: "page", ArrayField: "data"}
-	text := mcpTextContent(t, mcpToolPageResultText("GET", fixture, pageConfig, "", false))
+	text := mcpTextContent(t, mcpToolPageResultText("GET", fixture, pageConfig, "", nil, nil, ""))
 
 	var envelope struct {
 		Data       []json.RawMessage `json:"data"`
@@ -868,14 +875,17 @@ func TestMCPToolPageResultTextArrayFieldHintHandlesResidualInstructorsArray(t *t
 }
 
 // TestMCPToolPageResultTextRespectsExplicitSelectOfFirstPageOnlyField
-// guards a Greptile review finding on the FirstPageOnlyFields fix: a
-// caller resuming workouts_list with an explicit select naming "summary"
-// (e.g. select=data.id,summary) has made a deliberate ask for it on that
-// page, distinct from the unprojected-default-response repeated-overhead
-// case FirstPageOnlyFields exists to trim. mcpToolPageResultText must not
-// pass FirstPageOnlyFields through to bound.go at all when hasSelect is
-// true, or an explicit later-page select would silently return less than
-// it asked for.
+// guards two Greptile review findings on the FirstPageOnlyFields fix, in
+// sequence:
+//  1. A caller resuming workouts_list with an explicit select naming
+//     "summary" (e.g. select=data.id,summary) has made a deliberate ask
+//     for it on that page and must get it back.
+//  2. A first fix over-corrected: disabling FirstPageOnlyFields for ANY
+//     select (rather than only for a select that actually names the
+//     field) meant select=id -- which never asked for summary -- still
+//     let it through, since select's own envelope fallback can pass
+//     unselected sibling metadata through unfiltered. Only a select that
+//     explicitly names the field should exempt it.
 func TestMCPToolPageResultTextRespectsExplicitSelectOfFirstPageOnlyField(t *testing.T) {
 	fixture, err := json.Marshal(map[string]any{
 		"data": []map[string]string{{"id": "w1"}}, "summary": map[string]any{"jan": 5},
@@ -885,30 +895,147 @@ func TestMCPToolPageResultTextRespectsExplicitSelectOfFirstPageOnlyField(t *test
 	}
 	pageConfig := mcpPageConfig{CursorParam: "page", ArrayField: "data", FirstPageOnlyFields: []string{"summary"}}
 
-	// A resumed call (non-empty cursor) with an explicit select asking for
-	// summary must keep it.
-	explicitText := mcpTextContent(t, mcpToolPageResultText("GET", fixture, pageConfig, "some-cursor", true))
-	var explicit struct {
-		Summary map[string]any `json:"summary"`
-	}
-	if err := json.Unmarshal([]byte(explicitText), &explicit); err != nil {
-		t.Fatalf("result must remain valid JSON: %v\n%s", err, explicitText)
-	}
-	if explicit.Summary == nil {
-		t.Fatalf("explicit select naming summary on a resumed call must keep it: %s", explicitText)
+	summaryPresent := func(t *testing.T, selected map[string]bool) bool {
+		t.Helper()
+		text := mcpTextContent(t, mcpToolPageResultText("GET", fixture, pageConfig, "some-cursor", selected, nil, ""))
+		var envelope struct {
+			Summary map[string]any `json:"summary"`
+		}
+		if err := json.Unmarshal([]byte(text), &envelope); err != nil {
+			t.Fatalf("result must remain valid JSON: %v\n%s", err, text)
+		}
+		return envelope.Summary != nil
 	}
 
-	// The same resumed call with no select (the default, unprojected
-	// shape FirstPageOnlyFields targets) must still drop it.
-	defaultText := mcpTextContent(t, mcpToolPageResultText("GET", fixture, pageConfig, "some-cursor", false))
-	var defaultResult struct {
-		Summary map[string]any `json:"summary"`
+	if !summaryPresent(t, topLevelSelectFieldNames("data.id,summary")) {
+		t.Fatal("explicit select naming summary on a resumed call must keep it")
 	}
-	if err := json.Unmarshal([]byte(defaultText), &defaultResult); err != nil {
-		t.Fatalf("result must remain valid JSON: %v\n%s", err, defaultText)
+	if summaryPresent(t, topLevelSelectFieldNames("id")) {
+		t.Fatal("a select that does not name summary must still drop it, even though a select ran")
 	}
-	if defaultResult.Summary != nil {
-		t.Fatalf("unprojected resumed call should still drop summary: %s", defaultText)
+	if summaryPresent(t, nil) {
+		t.Fatal("unprojected (no select at all) resumed call should still drop summary")
+	}
+}
+
+// TestMCPToolPageResultTextRecoversNextCursorFromPreSelectData guards
+// mcpToolPageResultText's wiring of preSelectData through to
+// bound.PageOptions.PreProjectionData (Issue #2026): a select like
+// select=data.id,next_cursor keeps the item array but drops show_next/page,
+// which the endpoint's continuation detection depends on. Without the
+// unfiltered pre-select body to fall back on, next_cursor is silently
+// omitted even though more data exists upstream.
+func TestMCPToolPageResultTextRecoversNextCursorFromPreSelectData(t *testing.T) {
+	preSelect, err := json.Marshal(map[string]any{
+		"data":      []map[string]string{{"id": "w1", "created_at": "1789230702"}},
+		"show_next": true,
+		"page":      0,
+		"total":     3742,
+	})
+	if err != nil {
+		t.Fatalf("marshal preSelect fixture: %v", err)
+	}
+	// What select=data.id,next_cursor leaves behind.
+	projected := json.RawMessage(`{"data":[{"id":"w1"}]}`)
+	pageConfig := mcpPageConfig{
+		CursorParam:           "page",
+		ArrayField:            "data",
+		NextPageIndicatorPath: "show_next",
+		CurrentPageNumberPath: "page",
+	}
+
+	withPreSelect := mcpTextContent(t, mcpToolPageResultText("GET", projected, pageConfig, "", nil, preSelect, ""))
+	var withCursor struct {
+		NextCursor string `json:"next_cursor"`
+	}
+	if err := json.Unmarshal([]byte(withPreSelect), &withCursor); err != nil {
+		t.Fatalf("result must remain valid JSON: %v\n%s", err, withPreSelect)
+	}
+	if withCursor.NextCursor == "" {
+		t.Fatalf("preSelectData should recover next_cursor for a select dropping show_next/page: %s", withPreSelect)
+	}
+
+	withoutPreSelect := mcpTextContent(t, mcpToolPageResultText("GET", projected, pageConfig, "", nil, nil, ""))
+	var withoutCursor struct {
+		NextCursor string `json:"next_cursor"`
+	}
+	if err := json.Unmarshal([]byte(withoutPreSelect), &withoutCursor); err != nil {
+		t.Fatalf("result must remain valid JSON: %v\n%s", err, withoutPreSelect)
+	}
+	if withoutCursor.NextCursor != "" {
+		t.Fatalf("this fixture should only recover next_cursor via preSelectData, not on its own: %s", withoutPreSelect)
+	}
+}
+
+// TestCursorLimitMismatchErrorRejectsDifferentLimit guards the fix for the
+// B10 finding on Issue #2026's follow-up: resuming a cursor with a
+// different "limit" than the one that minted it re-fetches a
+// differently-sized upstream page, so the cursor's offset silently
+// addresses the wrong records (an empty page, in the reported case, with a
+// bogus byte-budget truncation claim alongside it). cursorLimitMismatchError
+// is the guard makeAPIHandlerVerbose calls before making the upstream
+// request at all.
+func TestCursorLimitMismatchErrorRejectsDifferentLimit(t *testing.T) {
+	// More than bound.MaxItems so a real Offset-based continuation cursor
+	// gets minted, matching the shape the reported bug actually resumes.
+	items := make([]map[string]string, 0, bound.MaxItems+10)
+	for i := 0; i < bound.MaxItems+10; i++ {
+		items = append(items, map[string]string{"id": fmt.Sprintf("w%d", i)})
+	}
+	data, err := json.Marshal(items)
+	if err != nil {
+		t.Fatalf("marshal fixture: %v", err)
+	}
+	// Mint a cursor the way a real limit=100 call would.
+	minted := bound.EndpointPageResponse("GET", data, bound.PageOptions{
+		CursorParam:  "page",
+		RequestLimit: "100",
+	})
+	var envelope struct {
+		NextCursor string `json:"next_cursor"`
+	}
+	if err := json.Unmarshal([]byte(minted), &envelope); err != nil {
+		t.Fatalf("result must remain valid JSON: %v\n%s", err, minted)
+	}
+	if envelope.NextCursor == "" {
+		t.Fatalf("expected a minted cursor to resume from: %s", minted)
+	}
+
+	if msg := cursorLimitMismatchError(envelope.NextCursor, "2", true); msg == "" {
+		t.Fatal("resuming a limit=100 cursor with limit=2 should be rejected")
+	} else if !strings.Contains(msg, "limit=100") || !strings.Contains(msg, "limit=2") {
+		t.Fatalf("error message should name both limits: %q", msg)
+	}
+
+	if msg := cursorLimitMismatchError(envelope.NextCursor, "100", true); msg != "" {
+		t.Fatalf("resuming with the same limit that minted the cursor must be allowed: %q", msg)
+	}
+
+	if msg := cursorLimitMismatchError("", "2", true); msg != "" {
+		t.Fatalf("no cursor at all (first call) must never be blocked: %q", msg)
+	}
+
+	// A cursor minted with no RequestLimit tracked must still be rejected
+	// when the endpoint has a known limit — otherwise pre-binding cursors
+	// keep the silent mispagination hole open across deploy.
+	untracked := bound.EndpointPageResponse("GET", data, bound.PageOptions{CursorParam: "page"})
+	var untrackedEnvelope struct {
+		NextCursor string `json:"next_cursor"`
+	}
+	if err := json.Unmarshal([]byte(untracked), &untrackedEnvelope); err != nil {
+		t.Fatalf("result must remain valid JSON: %v\n%s", err, untracked)
+	}
+	if untrackedEnvelope.NextCursor == "" {
+		t.Fatalf("expected an untracked cursor to resume from: %s", untracked)
+	}
+	if msg := cursorLimitMismatchError(untrackedEnvelope.NextCursor, "2", true); msg == "" {
+		t.Fatal("a cursor with no recorded limit must be rejected on a limit-bound endpoint")
+	} else if !strings.Contains(msg, "no recorded") {
+		t.Fatalf("error message should explain the unbound cursor: %q", msg)
+	}
+	// Endpoints with no limit binding still allow unbound cursors.
+	if msg := cursorLimitMismatchError(untrackedEnvelope.NextCursor, "", false); msg != "" {
+		t.Fatalf("limitKnown=false must never block on missing cursor limit: %q", msg)
 	}
 }
 
@@ -1873,5 +2000,268 @@ func TestMCPCompanionCLIAvailableRejectsUnexecutablePath(t *testing.T) {
 	mcpCLIPathResolver = func() (string, error) { return os.Args[0], nil }
 	if !mcpCompanionCLIAvailable() {
 		t.Fatal("mcpCompanionCLIAvailable() = false for the running test binary itself, want true")
+	}
+}
+
+func testProfileClient(t *testing.T, baseURL string) *client.Client {
+	t.Helper()
+	return testProfileClientWithToken(t, baseURL, "test-access-token")
+}
+
+func testProfileClientWithToken(t *testing.T, baseURL, accessToken string) *client.Client {
+	t.Helper()
+	c := client.New(&config.Config{BaseURL: baseURL, AccessToken: accessToken}, time.Second, 0)
+	c.NoCache = true
+	return c
+}
+
+// resetLiveProfileIDCache clears resolveLiveProfileID's process-lifetime
+// memoization before and after the test, so tests exercising it don't leak
+// a cached id to (or inherit one from) any other test regardless of run
+// order.
+func resetLiveProfileIDCache(t *testing.T) {
+	t.Helper()
+	liveProfileIDMu.Lock()
+	liveProfileIDCache.accessToken, liveProfileIDCache.id = "", ""
+	liveProfileIDMu.Unlock()
+	t.Cleanup(func() {
+		liveProfileIDMu.Lock()
+		liveProfileIDCache.accessToken, liveProfileIDCache.id = "", ""
+		liveProfileIDMu.Unlock()
+	})
+}
+
+// TestResolveLiveProfileIDFetchesFromAPIMe guards the fix for a connector
+// handoff finding: workouts_list required a caller-supplied user_id even
+// though account_show already returns the authenticated profile's id via
+// /api/me (which needs no user_id itself). resolveLiveProfileID is the
+// live lookup that closes that gap.
+func TestResolveLiveProfileIDFetchesFromAPIMe(t *testing.T) {
+	resetLiveProfileIDCache(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/me" {
+			t.Fatalf("expected /api/me, got %s", r.URL.Path)
+		}
+		_, _ = w.Write([]byte(`{"id":"live-profile-id","username":"jim"}`))
+	}))
+	defer server.Close()
+
+	got, err := resolveLiveProfileID(context.Background(), testProfileClient(t, server.URL))
+	if err != nil || got != "live-profile-id" {
+		t.Fatalf("id=%q err=%v", got, err)
+	}
+}
+
+// TestResolveLiveProfileIDSurfacesMissingID guards against silently
+// resolving to an empty user_id if the provider's response omits one.
+func TestResolveLiveProfileIDSurfacesMissingID(t *testing.T) {
+	resetLiveProfileIDCache(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"username":"jim"}`))
+	}))
+	defer server.Close()
+
+	if _, err := resolveLiveProfileID(context.Background(), testProfileClient(t, server.URL)); err == nil {
+		t.Fatal("expected an error when the profile response omits id")
+	}
+}
+
+// TestResolveLiveProfileBindingsInjectsMissingUserID guards the actual
+// workouts_list-facing behavior: a ResolveFromLiveProfile binding the
+// caller omitted gets filled into args from a live lookup, using the same
+// key the rest of the binding pipeline (path/query/body substitution)
+// already expects.
+func TestResolveLiveProfileBindingsInjectsMissingUserID(t *testing.T) {
+	resetLiveProfileIDCache(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"id":"live-profile-id"}`))
+	}))
+	defer server.Close()
+
+	args := map[string]any{}
+	bindings := []mcpParamBinding{
+		{PublicName: "user_id", WireName: "user_id", Location: "path", ResolveFromLiveProfile: true},
+		{PublicName: "limit", WireName: "limit", Location: "query"},
+	}
+	if err := resolveLiveProfileBindings(context.Background(), testProfileClient(t, server.URL), args, bindings); err != nil {
+		t.Fatal(err)
+	}
+	if args["user_id"] != "live-profile-id" {
+		t.Fatalf("args[user_id] = %v, want live-profile-id", args["user_id"])
+	}
+}
+
+// TestResolveLiveProfileBindingsRespectsExplicitValue guards against
+// overriding a caller who deliberately named a different user_id (e.g.
+// looking up someone else's public data, where the endpoint allows it) --
+// and against spending an unnecessary live lookup at all when the caller
+// already supplied the value. The fixture server fails the test if it
+// receives any request.
+func TestResolveLiveProfileBindingsRespectsExplicitValue(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		t.Fatal("an explicitly supplied value must not trigger a live profile lookup")
+	}))
+	defer server.Close()
+
+	args := map[string]any{"user_id": "explicit-caller-id"}
+	bindings := []mcpParamBinding{{PublicName: "user_id", WireName: "user_id", Location: "path", ResolveFromLiveProfile: true}}
+	if err := resolveLiveProfileBindings(context.Background(), testProfileClient(t, server.URL), args, bindings); err != nil {
+		t.Fatal(err)
+	}
+	if args["user_id"] != "explicit-caller-id" {
+		t.Fatalf("args[user_id] = %v, want explicit-caller-id unchanged", args["user_id"])
+	}
+}
+
+// TestResolveLiveProfileBindingsSurfacesLookupFailure guards that a failed
+// live lookup produces a clear, named error rather than silently leaving
+// the binding unset (which would otherwise reach the live API as a
+// literal unresolved {user_id} path placeholder).
+func TestResolveLiveProfileBindingsSurfacesLookupFailure(t *testing.T) {
+	resetLiveProfileIDCache(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	}))
+	defer server.Close()
+
+	args := map[string]any{}
+	bindings := []mcpParamBinding{{PublicName: "user_id", WireName: "user_id", Location: "path", ResolveFromLiveProfile: true}}
+	err := resolveLiveProfileBindings(context.Background(), testProfileClient(t, server.URL), args, bindings)
+	if err == nil || !strings.Contains(err.Error(), "user_id") {
+		t.Fatalf("expected an error naming the unresolved binding, got: %v", err)
+	}
+	if _, ok := args["user_id"]; ok {
+		t.Fatalf("args[user_id] should remain unset on lookup failure, got %v", args["user_id"])
+	}
+}
+
+// TestResolveLiveProfileIDIsMemoizedAcrossCalls guards the fix for a live
+// review finding (B14 §5): resolveLiveProfileID was not cached at all, so
+// every workouts_list call that omitted user_id cost an extra upstream
+// round-trip -- 75 extra calls for one full enumeration at the default
+// page size. A second call must reuse the first success without hitting
+// the server again.
+func TestResolveLiveProfileIDIsMemoizedAcrossCalls(t *testing.T) {
+	resetLiveProfileIDCache(t)
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		_, _ = w.Write([]byte(`{"id":"live-profile-id"}`))
+	}))
+	defer server.Close()
+	c := testProfileClient(t, server.URL)
+
+	for i := 0; i < 3; i++ {
+		got, err := resolveLiveProfileID(context.Background(), c)
+		if err != nil || got != "live-profile-id" {
+			t.Fatalf("call %d: id=%q err=%v", i, got, err)
+		}
+	}
+	if calls != 1 {
+		t.Fatalf("expected exactly one /api/me request across 3 resolutions, got %d", calls)
+	}
+}
+
+// TestResolveLiveProfileIDDoesNotCacheFailure guards against a transient
+// failure (auth hiccup, network blip) permanently poisoning every later
+// call for the rest of the server process's lifetime.
+func TestResolveLiveProfileIDDoesNotCacheFailure(t *testing.T) {
+	resetLiveProfileIDCache(t)
+	calls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls++
+		if calls == 1 {
+			// 403, not 5xx/429: those retry internally in client.go, which
+			// would mask what this test is checking (memoization across
+			// resolveLiveProfileID calls, not the client's own retry).
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		_, _ = w.Write([]byte(`{"id":"live-profile-id"}`))
+	}))
+	defer server.Close()
+	c := testProfileClient(t, server.URL)
+
+	if _, err := resolveLiveProfileID(context.Background(), c); err == nil {
+		t.Fatal("expected the first, failing lookup to return an error")
+	}
+	got, err := resolveLiveProfileID(context.Background(), c)
+	if err != nil || got != "live-profile-id" {
+		t.Fatalf("expected the second lookup to succeed and not be poisoned by the first failure: id=%q err=%v", got, err)
+	}
+	if calls != 2 {
+		t.Fatalf("expected exactly 2 requests (one failed, one retried), got %d", calls)
+	}
+}
+
+// TestResolveLiveProfileIDCacheInvalidatesOnAccessTokenChange guards a
+// Greptile finding on the first version of this cache: it cached
+// unconditionally, so a long-running server whose persisted credential
+// bundle switches to a different Peloton account would keep returning the
+// PREVIOUS account's profile id forever, since nothing ever invalidated
+// it. installManagedPelotonBearer mints a fresh access token for every
+// client build, and a different account means a different token -- the
+// cache must treat that as a cold miss, not reuse the stale id.
+func TestResolveLiveProfileIDCacheInvalidatesOnAccessTokenChange(t *testing.T) {
+	resetLiveProfileIDCache(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "Bearer token-b" {
+			_, _ = w.Write([]byte(`{"id":"profile-b"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"id":"profile-a"}`))
+	}))
+	defer server.Close()
+
+	got, err := resolveLiveProfileID(context.Background(), testProfileClientWithToken(t, server.URL, "token-a"))
+	if err != nil || got != "profile-a" {
+		t.Fatalf("first account: id=%q err=%v", got, err)
+	}
+
+	// A fresh client with a different access token models the persisted
+	// bundle switching to a different account.
+	got, err = resolveLiveProfileID(context.Background(), testProfileClientWithToken(t, server.URL, "token-b"))
+	if err != nil || got != "profile-b" {
+		t.Fatalf("a changed access token must invalidate the cache, not return the previous account's stale profile: id=%q err=%v", got, err)
+	}
+}
+
+// TestResolveLiveProfileIDSerializesConcurrentColdLookups guards a second
+// Greptile finding on the first version: the lock was released before the
+// live /api/me call, so concurrent requests that all see an empty cache
+// (the common cold-start shape -- a server's first few workouts_list
+// calls arriving close together) could each fire their own upstream
+// request instead of one winning and the rest reusing its result.
+func TestResolveLiveProfileIDSerializesConcurrentColdLookups(t *testing.T) {
+	resetLiveProfileIDCache(t)
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		time.Sleep(20 * time.Millisecond) // widen the race window
+		_, _ = w.Write([]byte(`{"id":"live-profile-id"}`))
+	}))
+	defer server.Close()
+	c := testProfileClient(t, server.URL)
+
+	const n = 10
+	var wg sync.WaitGroup
+	ids := make([]string, n)
+	errs := make([]error, n)
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			ids[i], errs[i] = resolveLiveProfileID(context.Background(), c)
+		}(i)
+	}
+	wg.Wait()
+
+	for i := range errs {
+		if errs[i] != nil || ids[i] != "live-profile-id" {
+			t.Fatalf("goroutine %d: id=%q err=%v", i, ids[i], errs[i])
+		}
+	}
+	if got := atomic.LoadInt32(&calls); got != 1 {
+		t.Fatalf("expected exactly one /api/me request across %d concurrent cold lookups, got %d", n, got)
 	}
 }

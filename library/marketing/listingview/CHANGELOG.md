@@ -2,6 +2,14 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.10.2 - 2026-10-02
+
+- fix(listingview): match provider data and secure MCP (#2202).
+
+## 2026.10.1 - 2026-10-01
+
+- fix(library): send numeric and boolean request-body fields with their declared JSON type (#2106).
+
 ## 2026.9.2 - 2026-09-11
 
 - fix: fail closed on ambiguous fleet write retries (#1978).

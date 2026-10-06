@@ -1,0 +1,22 @@
+{
+  "schema_version": 2,
+  "id": "steam-store-services-are-the-keyless-catalog",
+  "applied_at": "2026-10-02",
+  "base_run_id": "20260927-155341-72694577",
+  "base_printing_press_version": "4.32.5",
+  "summary": "Steam catalog enumeration comes from Valve's keyless store services (IStoreQueryService/IStoreBrowseService/IStoreService), and Steam identity comes from the Steam store link RAWG records for the game, not from title matching.",
+  "reason": "The partner-documented catalog endpoint (IStoreService/GetAppList) needs a Steam Web API key, cannot filter by demo, tag, or price, and has no demo listing at all; the store services answer keyless and take country_code/language. The storefront storesearch endpoint is capped at 10 results with no paging, so the old title-only resolver both could not enumerate anything and failed on remake titles such as DOOM (2016), whose Steam name is plain DOOM. Any regen that keeps only storesearch/appdetails/appreviews loses enumeration and reintroduces that class of failure.",
+  "files": [
+    "internal/source/steam/store.go",
+    "internal/source/steam/steam.go",
+    "internal/source/steam/config.go",
+    "internal/source/steam/cli_bridge.go",
+    "internal/source/steam/README.md",
+    "internal/cli/steam.go",
+    "internal/cli/steam_resolve.go",
+    "internal/cli/ratings.go",
+    "internal/source/steam/store_test.go",
+    "internal/cli/steam_resolve_test.go"
+  ],
+  "validated_outcome": "publish validate PASS; new offline tests pass (catalog taxonomy/encoding/decoding/resolution plus country precedence). Live: `steam browse --type demo --free` reports a real total with next_page, `steam app \"DOOM (2016)\"` resolves to appid 379720, and `ratings` reports steam_resolved_by=rawg-store-link. MCP surface went 65 -> 68 tools with nothing removed."
+}

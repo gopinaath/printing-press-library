@@ -1,0 +1,16 @@
+# agentcookie.toml: secrets-bus adoption manifest v2
+# See docs/spec-agentcookie-secrets-bus-v2-adoption.md
+schema_version = 2
+name = "philonet-pp-cli"
+display_name = "Philonet"
+description = "Your Philonet reading life in the terminal: feed, threads, streaks and friends, plus a local history the web app does not keep."
+project_kind = "cli"
+
+[secrets.file]
+path = "~/.config/philonet-pp-cli/config.toml"
+
+[sync]
+default = false
+
+[sync.keys]
+PHILONET_TOKEN = true

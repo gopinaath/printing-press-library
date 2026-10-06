@@ -1,0 +1,27 @@
+{
+  "manifest_version": "0.3",
+  "name": "oneword-domains-pp-mcp",
+  "display_name": "One Word Domains",
+  "version": "0.1.0",
+  "description": "Check a word across every TLD with registrar prices, watch the aftermarket, and generate names with DomainsGPT, all from the terminal with a local store the site itself does not offer.",
+  "author": {
+    "name": "CLI Printing Press"
+  },
+  "license": "Apache-2.0",
+  "server": {
+    "type": "binary",
+    "entry_point": "bin/oneword-domains-pp-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/bin/oneword-domains-pp-mcp",
+      "args": []
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=1.0.0",
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ]
+  }
+}

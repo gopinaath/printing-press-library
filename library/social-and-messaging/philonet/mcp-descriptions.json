@@ -1,0 +1,14 @@
+{
+  "descriptions": {
+    "feed_moment": "Fetch the featured 'moment' card currently shown at the top of the signed-in user's Philonet feed. Read-only, takes no parameters, requires PHILONET_TOKEN. Returns the Moment object; use feed_suggested for a list of suggested curiosity sessions instead.",
+    "friends_requests_preview": "Preview pending friend requests for the signed-in Philonet user: a lightweight summary suited to a badge or digest. Read-only, no parameters, requires PHILONET_TOKEN. Returns a FriendRequestsPreview object; use friends_requests for the full list.",
+    "friends_top": "List the signed-in user's top friends on Philonet, the people they interact with most. Read-only, no parameters, requires PHILONET_TOKEN. Returns the Topfriend records.",
+    "inbox_unread_conversations": "Get unread discussion counters for the signed-in user's Philonet inbox, showing which conversations have new messages. Read-only, no parameters, requires PHILONET_TOKEN. Returns Unreadconversation counters; use inbox_discussions to read the threads themselves.",
+    "me_awards": "List the awards (stars) the signed-in user has received on their Philonet thoughts. Read-only, no parameters, requires PHILONET_TOKEN. Returns Myaward records; pair with me_standings for ranking context.",
+    "me_bookmarks": "List thoughts the signed-in user has bookmarked on Philonet. Read-only, no parameters, requires PHILONET_TOKEN. Returns Mybookmark records; use me_read_later for saved articles instead.",
+    "me_engagements": "List the signed-in user's recent engagements on Philonet. Read-only, no parameters, requires PHILONET_TOKEN. Returns Myengagement records.",
+    "me_onboarding": "Get the signed-in user's Philonet onboarding state and selected interests. Read-only, no parameters, requires PHILONET_TOKEN. Returns the Onboarding object; useful for personalising suggestions.",
+    "me_read_later": "List articles the signed-in user has saved to read later on Philonet. Read-only, no parameters, requires PHILONET_TOKEN. Returns Readlater records; use me_bookmarks for bookmarked thoughts instead.",
+    "me_spotlights": "List the signed-in user's Philonet spotlights. Read-only, no parameters, requires PHILONET_TOKEN. Returns Spotlightsnew records."
+  }
+}

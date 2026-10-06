@@ -1,5 +1,8 @@
 # MakerWorld CLI
 
+Created by [@vcolombo](https://github.com/vcolombo) (Vincent Colombo).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 **Every MakerWorld model, searchable offline — plus trend deltas, designer-watch, and multi-tag discovery no scraper or the web UI offers.**
 
 A fast, agent-native CLI over MakerWorld's public catalog. Browse, search, and inspect 3D models from the terminal, mirror them into a local SQLite database for offline full-text search, then run queries the platform never exposes: what is newly rising (movers), which tracked designers shipped (designers deltas), and which models match a precise tag combination (tags). Reads need no account; an optional token unlocks 3MF downloads and your favorites.
@@ -114,6 +117,8 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 </details>
 
+For the HTTP MCP transport, set `PP_MCP_HTTP_TOKEN` in the server environment. It binds to `127.0.0.1:7777` by default. A non-loopback address also requires `--tls-cert` and `--tls-key`.
+
 ## Authentication
 
 Browsing, search, and model details work with no credentials against Bambu Lab's public API. To download 3MF files or read your favorites, set MAKERWORLD_TOKEN to a Bambu Cloud token (the same JWT the Bambu Handy app uses).
@@ -157,7 +162,7 @@ These capabilities aren't available in any other tool for this API.
   ```bash
   makerworld-pp-cli designers deltas --limit 50 --agent
   ```
-- **`movers`** — Rank models by the biggest jump in likes, downloads, or prints between your two most recent syncs.
+- **`movers`** — Rank models by the biggest jump in likes, downloads, or prints between your two most recent syncs. The local store keeps those two trend snapshots and removes older snapshots after a completed sync.
 
   _Pick this over 'browse --nav Trending' when the question is what is rising right now, not what is popular overall._
 

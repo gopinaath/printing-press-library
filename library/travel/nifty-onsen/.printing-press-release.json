@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "nifty-onsen",
+  "cli_name": "nifty-onsen-pp-cli",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T08:52:18Z",
+  "source_commit": "af00bd2d3afe7830bcad0124a205e4b9c4499fd7",
+  "printing_press_version": "4.32.5",
+  "run_id": "20261001-020155-5c0bf62e",
+  "changes": [
+    {
+      "title": "feat(nifty-onsen): add nifty-onsen",
+      "pr": 2098,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2098",
+      "commit": "af00bd2d3afe7830bcad0124a205e4b9c4499fd7"
+    }
+  ]
+}

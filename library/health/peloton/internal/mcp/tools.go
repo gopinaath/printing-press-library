@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	mcplib "github.com/mark3labs/mcp-go/mcp"
@@ -296,7 +297,7 @@ func RegisterTools(s *server.MCPServer) {
 
 	s.AddTool(
 		mcplib.NewTool("account_show",
-			mcplib.WithDescription("Show the current profile fact. Optional: select. Returns the Profile."),
+			mcplib.WithDescription("Show the current profile fact. Optional: select. Returns the Profile. Caveat: last_workout_at has been observed stale -- see context for details and a workaround."),
 			mcplib.WithString("select", mcplib.Description(selectParamDescription)),
 			mcplib.WithReadOnlyHintAnnotation(true),
 			mcplib.WithDestructiveHintAnnotation(false),
@@ -412,8 +413,8 @@ func RegisterTools(s *server.MCPServer) {
 	)
 	s.AddTool(
 		mcplib.NewTool("workouts_list",
-			mcplib.WithDescription("List workout history in newest-first pages; user_id is supplied by the caller until U3 links the profile fact. Required: user_id. Optional: joins (default: ride), limit (default: 100), cursor (plus 2 more). Returns array of Workout."),
-			mcplib.WithString("user_id", mcplib.Required(), mcplib.Description("Provider user identifier.")),
+			mcplib.WithDescription("List workout history in newest-first pages. Optional: user_id (defaults to the authenticated profile's id via a live lookup when omitted), joins (default: ride), limit (default: 100), cursor (plus 2 more). Returns array of Workout. Caveat: device_time_created_at is local wall time, not UTC, and history can include non-Peloton-originated workouts -- see context."),
+			mcplib.WithString("user_id", mcplib.Description("Provider user identifier. Defaults to the authenticated profile's id (a live lookup, same as account_show) when omitted.")),
 			mcplib.WithString("joins", mcplib.Description("Include linked ride metadata.")),
 			mcplib.WithNumber("limit", mcplib.Description("Maximum records per page.")),
 			mcplib.WithString("sort", mcplib.Description("Newest-first sort order.")),
@@ -423,11 +424,11 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		makeAPIHandler("GET", "/api/user/{user_id}/workouts", true, false, nil, mcpPageConfig{CursorParam: "page", NextCursorPath: "", ArrayField: "data", NextPageIndicatorPath: "show_next", CurrentPageNumberPath: "page", FirstPageOnlyFields: []string{"summary"}}, []mcpParamBinding{{PublicName: "user_id", WireName: "user_id", Location: "path"}, {PublicName: "joins", WireName: "joins", Location: "query", Default: "ride"}, {PublicName: "limit", WireName: "limit", Location: "query", Default: "100"}, {PublicName: "sort", WireName: "sort", Location: "query", Default: "-start_time"}}, []string{"user_id"}),
+		makeAPIHandler("GET", "/api/user/{user_id}/workouts", true, false, nil, mcpPageConfig{CursorParam: "page", NextCursorPath: "", ArrayField: "data", NextPageIndicatorPath: "show_next", CurrentPageNumberPath: "page", FirstPageOnlyFields: []string{"summary"}}, []mcpParamBinding{{PublicName: "user_id", WireName: "user_id", Location: "path", ResolveFromLiveProfile: true}, {PublicName: "joins", WireName: "joins", Location: "query", Default: "ride"}, {PublicName: "limit", WireName: "limit", Location: "query", Default: "100"}, {PublicName: "sort", WireName: "sort", Location: "query", Default: "-start_time"}}, []string{"user_id"}),
 	)
 	s.AddTool(
 		mcplib.NewTool("workouts_performance",
-			mcplib.WithDescription("Show recorded performance samples and summaries for one workout. Required: workout_id. Optional: every_n (default: 1), select. Returns the PerformanceGraph."),
+			mcplib.WithDescription("Show recorded performance samples and summaries for one workout. Required: workout_id. Optional: every_n (default: 1), select. Returns the PerformanceGraph. Caveat: a partial split's seconds is pace-normalized, not elapsed time, and heart rate zones are Peloton's own %maxHR model -- see context."),
 			mcplib.WithString("workout_id", mcplib.Required(), mcplib.Description("Provider workout identifier.")),
 			mcplib.WithNumber("every_n", mcplib.Description("Sample stride; one preserves full samples.")),
 			mcplib.WithString("select", mcplib.Description(selectParamDescription)),
@@ -439,7 +440,7 @@ func RegisterTools(s *server.MCPServer) {
 	)
 	s.AddTool(
 		mcplib.NewTool("workouts_show",
-			mcplib.WithDescription("Show a recorded workout detail payload. Required: workout_id. Optional: select. Returns the WorkoutDetail."),
+			mcplib.WithDescription("Show a recorded workout detail payload. Required: workout_id. Optional: select. Returns the WorkoutDetail. Caveat: device_time_created_at is local wall time, not UTC -- see context."),
 			mcplib.WithString("workout_id", mcplib.Required(), mcplib.Description("Provider workout identifier.")),
 			mcplib.WithString("select", mcplib.Description(selectParamDescription)),
 			mcplib.WithReadOnlyHintAnnotation(true),
@@ -492,6 +493,18 @@ type mcpParamBinding struct {
 	WireName   string
 	Location   string
 	Default    string
+
+	// ResolveFromLiveProfile, when true, means: if the caller omits this
+	// argument, resolve it via a live /api/me call (the same endpoint
+	// account_show uses, which needs no user_id itself since it comes from
+	// the session's own credentials) and use the returned profile id,
+	// instead of leaving it unset. Exists for workouts_list's user_id --
+	// account_show already returns id, so requiring a caller to separately
+	// know (or fetch) their own provider id before paging their own
+	// workouts was a needless two-hop call an agent has no way to
+	// anticipate from workouts_list's schema alone. See that tool's doc
+	// comment history ("until U3 links the profile fact").
+	ResolveFromLiveProfile bool
 }
 
 type mcpPageConfig struct {
@@ -653,6 +666,15 @@ func makeAPIHandlerVerbose(method, pathTemplate string, readOnly bool, binaryRes
 		// we rely on here (or an empty map when the payload is something else).
 		args := req.GetArguments()
 
+		// Resolve any ResolveFromLiveProfile binding the caller omitted
+		// before the main bindings loop below reads args -- injecting the
+		// resolved value into args means every other binding-handling path
+		// (path/query/body substitution, positional-arg passthrough) just
+		// sees it as if the caller had supplied it directly.
+		if err := resolveLiveProfileBindings(ctx, c, args, bindings); err != nil {
+			return mcpToolError(err.Error()), nil
+		}
+
 		// positionalParams mixes real URL path params with CLI positional
 		// args that map to query params (e.g. `search <query>` -> ?query=);
 		// the placeholder check below disambiguates them at runtime.
@@ -740,6 +762,21 @@ func makeAPIHandlerVerbose(method, pathTemplate string, readOnly bool, binaryRes
 		}
 		logUndeclaredArgs(pathTemplate, args, pathParams, knownArgs)
 
+		// A cursor's offset only addresses the right records relative to
+		// the page size (limit) in effect when it was minted -- resuming
+		// with a different limit re-fetches a differently-sized upstream
+		// page and silently skips or duplicates records (confirmed live:
+		// resuming a limit=100-minted cursor at limit=2 returned an empty
+		// page and advanced past the skipped records with no error). Catch
+		// this before spending an API call on a request we're going to
+		// reject anyway.
+		if pageConfig.CursorParam != "" && mcpCursor != "" {
+			currentLimit, limitKnown := params["limit"]
+			if msg := cursorLimitMismatchError(mcpCursor, currentLimit, limitKnown); msg != "" {
+				return mcpToolError(msg), nil
+			}
+		}
+
 		var data json.RawMessage
 		switch method {
 		case "GET":
@@ -823,16 +860,22 @@ func makeAPIHandlerVerbose(method, pathTemplate string, readOnly bool, binaryRes
 			data = deepStripFields(data, classAlwaysStripFields)
 		}
 		data = applyVerboseFieldToggles(data, args, verboseToggles)
+		// preSelectData is captured before "select" runs so pagination
+		// continuation detection (bound.PageOptions.PreProjectionData) can
+		// still see show_next/page/NextCursorPath even when a caller's own
+		// select drops them from the displayed result. See that field's
+		// doc comment.
+		preSelectData := data
 		// select is applied last, after any verbose-field stripping, so a
 		// caller who does pass include_stream_urls/include_instructor_bios=true
 		// can still narrow the now-larger response down with select in the
 		// same call. Binary responses are base64-encoded file payloads, not
 		// JSON a dotted-path projection could meaningfully narrow.
-		var hasSelect bool
+		var explicitlySelectedFields map[string]bool
 		if !binaryResponse {
 			if selectFields, ok := args["select"].(string); ok && strings.TrimSpace(selectFields) != "" {
 				data = cli.FilterFieldsJSON(data, selectFields)
-				hasSelect = true
+				explicitlySelectedFields = topLevelSelectFieldNames(selectFields)
 			}
 		}
 
@@ -852,7 +895,7 @@ func makeAPIHandlerVerbose(method, pathTemplate string, readOnly bool, binaryRes
 			return mcplib.NewToolResultText(string(out)), nil
 		}
 		if pageConfig.CursorParam != "" {
-			return mcpToolPageResultText(method, data, pageConfig, mcpCursor, hasSelect), nil
+			return mcpToolPageResultText(method, data, pageConfig, mcpCursor, explicitlySelectedFields, preSelectData, params["limit"]), nil
 		}
 		return mcpToolResultText(method, data), nil
 	}
@@ -894,7 +937,7 @@ func mcpToolError(message string) *mcplib.CallToolResult {
 	return mcplib.NewToolResultError(bound.Text(message))
 }
 
-func mcpToolPageResultText(method string, data json.RawMessage, pageConfig mcpPageConfig, cursor string, hasSelect bool) *mcplib.CallToolResult {
+func mcpToolPageResultText(method string, data json.RawMessage, pageConfig mcpPageConfig, cursor string, explicitlySelectedFields map[string]bool, preSelectData json.RawMessage, requestLimit string) *mcplib.CallToolResult {
 	opts := bound.PageOptions{
 		Cursor:                cursor,
 		CursorParam:           pageConfig.CursorParam,
@@ -902,16 +945,161 @@ func mcpToolPageResultText(method string, data json.RawMessage, pageConfig mcpPa
 		ArrayField:            pageConfig.ArrayField,
 		NextPageIndicatorPath: pageConfig.NextPageIndicatorPath,
 		CurrentPageNumberPath: pageConfig.CurrentPageNumberPath,
-	}
-	// A caller who explicitly named a field via select has already made
-	// their own choice about what to keep -- FirstPageOnlyFields exists to
-	// trim the *default* unprojected response's repeated fixed cost, not
-	// to silently override a deliberate later-page ask for that same
-	// field (e.g. select=data.id,summary on page 2 of workouts_list).
-	if !hasSelect {
-		opts.FirstPageOnlyFields = pageConfig.FirstPageOnlyFields
+		FirstPageOnlyFields:   pageConfig.FirstPageOnlyFields,
+		// A caller who explicitly named a FirstPageOnlyFields entry via
+		// select has made a deliberate ask for it on this page --
+		// FirstPageOnlyFields exists to trim the *default* unprojected
+		// response's repeated fixed cost, not to override that. A select
+		// that does NOT name the field (e.g. select=id) must still have it
+		// stripped: filterFieldsRec's envelope fallback can otherwise pass
+		// unselected sibling metadata straight through unfiltered, which
+		// would silently defeat the trim for every select that doesn't
+		// happen to also exclude it explicitly.
+		KeepFirstPageOnlyFields: explicitlySelectedFields,
+		// See bound.PageOptions.PreProjectionData: a select that drops
+		// show_next/page (or the endpoint's NextCursorPath field) must not
+		// be able to hide that more upstream data exists.
+		PreProjectionData: preSelectData,
+		// Stamped into every cursor this call mints so a later resumed
+		// call with a different limit gets rejected instead of silently
+		// addressing the wrong records -- see the CursorLimit check in
+		// makeAPIHandlerVerbose and bound.PageOptions.RequestLimit.
+		RequestLimit: requestLimit,
 	}
 	return mcplib.NewToolResultText(bound.EndpointPageResponse(method, data, opts))
+}
+
+// topLevelSelectFieldNames extracts the top-level segment of each
+// comma-separated select path (e.g. "data.id,summary" -> {"data": true,
+// "summary": true}), matching filterFieldsRec's own path-splitting and
+// lowercasing so a bound.PageOptions.KeepFirstPageOnlyFields lookup agrees
+// with what the projection actually kept.
+func topLevelSelectFieldNames(selectFields string) map[string]bool {
+	names := map[string]bool{}
+	for _, f := range strings.Split(selectFields, ",") {
+		f = strings.TrimSpace(f)
+		if f == "" {
+			continue
+		}
+		head, _, _ := strings.Cut(f, ".")
+		names[strings.ToLower(head)] = true
+	}
+	return names
+}
+
+// cursorLimitMismatchError returns a non-empty, caller-facing error message
+// when a resumed call's limit doesn't match the limit its cursor was minted
+// with (see bound.PageOptions.RequestLimit for why this matters), or "" when
+// the call may proceed: no cursor, an endpoint with no limit parameter
+// (limitKnown false), or limits that agree. When limitKnown is true, a
+// cursor with no recorded limit (minted before this check existed) is
+// rejected — accepting it would re-open the silent mispagination this
+// guard exists to close. limitKnown mirrors params["limit"]'s own
+// comma-ok form so an endpoint with no limit binding at all never blocks
+// on this.
+func cursorLimitMismatchError(mcpCursor, currentLimit string, limitKnown bool) string {
+	if mcpCursor == "" {
+		return ""
+	}
+	cursorLimit, err := bound.CursorLimit(mcpCursor)
+	if err != nil {
+		return ""
+	}
+	if cursorLimit == "" {
+		if !limitKnown {
+			return ""
+		}
+		return "cursor has no recorded page-size limit; resuming it after limit-binding shipped is not supported because its position cannot be validated against the current limit. Omit cursor to start a fresh query."
+	}
+	if !limitKnown || currentLimit == cursorLimit {
+		return ""
+	}
+	return fmt.Sprintf("cursor was issued for limit=%s; resuming with limit=%s is not supported because a cursor's position is only valid for the page size it was minted with. Retry with limit=%s to resume where you left off, or omit cursor to start a fresh query at the new limit.", cursorLimit, currentLimit, cursorLimit)
+}
+
+// resolveLiveProfileBindings fills in any ResolveFromLiveProfile binding
+// the caller omitted from args, via a live profile lookup. Extracted from
+// makeAPIHandlerVerbose's closure so it's directly testable without the
+// full newMCPClient()/config-loading machinery -- a plain map[string]any
+// and a client pointed at a test server are enough.
+func resolveLiveProfileBindings(ctx context.Context, c *client.Client, args map[string]any, bindings []mcpParamBinding) error {
+	for _, binding := range bindings {
+		if !binding.ResolveFromLiveProfile {
+			continue
+		}
+		if _, ok := args[binding.PublicName]; ok {
+			continue
+		}
+		resolved, err := resolveLiveProfileID(ctx, c)
+		if err != nil {
+			return fmt.Errorf("%s was not supplied and could not be resolved from the authenticated profile: %w", binding.PublicName, err)
+		}
+		args[binding.PublicName] = resolved
+	}
+	return nil
+}
+
+// liveProfileIDCache memoizes resolveLiveProfileID's result for as long as
+// the resolving client's access token stays the same. A caller's own
+// provider id is immutable for a given authenticated account, so a live
+// lookup on every omitted-user_id call is pure waste -- confirmed live: an
+// uncached lookup would cost one extra upstream round-trip per page of a
+// full workouts_list enumeration (75 pages at the default page size for
+// one real account). Keyed by access token (not cached unconditionally)
+// so this can't go stale across an account switch on a long-running
+// server: if the persisted credential bundle changes to a different
+// account, installManagedPelotonBearer mints a different access token for
+// the very next client, which this cache treats as a cold miss and
+// re-resolves -- a Greptile review finding on the first version, which
+// cached unconditionally and would have kept returning the previous
+// account's id forever. Only a successful lookup is cached; a failure
+// (auth hiccup, transient network issue) must not stick, or every
+// subsequent call would fail from a single bad moment. The lock is held
+// across the network call, not just the cache read/write, so concurrent
+// cold calls serialize onto one real request instead of each seeing an
+// empty cache and firing its own (a second Greptile finding on the first
+// version).
+var (
+	liveProfileIDMu    sync.Mutex
+	liveProfileIDCache struct {
+		accessToken string
+		id          string
+	}
+)
+
+// resolveLiveProfileID looks up the authenticated Peloton user's id via a
+// live /api/me call, memoized by liveProfileIDCache for as long as c's
+// access token doesn't change. See that var's doc comment.
+func resolveLiveProfileID(ctx context.Context, c *client.Client) (string, error) {
+	currentToken := ""
+	if c != nil && c.Config != nil {
+		currentToken = c.Config.AccessToken
+	}
+
+	liveProfileIDMu.Lock()
+	defer liveProfileIDMu.Unlock()
+
+	if currentToken != "" && liveProfileIDCache.id != "" && liveProfileIDCache.accessToken == currentToken {
+		return liveProfileIDCache.id, nil
+	}
+
+	data, err := c.Get(ctx, "/api/me", nil)
+	if err != nil {
+		return "", err
+	}
+	var profile struct {
+		ID string `json:"id"`
+	}
+	if err := json.Unmarshal(data, &profile); err != nil {
+		return "", fmt.Errorf("decoding profile response: %w", err)
+	}
+	if profile.ID == "" {
+		return "", fmt.Errorf("profile response omitted an id")
+	}
+
+	liveProfileIDCache.accessToken = currentToken
+	liveProfileIDCache.id = profile.ID
+	return profile.ID, nil
 }
 
 func newMCPClient() (*client.Client, error) {
@@ -1472,6 +1660,10 @@ func handleContext(_ context.Context, _ mcplib.CallToolRequest) (*mcplib.CallToo
 			"Run doctor to check auth state, credential location, and sync cache freshness before assuming an API or credential problem.",
 			"Unrecognized typed-tool arguments are forwarded as raw live API params, not validated — a misspelled filter name silently no-ops instead of erroring. Double-check argument spelling against the tool's declared schema. classes_search/classes_catalog now declare duration, super_genre_id, has_workout, and is_favorite_ride directly, so those four no longer need the raw passthrough.",
 			"Every typed endpoint tool (classes_*, workouts_*, strength_movements, account_show) accepts a select argument with the same dotted-path projection as this CLI's --select flag. classes_catalog, classes_search, and workouts_list wrap their items under a top-level \"data\" key, so their select paths must be prefixed accordingly, e.g. classes_search(..., select=\"data.id,data.title,data.duration,data.instructor_id\") -- a bare \"id\" matches nothing on these three tools. Every other typed endpoint tool's response has no wrapper, so bare field names (e.g. workouts_show(..., select=\"id,ride\")) work directly. classes_catalog/classes_search/classes_show/classes_structure also default to omitting stream/playback URLs, join tokens, instructor bios/Q&A/share-images, internal cross-reference identifiers, and is_*/has_* boolean flags (is_favorite excepted, always present) -- pass include_stream_urls/include_instructor_bios/include_internal_ids/include_flags to get them back. The same four tools also always omit a handful of per-class fields confirmed always-empty/constant or duplicate of a kept sibling field (no argument restores these).",
+			"account_show's last_workout_at has been observed stale/lagging real activity by years despite recent workouts existing -- this is a raw passthrough of Peloton's own /api/me response (no caching or field processing happens on this server's side), so it's a provider-side data quality issue, not something a retry or select projection will fix. Derive recency from workouts_list's first record instead (the list is already sorted newest-first).",
+			"workouts_performance's splits: a partial (final, cut-short) split's seconds field is pace-normalized -- the implied duration at that split's pace, not the actual elapsed time for it -- while every full split's seconds is genuine elapsed time. Summing splits[].seconds across a workout with a partial final split will overstate total duration; use splits_metrics.total_time for the real elapsed time instead. Heart rate zones in the same response are Peloton's own percent-of-max-HR model (roughly Z2 126-145 at a ~195 max), not a standardized or cross-provider scheme -- don't compare them directly against zones computed by another platform (e.g. Garmin) without converting both to the same model first.",
+			"device_time_created_at (workouts_list, workouts_show) encodes local wall-clock time at the point of recording as if it were a UTC epoch -- it is NOT a true UTC instant, and the offset baked into it depends on the account's timezone at recording time, which can differ from one record to the next (travel, a DST transition). Do not sort or compare by it directly -- a record's own offset can make it appear out of chronological order relative to neighbors recorded under a different offset. Use created_at (genuine UTC) or start_time (what workouts_list itself sorts by, default -start_time) for any real chronological ordering or timezone-sensitive calculation.",
+			"workouts_list can interleave workouts this account didn't originate on Peloton equipment -- e.g. device_type: garmin_connect for an outdoor run synced in from a linked Garmin account -- alongside genuine Peloton Bike/Tread classes. Filter on device_type and/or is_peloton_originated_workout when an analysis should only cover Peloton-recorded activity.",
 		},
 		// Command-mirror capabilities are exposed through MCP by shelling out
 		// to the companion CLI binary.

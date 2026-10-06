@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "catasto",
   "cli_name": "catasto-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T00:47:37Z",
+  "source_commit": "73f09a21668320b54bcdce5ca411472e2a47a469",
   "printing_press_version": "4.27.1",
   "run_id": "20260517-193731",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(catasto): refresh cadastral cache without losing offline access",
+      "pr": 2186,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2186",
+      "commit": "73f09a21668320b54bcdce5ca411472e2a47a469"
     }
   ]
 }

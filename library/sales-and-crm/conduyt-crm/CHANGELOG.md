@@ -2,6 +2,10 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.10.1 - 2026-10-01
+
+- fix(conduyt-crm): reject NULL DACL after control flags (#2165).
+
 ## 2026.9.2 - 2026-09-18
 
 - feat(conduyt-crm): add conduyt-crm (#2012).

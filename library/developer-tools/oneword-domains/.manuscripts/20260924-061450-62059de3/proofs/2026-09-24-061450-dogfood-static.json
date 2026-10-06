@@ -1,0 +1,127 @@
+{
+  "dir": "~/printing-press/.runstate/oneworddomains-cli-0b6a6931/runs/20260924-061450-62059de3/working/oneword-domains-pp-cli",
+  "spec_path": "~/printing-press/.runstate/oneworddomains-cli-0b6a6931/runs/20260924-061450-62059de3/working/oneword-domains-pp-cli/spec.yaml",
+  "spec_source": "bundled",
+  "verdict": "WARN",
+  "path_check": {
+    "tested": 0,
+    "valid": 0,
+    "valid_pct": 0,
+    "skipped": true,
+    "detail": "internal-yaml spec: paths validated at parse time"
+  },
+  "auth_check": {
+    "spec_scheme": "",
+    "generated_format": "unknown",
+    "match": true,
+    "detail": "no bot/bearer/basic scheme detected"
+  },
+  "browser_session_check": {
+    "required": false,
+    "pass": true,
+    "detail": "browser-session auth not required"
+  },
+  "oauth_scope_coverage_check": {
+    "checked": 0,
+    "covered": 0,
+    "skipped": true,
+    "detail": "no OAuth-scoped endpoints in spec"
+  },
+  "dead_flags": {
+    "total": 24,
+    "dead": 0
+  },
+  "dead_functions": {
+    "total": 112,
+    "dead": 4,
+    "items": [
+      "handleBinaryResponseDelivery",
+      "retainCLIQueryParams",
+      "retainExplicitQueryParams",
+      "successfulNoop"
+    ]
+  },
+  "pipeline_check": {
+    "sync_calls_domain": true,
+    "search_calls_domain": false,
+    "domain_tables": 4,
+    "sync_file_emitted": true,
+    "sync_resources_present": true,
+    "detail": "sync uses domain-specific Upsert methods; search uses generic Search only; 4 domain tables found"
+  },
+  "example_check": {
+    "tested": 10,
+    "with_examples": 10,
+    "valid_examples": 10,
+    "detail": "10/10 commands have examples"
+  },
+  "wiring_check": {
+    "command_tree": {
+      "defined": 88,
+      "registered": 88
+    },
+    "config_consistency": {
+      "write_fields": [
+        ", token, "
+      ],
+      "read_fields": [
+        " || c.CookieCredential() != "
+      ],
+      "mismatched": [
+        " || c.CookieCredential() != ",
+        ", token, "
+      ],
+      "consistent": false
+    },
+    "workflow_completeness": {
+      "skipped": true,
+      "total_steps": 0,
+      "mapped_steps": 0,
+      "detail": "no workflow_verify.yaml found"
+    }
+  },
+  "novel_features_check": {
+    "planned": 12,
+    "found": 12,
+    "depth_mismatches": [
+      {
+        "command": "check",
+        "advertised": "check",
+        "actual": "domains check"
+      }
+    ]
+  },
+  "mcp_surface_parity": {
+    "state": "runtime_walking",
+    "pass": true,
+    "detail": "MCP surface mirrors the Cobra tree at runtime"
+  },
+  "reimplementation_check": {
+    "checked": 12,
+    "exempted_via_store": 10
+  },
+  "description_drift_check": {
+    "expected": "Check a word across every TLD with registrar prices, watch the aftermarket, and generate names with DomainsGPT, all from the terminal with a local store the site itself does not offer."
+  },
+  "source_client_check": {
+    "checked": 9
+  },
+  "print_json_filtered_check": {
+    "checked": 67
+  },
+  "test_presence": {
+    "checked": 2
+  },
+  "naming_check": {
+    "checked": 67
+  },
+  "sync_param_drop_check": {
+    "checked": 0,
+    "skipped": true
+  },
+  "issues": [
+    "4 dead helper functions found",
+    "config inconsistency: write fields [, token, ] vs read fields [ || c.CookieCredential() != ]",
+    "1 novel feature command-depth mismatches: check advertised as check but registered as domains check"
+  ]
+}

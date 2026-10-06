@@ -1,0 +1,120 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-10-01T19:03:01.654231Z",
+  "printing_press_version": "4.32.6",
+  "api_name": "philonet",
+  "display_name": "Philonet",
+  "cli_name": "philonet-pp-cli",
+  "creator": {
+    "handle": "SomSamantray",
+    "name": "Som Samantray"
+  },
+  "owner": "somsamantray",
+  "printer": "SomSamantray",
+  "printer_name": "Som Samantray",
+  "spec_path": "spec.yaml",
+  "spec_format": "internal",
+  "spec_source": "sniffed",
+  "spec_checksum": "sha256:a9c7e083725b02c0b9f145e195c54c45321517c3d24fc4f5cac8c62366f1b2f3",
+  "run_id": "20260930-231529-697aab83",
+  "category": "social-and-messaging",
+  "description": "Your Philonet reading life in the terminal: feed, threads, streaks and friends, plus a local history the web app does not keep.",
+  "mcp_binary": "philonet-pp-mcp",
+  "mcp_tool_count": 46,
+  "mcp_public_tool_count": 1,
+  "mcp_ready": "full",
+  "api_version": "0.1.0",
+  "auth_type": "bearer_token",
+  "auth_env_vars": [
+    "PHILONET_TOKEN"
+  ],
+  "novel_features": [
+    {
+      "name": "Today briefing",
+      "command": "today",
+      "description": "One snapshot of your streak, reading time, friends thinking now, unread counts and pending requests."
+    },
+    {
+      "name": "Reading rhythm",
+      "command": "rhythm",
+      "description": "Weekly and monthly reading minutes, longest streak and rank-vs-friends trend, accumulated from your own runs (history starts at the first run)."
+    },
+    {
+      "name": "Friends digest",
+      "command": "digest",
+      "description": "Friends' thoughts this CLI first saw recently, grouped by friend; 'recently' is relative to when the CLI saw them."
+    },
+    {
+      "name": "Owed replies",
+      "command": "owed",
+      "description": "Threads among your recent thoughts where someone replied and you have not answered yet."
+    },
+    {
+      "name": "Voices",
+      "command": "voices",
+      "description": "Rank people from your stored For You feed cards by thoughts on a topic, filtered by alma mater or employer badge."
+    },
+    {
+      "name": "Reading queue",
+      "command": "queue",
+      "description": "Read-later and bookmarks that fit your free minutes (items with unknown length are dropped unless --include-unknown), flagged when discussed."
+    },
+    {
+      "name": "Resonance",
+      "command": "resonance",
+      "description": "Which of your thoughts earned stars and insightful reactions, by tag and week."
+    }
+  ],
+  "novel_features_built": [
+    {
+      "name": "Today briefing",
+      "command": "today",
+      "description": "One snapshot of your streak, reading time, friends thinking now, unread counts and pending requests."
+    },
+    {
+      "name": "Reading rhythm",
+      "command": "rhythm",
+      "description": "Weekly and monthly reading minutes, longest streak and rank-vs-friends trend, accumulated from your own runs (history starts at the first run)."
+    },
+    {
+      "name": "Friends digest",
+      "command": "digest",
+      "description": "Friends' thoughts this CLI first saw recently, grouped by friend; 'recently' is relative to when the CLI saw them."
+    },
+    {
+      "name": "Owed replies",
+      "command": "owed",
+      "description": "Threads among your recent thoughts where someone replied and you have not answered yet."
+    },
+    {
+      "name": "Voices",
+      "command": "voices",
+      "description": "Rank people from your stored For You feed cards by thoughts on a topic, filtered by alma mater or employer badge."
+    },
+    {
+      "name": "Reading queue",
+      "command": "queue",
+      "description": "Read-later and bookmarks that fit your free minutes (items with unknown length are dropped unless --include-unknown), flagged when discussed."
+    },
+    {
+      "name": "Resonance",
+      "command": "resonance",
+      "description": "Which of your thoughts earned stars and insightful reactions, by tag and week."
+    }
+  ],
+  "verify": {
+    "mode": "mock",
+    "pass_rate": 100,
+    "passed": 53,
+    "total": 53,
+    "data_pipeline": true,
+    "verdict": "PASS"
+  },
+  "scorecard": {
+    "steinberger": {
+      "percentage": 90,
+      "grade": "A",
+      "total": 90
+    }
+  }
+}

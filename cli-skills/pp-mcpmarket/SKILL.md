@@ -149,8 +149,10 @@ mcpmarket-pp-cli which "<capability in your own words>"
 
 ### Find the best PDF tool and see what it's related to
 
+`server search` queries the live catalog. The root-level `search` command searches locally synced data.
+
 ```bash
-mcpmarket-pp-cli server search "pdf" --json --select 0.name,0.url
+mcpmarket-pp-cli server search "pdf" --limit 1 --json --select name,url
 ```
 
 narrow a broad search then feed a result's slug into stack
@@ -158,7 +160,7 @@ narrow a broad search then feed a result's slug into stack
 ### Check who's trending in the last week
 
 ```bash
-mcpmarket-pp-cli trending --since 7d --json --select 0.name,0.delta
+mcpmarket-pp-cli trending --since 7d --json --select name,delta
 ```
 
 select just the fields that matter to avoid parsing a verbose payload
@@ -383,7 +385,7 @@ mcpmarket-pp-cli teach --query-file /tmp/mcpmarket-query.txt --resource-type <ty
 
 Silent on success. Errors only land in `teach.log` under the resolved state dir. Teach the **most specific** resource - if the user asked a broad question and you walked through parent records to find the specific answer, teach the leaf id, not the parent. The CLI uses seeded `entity_lookups` for cross-alias resolution at recall time, so a teach under one alias (e.g., "Niners") satisfies future queries under another alias (e.g., "49ers", "San Francisco") automatically.
 
-PII rule: teach the structural question with identifiers stripped - never include names, emails, phone numbers, account ids, or other personal identifiers in taught queries or notes. The CLI scans teach queries for obvious email/phone shapes and warns, but does not block; strip before teaching rather than relying on the warning.
+PII rule: teach the structural question with identifiers stripped - never include names, emails, phone numbers, account ids, or other personal identifiers in taught queries or notes. By default the CLI warns on obvious email/phone shapes in `teach` queries and still saves them. Set `MCPMARKET_REJECT_PII=1` for this agent session, or pass `--reject-pii`, to refuse detected email/phone shapes across all teaching and playbook amendment commands before saving. The environment setting cannot be disabled by a saved run profile or flag. This is a limited pattern check; strip other personal details yourself.
 
 ### Step 5: playbooks - optional flags, automatic synthesis
 
@@ -524,6 +526,8 @@ Parse `$ARGUMENTS`:
    claude mcp add mcpmarket-pp-mcp -- mcpmarket-pp-mcp
    ```
 3. Verify: `claude mcp list`
+
+For HTTP MCP, set `PP_MCP_HTTP_TOKEN` in the server environment, start `mcpmarket-pp-mcp --transport http --addr 127.0.0.1:7777`, and send `Authorization: Bearer <token>` with requests. Remote binds require `--tls-cert` and `--tls-key`. Never pass the token as a command-line argument.
 
 ## Direct Use
 

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "navitime",
+  "cli_name": "navitime-pp-cli",
+  "version": "2026.9.1",
+  "released_at": "2026-09-28T08:53:15Z",
+  "source_commit": "ae237370da34bfde207fc97507061da0b9633783",
+  "printing_press_version": "4.32.5",
+  "run_id": "20260927-220504-6059fc84",
+  "changes": [
+    {
+      "title": "feat(navitime): add navitime",
+      "pr": 2075,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2075",
+      "commit": "ae237370da34bfde207fc97507061da0b9633783"
+    }
+  ]
+}

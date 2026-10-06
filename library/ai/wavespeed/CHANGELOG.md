@@ -2,6 +2,18 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.10.3 - 2026-10-01
+
+- feat(wavespeed): reprint wavespeed on press 4.32.6 (#2111).
+
+## 2026.10.2 - 2026-10-01
+
+- fix(wavespeed): keep superseded pack manifests and paid-run recovery details (#2089).
+
+## 2026.10.1 - 2026-10-01
+
+- fix(wavespeed): never replay paid runs and keep results on transport failures (#2088).
+
 ## 2026.9.1 - 2026-09-11
 
 - fix: fail closed on ambiguous fleet write retries (#1978).

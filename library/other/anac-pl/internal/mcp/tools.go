@@ -49,7 +49,7 @@ func RegisterTools(s *server.MCPServer) {
 	)
 	s.AddTool(
 		mcplib.NewTool("avvisi_search",
-			mcplib.WithDescription("Ricerca full-text di avvisi (bandi, esiti, altri avvisi) con ranking di rilevanza e filtri. Optional: query, scheda, cpv (plus 9 more). Returns array of Avviso."),
+			mcplib.WithDescription("Ricerca full-text di avvisi (bandi, esiti, altri avvisi) con ranking di rilevanza e filtri. Optional: query, scheda, cpv (plus 8 more). Returns array of Avviso."),
 			mcplib.WithString("query", mcplib.Description("Testo libero: parola chiave, CIG, CUP, stazione appaltante, oggetto")),
 			mcplib.WithString("scheda", mcplib.Description("Tipologia avviso: numero template o nome di 'tipologie list' (es. 4 o bandi, 7 o esiti). Un solo valore; i codici dei risultati (AD3, A1_29) non sono accettati")),
 			mcplib.WithString("cpv", mcplib.Description("Codice CPV (Common Procurement Vocabulary) dell'oggetto della gara")),
@@ -60,13 +60,12 @@ func RegisterTools(s *server.MCPServer) {
 			mcplib.WithString("sort-field", mcplib.Description("Campo di ordinamento (es. dataPubblicazione). Il servizio lo onora solo senza --query: con testo libero ordina per rilevanza")),
 			mcplib.WithString("sort-dir", mcplib.Description("Direzione di ordinamento: ASC o DESC")),
 			mcplib.WithBoolean("fuzzy", mcplib.Description("true (default): termini in OR per rilevanza. false: frase esatta, parole adiacenti nell'ordine dato; richiede --scheda")),
-			mcplib.WithNumber("page", mcplib.Description("Numero di pagina (0-based)")),
-			mcplib.WithNumber("size", mcplib.Description("Numero di risultati per pagina")),
+			mcplib.WithNumber("size", mcplib.Description("Numero di risultati per pagina. Il servizio restituisce una sola pagina: non esiste un parametro di pagina, alza size per averne di più")),
 			mcplib.WithReadOnlyHintAnnotation(true),
 			mcplib.WithDestructiveHintAnnotation(false),
 			mcplib.WithOpenWorldHintAnnotation(true),
 		),
-		conValidazioneAvvisi(makeAPIHandler("GET", "/avvisi-full-text", true, false, nil, []mcpParamBinding{{PublicName: "query", WireName: "keywords", Location: "query"}, {PublicName: "scheda", WireName: "codiceScheda", Location: "query"}, {PublicName: "cpv", WireName: "cpv", Location: "query"}, {PublicName: "amount", WireName: "importoLotto", Location: "query"}, {PublicName: "published-from", WireName: "dataPubblicazioneStart", Location: "query"}, {PublicName: "published-to", WireName: "dataPubblicazioneEnd", Location: "query"}, {PublicName: "archive", WireName: "ricercaArchivio", Location: "query"}, {PublicName: "sort-field", WireName: "sortField", Location: "query"}, {PublicName: "sort-dir", WireName: "sortDirection", Location: "query"}, {PublicName: "fuzzy", WireName: "atlasFuzzySearchEnabled", Location: "query"}, {PublicName: "page", WireName: "page", Location: "query"}, {PublicName: "size", WireName: "size", Location: "query"}}, []string{})),
+		conValidazioneAvvisi(makeAPIHandler("GET", "/avvisi-full-text", true, false, nil, []mcpParamBinding{{PublicName: "query", WireName: "keywords", Location: "query"}, {PublicName: "scheda", WireName: "codiceScheda", Location: "query"}, {PublicName: "cpv", WireName: "cpv", Location: "query"}, {PublicName: "amount", WireName: "importoLotto", Location: "query"}, {PublicName: "published-from", WireName: "dataPubblicazioneStart", Location: "query"}, {PublicName: "published-to", WireName: "dataPubblicazioneEnd", Location: "query"}, {PublicName: "archive", WireName: "ricercaArchivio", Location: "query"}, {PublicName: "sort-field", WireName: "sortField", Location: "query"}, {PublicName: "sort-dir", WireName: "sortDirection", Location: "query"}, {PublicName: "fuzzy", WireName: "atlasFuzzySearchEnabled", Location: "query"}, {PublicName: "size", WireName: "size", Location: "query"}}, []string{})),
 	)
 	s.AddTool(
 		mcplib.NewTool("news_list",

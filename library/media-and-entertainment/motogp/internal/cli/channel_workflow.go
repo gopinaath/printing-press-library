@@ -57,6 +57,12 @@ and full resync. After archiving, use 'search' for instant full-text search.`,
 
 			resources := []string{"categories", "riders", "seasons"}
 			totalSynced := 0
+			successfulResources := 0
+			type resourceFailure struct {
+				Resource string `json:"resource"`
+				Error    string `json:"error"`
+			}
+			var failedResources []resourceFailure
 			syncEventWriter := cmd.OutOrStdout()
 			if flags.asJSON {
 				syncEventWriter = cmd.ErrOrStderr()
@@ -67,36 +73,49 @@ and full resync. After archiving, use 'search' for instant full-text search.`,
 			// since filter, not cursor reset. Mirrors newSyncCmd's pattern.
 			if full {
 				for _, resource := range resources {
-					_ = s.SaveSyncState(resource, "", 0)
+					if err := s.SaveSyncState(resource, "", 0); err != nil {
+						return fmt.Errorf("resetting %s sync state: %w", resource, err)
+					}
 				}
 			}
 
 			for _, resource := range resources {
 				res := syncResource(cmd.Context(), c, s, resource, "", full, 100, false, false, nil, syncEventWriter)
-				if res.Err != nil {
-					fmt.Fprintf(cmd.ErrOrStderr(), "  %s: error: %v\n", resource, res.Err)
+				count, failure := archiveSyncOutcome(res)
+				totalSynced += count
+				if failure != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "  %s: incomplete: %v\n", resource, failure)
+					failedResources = append(failedResources, resourceFailure{Resource: resource, Error: failure.Error()})
 					continue
 				}
-				if res.Warn != nil {
-					fmt.Fprintf(cmd.ErrOrStderr(), "  %s: warning: %v\n", resource, res.Warn)
-					continue
-				}
-				totalSynced += res.Count
+				successfulResources++
 				fmt.Fprintf(cmd.ErrOrStderr(), "  %s: %d synced\n", resource, res.Count)
 			}
 
 			if flags.asJSON {
 				enc := json.NewEncoder(cmd.OutOrStdout())
 				enc.SetIndent("", "  ")
-				return enc.Encode(map[string]any{
-					"resources_synced": len(resources),
+				if err := enc.Encode(map[string]any{
+					"resources_total":  len(resources),
+					"resources_synced": successfulResources,
+					"resources_failed": len(failedResources),
+					"failed_resources": failedResources,
 					"total_items":      totalSynced,
 					"store_path":       dbPath,
 					"timestamp":        time.Now().UTC().Format(time.RFC3339),
-				})
+				}); err != nil {
+					return err
+				}
+				if len(failedResources) > 0 {
+					return fmt.Errorf("archive incomplete: %d of %d resources failed", len(failedResources), len(resources))
+				}
+				return nil
 			}
 
-			fmt.Fprintf(cmd.OutOrStdout(), "Archived %d items across %d resources to %s\n", totalSynced, len(resources), dbPath)
+			fmt.Fprintf(cmd.OutOrStdout(), "Archived %d items across %d of %d resources to %s\n", totalSynced, successfulResources, len(resources), dbPath)
+			if len(failedResources) > 0 {
+				return fmt.Errorf("archive incomplete: %d of %d resources failed", len(failedResources), len(resources))
+			}
 			return nil
 		},
 	}
@@ -105,6 +124,19 @@ and full resync. After archiving, use 'search' for instant full-text search.`,
 	cmd.Flags().BoolVar(&full, "full", false, "Full re-archive (ignore previous sync state)")
 
 	return cmd
+}
+
+func archiveSyncOutcome(res syncResult) (int, error) {
+	switch {
+	case res.Err != nil:
+		return res.Count, res.Err
+	case res.Warn != nil:
+		return res.Count, res.Warn
+	case res.IncompleteReason != "":
+		return res.Count, fmt.Errorf("enumeration stopped: %s", res.IncompleteReason)
+	default:
+		return res.Count, nil
+	}
 }
 
 func newWorkflowStatusCmd(flags *rootFlags) *cobra.Command {

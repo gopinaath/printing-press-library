@@ -5,6 +5,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/mvanhorn/printing-press-library/library/devices/bmw-cardata/internal/client"
+	"github.com/mvanhorn/printing-press-library/library/devices/bmw-cardata/internal/cliutil"
 	"github.com/mvanhorn/printing-press-library/library/devices/bmw-cardata/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -281,8 +283,17 @@ func (f *rootFlags) newClient() (*client.Client, error) {
 	if err != nil {
 		return nil, configErr(err)
 	}
+	// Preview and local-only paths must not rotate a single-use refresh token.
+	if !f.dryRun && !cliutil.IsVerifyEnv() && f.dataSource != "local" {
+		ctx, cancel := context.WithTimeout(context.Background(), f.timeout)
+		defer cancel()
+		if err := RefreshCardataAccessTokenIfNeeded(ctx, cfg, time.Now(), CardataTokenURL); err != nil {
+			return nil, authErr(err)
+		}
+	}
 	c := client.New(cfg, f.timeout, f.rateLimit)
-	c.DryRun = f.dryRun
+	c.DryRun = f.dryRun || (cliutil.IsVerifyEnv() && !cliutil.IsVerifyLiveHTTPEnv())
+	c.LocalOnly = f.dataSource == "local"
 	c.NoCache = f.noCache
 	return c, nil
 }

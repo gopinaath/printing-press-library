@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "bmw-cardata",
   "cli_name": "bmw-cardata-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.2",
+  "released_at": "2026-10-02T02:51:57Z",
+  "source_commit": "e7bc1c32562d40a2830745c31fbd5ddf71203f33",
   "printing_press_version": "4.24.0",
   "run_id": "20260630-212750-ea90da3f",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(bmw-cardata): correct shipped spec path",
+      "pr": 2233,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2233",
+      "commit": "e7bc1c32562d40a2830745c31fbd5ddf71203f33"
     }
   ]
 }

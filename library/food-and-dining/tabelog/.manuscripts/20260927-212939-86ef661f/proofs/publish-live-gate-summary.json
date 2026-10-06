@@ -1,0 +1,110 @@
+{
+  "kind": "publish-time-live-gate",
+  "status": "PASS",
+  "exit_code": 0,
+  "verdict": "PASS",
+  "mandatory_passed": 60,
+  "mandatory_failed": 0,
+  "skipped_unverified": 127,
+  "skip_reasons": {
+    "command hidden from public help": 60,
+    "ancestor command hidden from public help": 60,
+    "no positional argument": 2,
+    "mutating command dry-run only": 1,
+    "mutating command; error_path would call live API without --dry-run": 4
+  },
+  "failed_rows": [],
+  "mutator_happy_invocations": {
+    "lists add": {
+      "status": "pass",
+      "no_dry_run": true,
+      "confined_home": true,
+      "json_flag_explicit": false
+    },
+    "lists note": {
+      "status": "pass",
+      "no_dry_run": true,
+      "confined_home": true,
+      "json_flag_explicit": false
+    },
+    "lists refresh": {
+      "status": "pass",
+      "no_dry_run": true,
+      "confined_home": true,
+      "json_flag_explicit": false
+    },
+    "lists remove": {
+      "status": "pass",
+      "no_dry_run": true,
+      "confined_home": true,
+      "json_flag_explicit": true
+    }
+  },
+  "prior_marker_sha256": "c59643b220c82551c4cd0e0ce62971571101f704c76f054422bad62400cc5916",
+  "fresh_marker_sha256": "029862acf7f595018f51977a1ea66aaac43f472a1fd651ec68de0b34f14652ec",
+  "marker_status": "pass",
+  "marker_source_fingerprint": "e48f112c7e7d01835d496882aaabd17d01d2e1de3b6e22a9cb48483a2e336de1",
+  "raw_transcript_sha256": "50b22776853983707b1231a2050864481491808242cb1f7b3c0a22d7ec5fc477",
+  "raw_transcript_bytes": 140523,
+  "raw_transcript_private_and_deleted": true,
+  "transport": "native HTTPS; network-permitted; TABELOG_* test variables unset",
+  "source_happy_request_envelopes": [
+    {
+      "command": "areas",
+      "kind": "happy_path",
+      "reported_requests": 1,
+      "reused_successful_happy_invocation": false
+    },
+    {
+      "command": "areas",
+      "kind": "json_fidelity",
+      "reported_requests": 1,
+      "reused_successful_happy_invocation": true
+    },
+    {
+      "command": "areas",
+      "kind": "error_path",
+      "reported_requests": 1,
+      "reused_successful_happy_invocation": false
+    },
+    {
+      "command": "find",
+      "kind": "happy_path",
+      "reported_requests": 1,
+      "reused_successful_happy_invocation": false
+    },
+    {
+      "command": "find",
+      "kind": "json_fidelity",
+      "reported_requests": 1,
+      "reused_successful_happy_invocation": true
+    },
+    {
+      "command": "lists refresh",
+      "kind": "happy_path",
+      "reported_requests": 1,
+      "reused_successful_happy_invocation": false
+    },
+    {
+      "command": "lists refresh",
+      "kind": "json_fidelity",
+      "reported_requests": 1,
+      "reused_successful_happy_invocation": true
+    },
+    {
+      "command": "show",
+      "kind": "happy_path",
+      "reported_requests": 1,
+      "reused_successful_happy_invocation": false
+    },
+    {
+      "command": "show",
+      "kind": "json_fidelity",
+      "reported_requests": 1,
+      "reused_successful_happy_invocation": true
+    }
+  ],
+  "source_happy_command_reported_GETs": 4,
+  "successful_response_envelope_requests_after_exact_json_reuse": 5,
+  "failed_error_path_requests_not_observable_from_response_envelopes": true
+}

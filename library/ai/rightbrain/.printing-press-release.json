@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "rightbrain",
   "cli_name": "rightbrain-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-02T01:55:28Z",
+  "source_commit": "f54d1b1d99ed64ae57373a04487f3636f09d2675",
   "printing_press_version": "4.29.0",
   "run_id": "20260731-211113-96771397",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "fix(rightbrain): redact dry runs and secure HTTP MCP",
+      "pr": 2206,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2206",
+      "commit": "f54d1b1d99ed64ae57373a04487f3636f09d2675"
     }
   ]
 }

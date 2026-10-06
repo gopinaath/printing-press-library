@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -22,6 +23,46 @@ import (
 // logiDownloadRe matches Logitech's download01.logi.com file URLs found inside
 // article bodies (firmware, software, PDF manuals).
 var logiDownloadRe = regexp.MustCompile(`https://download[0-9]*\.logi\.com/[^\s"'<>\\]+`)
+
+// logiDownloadHostRe is deliberately narrower than a general *.logi.com
+// allowlist. Article links are sourced from Logitech's dedicated download
+// hosts, so redirects must remain on that same host family and on HTTPS.
+var logiDownloadHostRe = regexp.MustCompile(`(?i)^download[0-9]*\.logi\.com$`)
+
+func validateLogitechDownloadURL(u *url.URL) error {
+	if u == nil || !strings.EqualFold(u.Scheme, "https") || !logiDownloadHostRe.MatchString(u.Hostname()) {
+		return fmt.Errorf("refusing download redirect outside HTTPS Logitech download hosts")
+	}
+	return nil
+}
+
+func newLogitechDownloadClient() *http.Client {
+	return &http.Client{CheckRedirect: func(req *http.Request, _ []*http.Request) error {
+		return validateLogitechDownloadURL(req.URL)
+	}}
+}
+
+// saveNewDownload claims the destination with O_EXCL. If writing fails, it
+// leaves the partial file in place with an explicit error. Removing by path
+// could delete a file another process swapped in after the open.
+func saveNewDownload(dest string, src io.Reader) error {
+	out, err := os.OpenFile(dest, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600) // #nosec G304 -- dest is a validated basename joined under the caller-selected --save directory
+	if err != nil {
+		if os.IsExist(err) {
+			return fmt.Errorf("refusing to overwrite existing download %s", dest)
+		}
+		return fmt.Errorf("creating download %s: %w", dest, err)
+	}
+	_, copyErr := io.Copy(out, src)
+	closeErr := out.Close()
+	if copyErr != nil {
+		return fmt.Errorf("writing %s: %w; partial download may remain at this path", dest, copyErr)
+	}
+	if closeErr != nil {
+		return fmt.Errorf("closing %s: %w; partial download may remain at this path", dest, closeErr)
+	}
+	return nil
+}
 
 type downloadLink struct {
 	ArticleID string `json:"article_id"`
@@ -117,7 +158,7 @@ func newNovelDownloadCmd(flags *rootFlags) *cobra.Command {
 			if err := os.MkdirAll(saveDir, 0o750); err != nil {
 				return fmt.Errorf("creating directory %s: %w", saveDir, err)
 			}
-			client := &http.Client{}
+			client := newLogitechDownloadClient()
 			for i := range links {
 				req, err := http.NewRequestWithContext(ctx, http.MethodGet, links[i].URL, nil)
 				if err != nil {
@@ -140,19 +181,10 @@ func newNovelDownloadCmd(flags *rootFlags) *cobra.Command {
 					return apiErr(fmt.Errorf("refusing unsafe download filename %q from %s", name, links[i].URL))
 				}
 				dest := filepath.Join(saveDir, name)
-				out, err := os.Create(dest) // #nosec G304 -- name is validated above as a plain file name and joined under the user-supplied --save dir
-				if err != nil {
-					_ = resp.Body.Close()
-					return fmt.Errorf("creating %s: %w", dest, err)
-				}
-				_, copyErr := io.Copy(out, resp.Body)
-				closeErr := out.Close()
+				err = saveNewDownload(dest, resp.Body)
 				_ = resp.Body.Close()
-				if copyErr != nil {
-					return fmt.Errorf("writing %s: %w", dest, copyErr)
-				}
-				if closeErr != nil {
-					return fmt.Errorf("closing %s: %w", dest, closeErr)
+				if err != nil {
+					return err
 				}
 				links[i].SavedTo = dest
 			}

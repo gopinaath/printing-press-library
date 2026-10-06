@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "pbs",
   "cli_name": "pbs-pp-cli",
-  "version": "2026.9.2",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T20:44:56Z",
+  "source_commit": "3631a9d6bcfd8d939fb826da4de756f8cbb2a91d",
   "printing_press_version": "4.31.7",
   "run_id": "20260908-120459-bfe084c8",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "Reject incomplete PBS price report totals",
+      "pr": 2124,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2124",
+      "commit": "3631a9d6bcfd8d939fb826da4de756f8cbb2a91d"
     }
   ]
 }

@@ -2,7 +2,10 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.10.1 - 2026-10-02
+
+- fix(swiggy): use MCP envelopes and reject unsafe Windows ACLs (#2182).
+
 ## 2026.9.1 - 2026-09-13
 
 - Baseline release metadata added for this published CLI.
-

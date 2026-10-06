@@ -1,0 +1,65 @@
+{
+  "status": "PASS",
+  "leading_connector_set": [
+    "ただし",
+    "また",
+    "なお",
+    "但し",
+    "尚"
+  ],
+  "at_most_one_leading_prefix_only": true,
+  "full_weather_body_unchanged": true,
+  "multiple_internal_unlisted_prefixes_contact_mixed_and_unknown_conservative": true,
+  "fresh_connector_cases": 49,
+  "prior_request_cases": 17,
+  "expense_cases": 10,
+  "legacy_contact_cases": 20,
+  "legacy_weather_cases": 5,
+  "read_selectors_each": 3,
+  "actual_cached_commands": [
+    {
+      "command": "inspect-weather",
+      "exit": 0,
+      "notice_and_shared_projection_correct": true,
+      "evidence_clocks_units_null_total_preserved": true,
+      "warnings_only_actual_delta": true
+    },
+    {
+      "command": "inspect-contact",
+      "exit": 0,
+      "notice_and_shared_projection_correct": true,
+      "evidence_clocks_units_null_total_preserved": true,
+      "warnings_only_actual_delta": true
+    },
+    {
+      "command": "inspect-correct",
+      "exit": 0,
+      "notice_and_shared_projection_correct": true,
+      "evidence_clocks_units_null_total_preserved": true,
+      "warnings_only_actual_delta": true
+    },
+    {
+      "command": "compare-weather",
+      "exit": 0,
+      "notice_and_shared_projection_correct": true,
+      "evidence_clocks_units_null_total_preserved": true,
+      "warnings_only_actual_delta": true
+    },
+    {
+      "command": "compare-contact",
+      "exit": 0,
+      "notice_and_shared_projection_correct": true,
+      "evidence_clocks_units_null_total_preserved": true,
+      "warnings_only_actual_delta": true
+    },
+    {
+      "command": "saved",
+      "exit": 0,
+      "notice_and_shared_projection_correct": true,
+      "evidence_clocks_units_null_total_preserved": true,
+      "warnings_only_actual_delta": true
+    }
+  ],
+  "DB_hash_mtime_original_clocks_amount_units_unchanged": true,
+  "warnings_only_actual_delta": true
+}

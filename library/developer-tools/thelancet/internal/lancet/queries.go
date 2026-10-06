@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math"
+	"time"
 )
 
 // AuthorRank is one row of the rank-authors output.
@@ -75,6 +77,44 @@ type CoAuthorEdge struct {
 
 // CoAuthorMesh finds co-authorship pairs where both authors have published from
 // the given institution, ranked by number of shared works.
+//
+// The institution's authors are collected into an indexed temporary table
+// rather than matched with `author_id IN (SELECT ... )`. That IN-list is what
+// made this query unusable on a real store: SQLite materialises the first
+// reference but replays the second as a LINEAR SCAN of the list for every
+// candidate row, so the cost is (rows of the institution's authors) x (number
+// of those authors).
+//
+// Measured on the Bibliovera mirror (506k authorships, 610k affiliations,
+// "oxford" -> 3,649 authors and 12,020 authorship rows, so ~44M list
+// comparisons):
+//
+//	IN (SELECT ...)            29.9s   <- the form this replaces
+//	CTE narrowing the rows     28.4s
+//	COUNT(*) instead of DISTINCT 28.7s
+//	EXISTS against the index   >60s, abandoned
+//	indexed temp table          0.98s  <- this form
+//
+// All of the completed variants returned byte-identical output: 28,963 pairs,
+// verified with diff. The speedup is in how the set is probed, not in what is
+// counted, and the callers see exactly the same rows in the same order.
+//
+// Two details are load-bearing:
+//
+//   - The work runs on an explicit *sql.Conn. A TEMP table belongs to one
+//     SQLite connection, and database/sql is free to hand the next statement a
+//     different pooled connection, on which the table would simply not exist.
+//     One caller (ensureLancetStore) already pins the pool to a single
+//     connection, but this function cannot see that and must not depend on it.
+//   - The table is dropped on the way out. The connection goes back to the
+//     pool afterwards, so a leftover table would meet the next call's CREATE
+//     and fail it.
+//
+// COUNT(*) is correct in place of COUNT(DISTINCT a1.work_id) because
+// lancet_authorships has PRIMARY KEY (work_id, author_id): within one
+// (a1.author_id, a2.author_id) group a work_id cannot repeat, so there is
+// nothing for DISTINCT to remove. It is also the form the 0.98s figure above
+// was measured with.
 func CoAuthorMesh(ctx context.Context, db *sql.DB, institution string, limit int) ([]CoAuthorEdge, error) {
 	if institution == "" {
 		return nil, fmt.Errorf("institution is required")
@@ -82,22 +122,51 @@ func CoAuthorMesh(ctx context.Context, db *sql.DB, institution string, limit int
 	if err := EnsureSchema(ctx, db); err != nil {
 		return nil, err
 	}
-	// Authors affiliated with the institution.
+
+	conn, err := db.Conn(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	// A previous call on this same pooled connection should have dropped its
+	// table, but a cancelled context can cut the drop short. Clearing first
+	// makes the function safe to retry rather than dependent on the last run
+	// having finished cleanly.
+	if _, err := conn.ExecContext(ctx, `DROP TABLE IF EXISTS temp.mesh_inst_authors`); err != nil {
+		return nil, err
+	}
+	if _, err := conn.ExecContext(ctx, `
+		CREATE TEMP TABLE mesh_inst_authors (
+			author_id TEXT PRIMARY KEY
+		)`); err != nil {
+		return nil, err
+	}
+	defer func() {
+		// Not ctx: if the caller's context is already cancelled this is exactly
+		// when the drop matters most, and leaving the table behind would break
+		// the NEXT call rather than this one.
+		_, _ = conn.ExecContext(context.Background(), `DROP TABLE IF EXISTS temp.mesh_inst_authors`)
+	}()
+
+	if _, err := conn.ExecContext(ctx, `
+		INSERT OR IGNORE INTO mesh_inst_authors(author_id)
+		SELECT DISTINCT author_id FROM lancet_affiliations
+		WHERE institution_name LIKE ?`, "%"+institution+"%"); err != nil {
+		return nil, err
+	}
+
 	q := `
-		WITH inst_authors AS (
-			SELECT DISTINCT author_id FROM lancet_affiliations
-			WHERE institution_name LIKE ?
-		)
-		SELECT a1.author_name, a2.author_name, COUNT(DISTINCT a1.work_id) AS shared
+		SELECT a1.author_name, a2.author_name, COUNT(*) AS shared
 		FROM lancet_authorships a1
+		JOIN mesh_inst_authors i1 ON i1.author_id = a1.author_id
 		JOIN lancet_authorships a2
-		  ON a1.work_id = a2.work_id AND a1.author_id < a2.author_id
-		WHERE a1.author_id IN (SELECT author_id FROM inst_authors)
-		  AND a2.author_id IN (SELECT author_id FROM inst_authors)
+		  ON a2.work_id = a1.work_id AND a2.author_id > a1.author_id
+		JOIN mesh_inst_authors i2 ON i2.author_id = a2.author_id
 		GROUP BY a1.author_id, a2.author_id
 		ORDER BY shared DESC
 		LIMIT ?`
-	rows, err := db.QueryContext(ctx, q, "%"+institution+"%", limit)
+	rows, err := conn.QueryContext(ctx, q, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -267,17 +336,65 @@ type WorkRow struct {
 	Year    int    `json:"year"`
 	Cited   int    `json:"cited_by_count"`
 	Topic   string `json:"topic"`
+	// PubDate is YYYY-MM-DD, empty when unknown.
+	PubDate          string  `json:"pub_date"`
+	CitationsPerYear float64 `json:"citations_per_year"`
 }
 
-// Curate selects works matching a topic/keyword (title or topic substring),
-// scoped optionally to a journal, sorted by "citations" or "date".
+// minAgeYears floors a work's age so a paper published days ago does not get an
+// absurd citations-per-year figure.
+const minAgeYears = 0.25
+
+// CitationsPerYear is cited / age in years, rounded to one decimal. Age is
+// (now - pubDate) / 365.25 days; an empty or invalid pubDate falls back to
+// July 1 of year; age is floored at 0.25 years. ok is false when neither a
+// valid date nor a year is available.
+func CitationsPerYear(now time.Time, pubDate string, year, cited int) (cpy float64, ok bool) {
+	d, err := time.Parse("2006-01-02", pubDate)
+	if err != nil {
+		if year <= 0 {
+			return 0, false
+		}
+		d = time.Date(year, time.July, 1, 0, 0, 0, 0, time.UTC)
+	}
+	age := now.Sub(d).Hours() / 24 / 365.25
+	if age < minAgeYears {
+		age = minAgeYears
+	}
+	return math.Round(float64(cited)/age*10) / 10, true
+}
+
+// Same age rule as CitationsPerYear, evaluated in SQL so it can run before LIMIT.
+// validDateSQL accepts pub_date only when it is exactly a real YYYY-MM-DD: the
+// GLOB rejects other shapes ("2024-2-5", timestamps) and the date() round trip
+// rejects day overflow that SQLite would normalise ("2024-02-31"), matching
+// time.Parse in the Go helper. Anything else falls back to July 1 of pub_year.
+const (
+	validDateSQL = `CASE WHEN length(pub_date) = 10 AND pub_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(pub_date) = pub_date THEN pub_date END`
+	effDateSQL   = `COALESCE(` + validDateSQL + `, CASE WHEN pub_year > 0 THEN printf('%04d-07-01', pub_year) END)`
+	// rawCpySQL is the unrounded rate, used for ordering; cpySQL rounds it for output.
+	rawCpySQL = `cited_count / MAX(0.25, (julianday('now') - julianday(` + effDateSQL + `)) / 365.25)`
+	cpySQL    = `CASE WHEN ` + effDateSQL + ` IS NULL THEN 0 ELSE ROUND(` + rawCpySQL + `, 1) END`
+)
+
+// Curate selects works matching a topic/keyword (whole words in title or topic),
+// scoped optionally to a journal, sorted by "citations", "date" or "per-year"
+// (average citations per year, ranked over all matching rows before LIMIT).
 func Curate(ctx context.Context, db *sql.DB, topic, issn, sort string, openAccessOnly bool, limit int) ([]WorkRow, error) {
 	if err := EnsureSchema(ctx, db); err != nil {
 		return nil, err
 	}
-	q := `SELECT title, doi, journal_name, pub_year, cited_count, COALESCE(topic,'')
-	      FROM lancet_works WHERE (title LIKE ? OR topic LIKE ?)`
-	args := []any{"%" + topic + "%", "%" + topic + "%"}
+	q := `SELECT title, doi, journal_name, pub_year, cited_count, COALESCE(topic,''),
+	             COALESCE(` + validDateSQL + `,''), ` + cpySQL + ` AS cpy
+	      FROM lancet_works WHERE 1=1`
+	var args []any
+	// Whole-word match (porter unicode61, AND across words). A topic with no
+	// searchable word (empty/whitespace/punctuation only) applies no text
+	// filter and returns every work, subject to the other filters.
+	if m := ftsMatchQuery(topic); m != "" {
+		q += ` AND rowid IN (SELECT rowid FROM lancet_works_fts WHERE lancet_works_fts MATCH ?)`
+		args = append(args, m)
+	}
 	if issn != "" {
 		q += ` AND journal_issn = ?`
 		args = append(args, issn)
@@ -288,6 +405,8 @@ func Curate(ctx context.Context, db *sql.DB, topic, issn, sort string, openAcces
 	switch sort {
 	case "date":
 		q += ` ORDER BY pub_date DESC`
+	case "per-year":
+		q += ` AND ` + effDateSQL + ` IS NOT NULL ORDER BY ` + rawCpySQL + ` DESC, cited_count DESC, title`
 	default:
 		q += ` ORDER BY cited_count DESC`
 	}
@@ -302,11 +421,12 @@ func Curate(ctx context.Context, db *sql.DB, topic, issn, sort string, openAcces
 	var out []WorkRow
 	for rows.Next() {
 		var w WorkRow
-		var title, doi, jn, tp sql.NullString
-		if err := rows.Scan(&title, &doi, &jn, &w.Year, &w.Cited, &tp); err != nil {
+		var title, doi, jn, tp, pd sql.NullString
+		if err := rows.Scan(&title, &doi, &jn, &w.Year, &w.Cited, &tp, &pd, &w.CitationsPerYear); err != nil {
 			continue
 		}
 		w.Title, w.DOI, w.Journal, w.Topic = title.String, doi.String, jn.String, tp.String
+		w.PubDate = pd.String
 		out = append(out, w)
 	}
 	return out, rows.Err()

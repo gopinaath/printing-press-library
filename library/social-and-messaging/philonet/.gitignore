@@ -1,0 +1,8 @@
+# Root-anchored so cmd/<binary>/ source stays tracked.
+/philonet-pp-cli
+/philonet-pp-cli.exe
+/philonet-pp-mcp
+/philonet-pp-mcp.exe
+/bin/
+/build/
+/dist/

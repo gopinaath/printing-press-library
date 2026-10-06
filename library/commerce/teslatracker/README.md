@@ -8,6 +8,8 @@ Learn more at [TeslaTracker](https://teslatracker.com).
 
 Created by [@michegz](https://github.com/michegz) (michegz).
 
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 ## Install
 
 The recommended path installs both the `teslatracker-pp-cli` binary and the `pp-teslatracker` agent skill (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, and other agents supported by the upstream [`skills`](https://github.com/vercel-labs/skills) CLI) in one shot:
@@ -143,6 +145,10 @@ teslatracker-pp-cli stale --limit 10
 teslatracker-pp-cli watch run mine
 
 ```
+
+`sync` stores listing links under their VIN, so a local `inventory get --vin` can find the listing. The listing link does not contain the full vehicle detail. Run `hydrate` before using the local derived commands that need mileage, warranty, and price fields.
+
+If you previously taught an inventory lookup based on a listing's display name, the local store keeps that learning and resolves it to the VIN when the old listing can be identified safely. Exact historical patterns use the same mapping. You can list or forget those learnings using `--resource <VIN>`. If two vehicles share the old display name, the store keeps the old link and learning unchanged; review that lookup before re-teaching it. Name-based prefix patterns may still need re-teaching because a display-name prefix cannot be mapped to a VIN reliably.
 
 ## Unique Features
 

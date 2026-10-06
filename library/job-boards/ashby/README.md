@@ -4,6 +4,9 @@
 
 Turn any known Ashby job-board name into structured, agent-friendly job data while enforcing Ashby's public-listing boundary.
 
+Created by [@klubieniecki](https://github.com/klubieniecki) (klubieniecki).
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 ## Install
 
 The recommended path installs both the `ashby-pp-cli` binary and the `pp-ashby` agent skill (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, and other agents supported by the upstream [`skills`](https://github.com/vercel-labs/skills) CLI) in one shot:
@@ -118,6 +121,10 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 
 No Ashby API key or customer account is required. Authenticated recruiting, candidate, and application-management APIs are intentionally out of scope.
 
+The MCP server uses local standard input and output by default. For HTTP MCP, set `PP_MCP_HTTP_TOKEN` in the server environment and run `ashby-pp-mcp --transport http --addr 127.0.0.1:7777`. Requests must carry that token as a Bearer token. A server exposed beyond the local computer also requires `--tls-cert` and `--tls-key`. Keep the token out of command-line arguments.
+
+The public Ashby API still needs no API key. The bearer token protects only the MCP server's HTTP transport; local stdio MCP does not need it. The catalog lists these as separate authentication requirements.
+
 ## Quick Start
 
 ```bash
@@ -169,7 +176,7 @@ Filters published structured compensation.
 ashby-pp-cli sync ashby --include-compensation
 ```
 
-Mirrors a known public board into SQLite.
+Mirrors a known public board into SQLite. Sync replaces that board's saved jobs only after Ashby returns a complete jobs list. If a posting is missing its ID or saving fails, the previous snapshot remains available.
 
 ### Search a synced board
 

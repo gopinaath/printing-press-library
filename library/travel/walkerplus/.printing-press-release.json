@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "walkerplus",
+  "cli_name": "walkerplus-pp-cli",
+  "version": "2026.9.1",
+  "released_at": "2026-09-28T08:53:15Z",
+  "source_commit": "d8dca182087cf0902856e8548955671f9300ea4b",
+  "printing_press_version": "4.32.5",
+  "run_id": "20260927-220621-b57bba4d",
+  "changes": [
+    {
+      "title": "feat(walkerplus): add walkerplus",
+      "pr": 2072,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2072",
+      "commit": "d8dca182087cf0902856e8548955671f9300ea4b"
+    }
+  ]
+}

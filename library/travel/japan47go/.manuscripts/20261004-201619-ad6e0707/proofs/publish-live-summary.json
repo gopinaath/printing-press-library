@@ -1,0 +1,166 @@
+{
+  "status": "PASS",
+  "source_fingerprint": "0b6d5c6be8cf658665c6189dd7dc3a525e08433f7f11844c50470d9e135a66f2",
+  "completed_at": "2026-10-04T23:06:34.679653+00:00",
+  "passed": 80,
+  "failed": 0,
+  "skipped_unverified": 80,
+  "runner_matrix_size": 80,
+  "actual_domain_happy_paths": [
+    {
+      "command": "services compare",
+      "kind": "happy_path",
+      "status": "pass"
+    },
+    {
+      "command": "services discover",
+      "kind": "happy_path",
+      "status": "pass"
+    },
+    {
+      "command": "services inspect",
+      "kind": "happy_path",
+      "status": "pass"
+    },
+    {
+      "command": "services saved",
+      "kind": "happy_path",
+      "status": "pass"
+    }
+  ],
+  "installed_meaningful_current_public_cases": [
+    {
+      "id": "2980022e-ef99-4115-95e5-be5227cdc74e",
+      "name_ja": "妻籠宿案内人の会",
+      "source_url": "https://www.japan47go.travel/ja/detail/2980022e-ef99-4115-95e5-be5227cdc74e",
+      "source_updated_at": "2026-05-22T12:56:31+09:00",
+      "observed_at": "2026-10-04T23:06:34.486513Z",
+      "request": {
+        "status": "known",
+        "lead_times": [
+          {
+            "value": 10,
+            "unit": "days",
+            "original": "10日前"
+          }
+        ],
+        "options": [],
+        "original": "・10日前"
+      },
+      "price": {
+        "status": "paid",
+        "amounts": [],
+        "qualifiers": [
+          "expenses",
+          "guide_fee"
+        ],
+        "total_jpy": null,
+        "original": "有料（ガイド料及び実費）"
+      },
+      "minimum_party": null,
+      "durations": [
+        {
+          "min_minutes": 30,
+          "max_minutes": 30,
+          "original": "1.お気軽コース（町並み案内）30分"
+        },
+        {
+          "min_minutes": 45,
+          "max_minutes": 45,
+          "original": "2.本陣コース（町並み+本陣）45分"
+        },
+        {
+          "min_minutes": 60,
+          "max_minutes": 60,
+          "original": "3.脇本陣奥谷・本陣コース（町並み＋博物館）60分"
+        },
+        {
+          "min_minutes": 90,
+          "max_minutes": 90,
+          "original": "4.歴史探訪コース（全てじっくり）90分"
+        }
+      ],
+      "availability": "unknown",
+      "open_now": null
+    },
+    {
+      "id": "0ad62a4e-2987-4e83-af63-7a6dd69e0d98",
+      "name_ja": "博多ガイドの会",
+      "source_url": "https://www.japan47go.travel/ja/detail/0ad62a4e-2987-4e83-af63-7a6dd69e0d98",
+      "source_updated_at": "2026-04-30T11:58:29+09:00",
+      "observed_at": "2026-10-04T23:06:34.577991Z",
+      "request": {
+        "status": "known",
+        "lead_times": [
+          {
+            "value": 1,
+            "unit": "weeks",
+            "original": "1週間前"
+          }
+        ],
+        "options": [],
+        "original": "・1週間前"
+      },
+      "price": {
+        "status": "expenses",
+        "amounts": [],
+        "qualifiers": [
+          "expenses"
+        ],
+        "total_jpy": null,
+        "original": "実費負担（保険料、資料代、施設入場料、ガイド交通費・弁当代等）"
+      },
+      "minimum_party": null,
+      "durations": [
+        {
+          "min_minutes": 120,
+          "max_minutes": 120,
+          "original": "4.フリーコース：お客様のご要望に応じてご案内します。 各コース約2時間"
+        }
+      ],
+      "availability": "unknown",
+      "open_now": null
+    },
+    {
+      "id": "c98eaa8d-a854-4494-88db-a04b6de17461",
+      "name_ja": "田主丸・かっぱガイド会",
+      "source_url": "https://www.japan47go.travel/ja/detail/c98eaa8d-a854-4494-88db-a04b6de17461",
+      "source_updated_at": "2026-05-22T12:56:31+09:00",
+      "observed_at": "2026-10-04T23:06:34.664117Z",
+      "request": {
+        "status": "known",
+        "lead_times": [
+          {
+            "value": 10,
+            "unit": "days",
+            "original": "10日前"
+          }
+        ],
+        "options": [],
+        "original": "・10日前"
+      },
+      "price": {
+        "status": "paid",
+        "amounts": [],
+        "qualifiers": [
+          "expenses",
+          "guide_fee"
+        ],
+        "total_jpy": null,
+        "original": "有料（ガイド料及び実費）"
+      },
+      "minimum_party": 2,
+      "durations": [
+        {
+          "min_minutes": 150,
+          "max_minutes": 150,
+          "original": "モデルコース：徒歩約2時間半　かっぱの像を巡りながら地元の歴史やトリビアを伝えます。このツアーでないと入れない場所もあります。"
+        }
+      ],
+      "availability": "unknown",
+      "open_now": null
+    }
+  ],
+  "saved_original_times_preserved": true,
+  "no_provider_mutations": true
+}

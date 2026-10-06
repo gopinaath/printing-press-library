@@ -4,6 +4,8 @@
 
 exa-pp-cli wraps the full Exa API — search, contents, answer, find-similar, monitors, agent runs, websets, webhooks, imports — and adds a local SQLite store so every result, run, and cost lands on disk. Re-run past queries, diff monitor runs, track entity first-seens, and watch spend in real time.
 
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 ## Install
 
 The recommended path installs both the `exa-pp-cli` binary and the `pp-exa` agent skill (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, and other agents supported by the upstream [`skills`](https://github.com/vercel-labs/skills) CLI) in one shot:
@@ -126,6 +128,8 @@ exa-pp-cli doctor --dry-run
 
 # Run a semantic web search with key excerpts for agent context.
 exa-pp-cli websearch --query "latest developments in LLMs" --num-results 5 --contents '{"highlights":true}'
+
+# --contents accepts a JSON object or null; other values fail before an API request.
 
 # Extract clean markdown text from a known URL.
 exa-pp-cli contents --urls "https://example.com" --highlights true

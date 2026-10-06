@@ -403,8 +403,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 			} else {
 				bodyMap := map[string]any{}
 				body = bodyMap
-				if bodyAuthorId != "" {
-					bodyMap["author_id"] = bodyAuthorId
+				if cmd.Flags().Changed("author-id") || bodyAuthorId != "" {
+					if err := setJSONBodyScalar(bodyMap, "author_id", "author-id", "int", bodyAuthorId); err != nil {
+						return err
+					}
 				}
 				if bodyBody != "" {
 					bodyMap["body"] = bodyBody
@@ -428,8 +430,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					nestedTranslatedContent := map[string]any{}
 					{
 						nestedTranslatedContentAr := map[string]any{}
-						if bodyTranslatedContentArAuthorId != "" {
-							nestedTranslatedContentAr["author_id"] = bodyTranslatedContentArAuthorId
+						if cmd.Flags().Changed("translated-content-ar-author-id") || bodyTranslatedContentArAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentAr, "author_id", "translated-content-ar-author-id", "int", bodyTranslatedContentArAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentArBody != "" {
 							nestedTranslatedContentAr["body"] = bodyTranslatedContentArBody
@@ -461,8 +465,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentBg := map[string]any{}
-						if bodyTranslatedContentBgAuthorId != "" {
-							nestedTranslatedContentBg["author_id"] = bodyTranslatedContentBgAuthorId
+						if cmd.Flags().Changed("translated-content-bg-author-id") || bodyTranslatedContentBgAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentBg, "author_id", "translated-content-bg-author-id", "int", bodyTranslatedContentBgAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentBgBody != "" {
 							nestedTranslatedContentBg["body"] = bodyTranslatedContentBgBody
@@ -494,8 +500,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentBs := map[string]any{}
-						if bodyTranslatedContentBsAuthorId != "" {
-							nestedTranslatedContentBs["author_id"] = bodyTranslatedContentBsAuthorId
+						if cmd.Flags().Changed("translated-content-bs-author-id") || bodyTranslatedContentBsAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentBs, "author_id", "translated-content-bs-author-id", "int", bodyTranslatedContentBsAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentBsBody != "" {
 							nestedTranslatedContentBs["body"] = bodyTranslatedContentBsBody
@@ -527,8 +535,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentCa := map[string]any{}
-						if bodyTranslatedContentCaAuthorId != "" {
-							nestedTranslatedContentCa["author_id"] = bodyTranslatedContentCaAuthorId
+						if cmd.Flags().Changed("translated-content-ca-author-id") || bodyTranslatedContentCaAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentCa, "author_id", "translated-content-ca-author-id", "int", bodyTranslatedContentCaAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentCaBody != "" {
 							nestedTranslatedContentCa["body"] = bodyTranslatedContentCaBody
@@ -560,8 +570,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentCs := map[string]any{}
-						if bodyTranslatedContentCsAuthorId != "" {
-							nestedTranslatedContentCs["author_id"] = bodyTranslatedContentCsAuthorId
+						if cmd.Flags().Changed("translated-content-cs-author-id") || bodyTranslatedContentCsAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentCs, "author_id", "translated-content-cs-author-id", "int", bodyTranslatedContentCsAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentCsBody != "" {
 							nestedTranslatedContentCs["body"] = bodyTranslatedContentCsBody
@@ -593,8 +605,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentDa := map[string]any{}
-						if bodyTranslatedContentDaAuthorId != "" {
-							nestedTranslatedContentDa["author_id"] = bodyTranslatedContentDaAuthorId
+						if cmd.Flags().Changed("translated-content-da-author-id") || bodyTranslatedContentDaAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentDa, "author_id", "translated-content-da-author-id", "int", bodyTranslatedContentDaAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentDaBody != "" {
 							nestedTranslatedContentDa["body"] = bodyTranslatedContentDaBody
@@ -626,8 +640,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentDe := map[string]any{}
-						if bodyTranslatedContentDeAuthorId != "" {
-							nestedTranslatedContentDe["author_id"] = bodyTranslatedContentDeAuthorId
+						if cmd.Flags().Changed("translated-content-de-author-id") || bodyTranslatedContentDeAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentDe, "author_id", "translated-content-de-author-id", "int", bodyTranslatedContentDeAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentDeBody != "" {
 							nestedTranslatedContentDe["body"] = bodyTranslatedContentDeBody
@@ -659,8 +675,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentEl := map[string]any{}
-						if bodyTranslatedContentElAuthorId != "" {
-							nestedTranslatedContentEl["author_id"] = bodyTranslatedContentElAuthorId
+						if cmd.Flags().Changed("translated-content-el-author-id") || bodyTranslatedContentElAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentEl, "author_id", "translated-content-el-author-id", "int", bodyTranslatedContentElAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentElBody != "" {
 							nestedTranslatedContentEl["body"] = bodyTranslatedContentElBody
@@ -692,8 +710,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentEn := map[string]any{}
-						if bodyTranslatedContentEnAuthorId != "" {
-							nestedTranslatedContentEn["author_id"] = bodyTranslatedContentEnAuthorId
+						if cmd.Flags().Changed("translated-content-en-author-id") || bodyTranslatedContentEnAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentEn, "author_id", "translated-content-en-author-id", "int", bodyTranslatedContentEnAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentEnBody != "" {
 							nestedTranslatedContentEn["body"] = bodyTranslatedContentEnBody
@@ -725,8 +745,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentEs := map[string]any{}
-						if bodyTranslatedContentEsAuthorId != "" {
-							nestedTranslatedContentEs["author_id"] = bodyTranslatedContentEsAuthorId
+						if cmd.Flags().Changed("translated-content-es-author-id") || bodyTranslatedContentEsAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentEs, "author_id", "translated-content-es-author-id", "int", bodyTranslatedContentEsAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentEsBody != "" {
 							nestedTranslatedContentEs["body"] = bodyTranslatedContentEsBody
@@ -758,8 +780,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentEt := map[string]any{}
-						if bodyTranslatedContentEtAuthorId != "" {
-							nestedTranslatedContentEt["author_id"] = bodyTranslatedContentEtAuthorId
+						if cmd.Flags().Changed("translated-content-et-author-id") || bodyTranslatedContentEtAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentEt, "author_id", "translated-content-et-author-id", "int", bodyTranslatedContentEtAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentEtBody != "" {
 							nestedTranslatedContentEt["body"] = bodyTranslatedContentEtBody
@@ -791,8 +815,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentFi := map[string]any{}
-						if bodyTranslatedContentFiAuthorId != "" {
-							nestedTranslatedContentFi["author_id"] = bodyTranslatedContentFiAuthorId
+						if cmd.Flags().Changed("translated-content-fi-author-id") || bodyTranslatedContentFiAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentFi, "author_id", "translated-content-fi-author-id", "int", bodyTranslatedContentFiAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentFiBody != "" {
 							nestedTranslatedContentFi["body"] = bodyTranslatedContentFiBody
@@ -824,8 +850,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentFr := map[string]any{}
-						if bodyTranslatedContentFrAuthorId != "" {
-							nestedTranslatedContentFr["author_id"] = bodyTranslatedContentFrAuthorId
+						if cmd.Flags().Changed("translated-content-fr-author-id") || bodyTranslatedContentFrAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentFr, "author_id", "translated-content-fr-author-id", "int", bodyTranslatedContentFrAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentFrBody != "" {
 							nestedTranslatedContentFr["body"] = bodyTranslatedContentFrBody
@@ -857,8 +885,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentHe := map[string]any{}
-						if bodyTranslatedContentHeAuthorId != "" {
-							nestedTranslatedContentHe["author_id"] = bodyTranslatedContentHeAuthorId
+						if cmd.Flags().Changed("translated-content-he-author-id") || bodyTranslatedContentHeAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentHe, "author_id", "translated-content-he-author-id", "int", bodyTranslatedContentHeAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentHeBody != "" {
 							nestedTranslatedContentHe["body"] = bodyTranslatedContentHeBody
@@ -890,8 +920,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentHr := map[string]any{}
-						if bodyTranslatedContentHrAuthorId != "" {
-							nestedTranslatedContentHr["author_id"] = bodyTranslatedContentHrAuthorId
+						if cmd.Flags().Changed("translated-content-hr-author-id") || bodyTranslatedContentHrAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentHr, "author_id", "translated-content-hr-author-id", "int", bodyTranslatedContentHrAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentHrBody != "" {
 							nestedTranslatedContentHr["body"] = bodyTranslatedContentHrBody
@@ -923,8 +955,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentHu := map[string]any{}
-						if bodyTranslatedContentHuAuthorId != "" {
-							nestedTranslatedContentHu["author_id"] = bodyTranslatedContentHuAuthorId
+						if cmd.Flags().Changed("translated-content-hu-author-id") || bodyTranslatedContentHuAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentHu, "author_id", "translated-content-hu-author-id", "int", bodyTranslatedContentHuAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentHuBody != "" {
 							nestedTranslatedContentHu["body"] = bodyTranslatedContentHuBody
@@ -956,8 +990,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentId := map[string]any{}
-						if bodyTranslatedContentIdAuthorId != "" {
-							nestedTranslatedContentId["author_id"] = bodyTranslatedContentIdAuthorId
+						if cmd.Flags().Changed("translated-content-id-author-id") || bodyTranslatedContentIdAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentId, "author_id", "translated-content-id-author-id", "int", bodyTranslatedContentIdAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentIdBody != "" {
 							nestedTranslatedContentId["body"] = bodyTranslatedContentIdBody
@@ -989,8 +1025,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentIt := map[string]any{}
-						if bodyTranslatedContentItAuthorId != "" {
-							nestedTranslatedContentIt["author_id"] = bodyTranslatedContentItAuthorId
+						if cmd.Flags().Changed("translated-content-it-author-id") || bodyTranslatedContentItAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentIt, "author_id", "translated-content-it-author-id", "int", bodyTranslatedContentItAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentItBody != "" {
 							nestedTranslatedContentIt["body"] = bodyTranslatedContentItBody
@@ -1022,8 +1060,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentJa := map[string]any{}
-						if bodyTranslatedContentJaAuthorId != "" {
-							nestedTranslatedContentJa["author_id"] = bodyTranslatedContentJaAuthorId
+						if cmd.Flags().Changed("translated-content-ja-author-id") || bodyTranslatedContentJaAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentJa, "author_id", "translated-content-ja-author-id", "int", bodyTranslatedContentJaAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentJaBody != "" {
 							nestedTranslatedContentJa["body"] = bodyTranslatedContentJaBody
@@ -1055,8 +1095,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentKo := map[string]any{}
-						if bodyTranslatedContentKoAuthorId != "" {
-							nestedTranslatedContentKo["author_id"] = bodyTranslatedContentKoAuthorId
+						if cmd.Flags().Changed("translated-content-ko-author-id") || bodyTranslatedContentKoAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentKo, "author_id", "translated-content-ko-author-id", "int", bodyTranslatedContentKoAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentKoBody != "" {
 							nestedTranslatedContentKo["body"] = bodyTranslatedContentKoBody
@@ -1088,8 +1130,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentLt := map[string]any{}
-						if bodyTranslatedContentLtAuthorId != "" {
-							nestedTranslatedContentLt["author_id"] = bodyTranslatedContentLtAuthorId
+						if cmd.Flags().Changed("translated-content-lt-author-id") || bodyTranslatedContentLtAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentLt, "author_id", "translated-content-lt-author-id", "int", bodyTranslatedContentLtAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentLtBody != "" {
 							nestedTranslatedContentLt["body"] = bodyTranslatedContentLtBody
@@ -1121,8 +1165,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentLv := map[string]any{}
-						if bodyTranslatedContentLvAuthorId != "" {
-							nestedTranslatedContentLv["author_id"] = bodyTranslatedContentLvAuthorId
+						if cmd.Flags().Changed("translated-content-lv-author-id") || bodyTranslatedContentLvAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentLv, "author_id", "translated-content-lv-author-id", "int", bodyTranslatedContentLvAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentLvBody != "" {
 							nestedTranslatedContentLv["body"] = bodyTranslatedContentLvBody
@@ -1154,8 +1200,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentMn := map[string]any{}
-						if bodyTranslatedContentMnAuthorId != "" {
-							nestedTranslatedContentMn["author_id"] = bodyTranslatedContentMnAuthorId
+						if cmd.Flags().Changed("translated-content-mn-author-id") || bodyTranslatedContentMnAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentMn, "author_id", "translated-content-mn-author-id", "int", bodyTranslatedContentMnAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentMnBody != "" {
 							nestedTranslatedContentMn["body"] = bodyTranslatedContentMnBody
@@ -1187,8 +1235,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentNb := map[string]any{}
-						if bodyTranslatedContentNbAuthorId != "" {
-							nestedTranslatedContentNb["author_id"] = bodyTranslatedContentNbAuthorId
+						if cmd.Flags().Changed("translated-content-nb-author-id") || bodyTranslatedContentNbAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentNb, "author_id", "translated-content-nb-author-id", "int", bodyTranslatedContentNbAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentNbBody != "" {
 							nestedTranslatedContentNb["body"] = bodyTranslatedContentNbBody
@@ -1220,8 +1270,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentNl := map[string]any{}
-						if bodyTranslatedContentNlAuthorId != "" {
-							nestedTranslatedContentNl["author_id"] = bodyTranslatedContentNlAuthorId
+						if cmd.Flags().Changed("translated-content-nl-author-id") || bodyTranslatedContentNlAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentNl, "author_id", "translated-content-nl-author-id", "int", bodyTranslatedContentNlAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentNlBody != "" {
 							nestedTranslatedContentNl["body"] = bodyTranslatedContentNlBody
@@ -1253,8 +1305,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentPl := map[string]any{}
-						if bodyTranslatedContentPlAuthorId != "" {
-							nestedTranslatedContentPl["author_id"] = bodyTranslatedContentPlAuthorId
+						if cmd.Flags().Changed("translated-content-pl-author-id") || bodyTranslatedContentPlAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentPl, "author_id", "translated-content-pl-author-id", "int", bodyTranslatedContentPlAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentPlBody != "" {
 							nestedTranslatedContentPl["body"] = bodyTranslatedContentPlBody
@@ -1286,8 +1340,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentPt := map[string]any{}
-						if bodyTranslatedContentPtAuthorId != "" {
-							nestedTranslatedContentPt["author_id"] = bodyTranslatedContentPtAuthorId
+						if cmd.Flags().Changed("translated-content-pt-author-id") || bodyTranslatedContentPtAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentPt, "author_id", "translated-content-pt-author-id", "int", bodyTranslatedContentPtAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentPtBody != "" {
 							nestedTranslatedContentPt["body"] = bodyTranslatedContentPtBody
@@ -1319,8 +1375,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentPtBR := map[string]any{}
-						if bodyTranslatedContentPtBRAuthorId != "" {
-							nestedTranslatedContentPtBR["author_id"] = bodyTranslatedContentPtBRAuthorId
+						if cmd.Flags().Changed("translated-content-pt-br-author-id") || bodyTranslatedContentPtBRAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentPtBR, "author_id", "translated-content-pt-br-author-id", "int", bodyTranslatedContentPtBRAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentPtBRBody != "" {
 							nestedTranslatedContentPtBR["body"] = bodyTranslatedContentPtBRBody
@@ -1352,8 +1410,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentRo := map[string]any{}
-						if bodyTranslatedContentRoAuthorId != "" {
-							nestedTranslatedContentRo["author_id"] = bodyTranslatedContentRoAuthorId
+						if cmd.Flags().Changed("translated-content-ro-author-id") || bodyTranslatedContentRoAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentRo, "author_id", "translated-content-ro-author-id", "int", bodyTranslatedContentRoAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentRoBody != "" {
 							nestedTranslatedContentRo["body"] = bodyTranslatedContentRoBody
@@ -1385,8 +1445,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentRu := map[string]any{}
-						if bodyTranslatedContentRuAuthorId != "" {
-							nestedTranslatedContentRu["author_id"] = bodyTranslatedContentRuAuthorId
+						if cmd.Flags().Changed("translated-content-ru-author-id") || bodyTranslatedContentRuAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentRu, "author_id", "translated-content-ru-author-id", "int", bodyTranslatedContentRuAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentRuBody != "" {
 							nestedTranslatedContentRu["body"] = bodyTranslatedContentRuBody
@@ -1418,8 +1480,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentSl := map[string]any{}
-						if bodyTranslatedContentSlAuthorId != "" {
-							nestedTranslatedContentSl["author_id"] = bodyTranslatedContentSlAuthorId
+						if cmd.Flags().Changed("translated-content-sl-author-id") || bodyTranslatedContentSlAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentSl, "author_id", "translated-content-sl-author-id", "int", bodyTranslatedContentSlAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentSlBody != "" {
 							nestedTranslatedContentSl["body"] = bodyTranslatedContentSlBody
@@ -1451,8 +1515,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentSr := map[string]any{}
-						if bodyTranslatedContentSrAuthorId != "" {
-							nestedTranslatedContentSr["author_id"] = bodyTranslatedContentSrAuthorId
+						if cmd.Flags().Changed("translated-content-sr-author-id") || bodyTranslatedContentSrAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentSr, "author_id", "translated-content-sr-author-id", "int", bodyTranslatedContentSrAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentSrBody != "" {
 							nestedTranslatedContentSr["body"] = bodyTranslatedContentSrBody
@@ -1484,8 +1550,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentSv := map[string]any{}
-						if bodyTranslatedContentSvAuthorId != "" {
-							nestedTranslatedContentSv["author_id"] = bodyTranslatedContentSvAuthorId
+						if cmd.Flags().Changed("translated-content-sv-author-id") || bodyTranslatedContentSvAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentSv, "author_id", "translated-content-sv-author-id", "int", bodyTranslatedContentSvAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentSvBody != "" {
 							nestedTranslatedContentSv["body"] = bodyTranslatedContentSvBody
@@ -1517,8 +1585,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentTr := map[string]any{}
-						if bodyTranslatedContentTrAuthorId != "" {
-							nestedTranslatedContentTr["author_id"] = bodyTranslatedContentTrAuthorId
+						if cmd.Flags().Changed("translated-content-tr-author-id") || bodyTranslatedContentTrAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentTr, "author_id", "translated-content-tr-author-id", "int", bodyTranslatedContentTrAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentTrBody != "" {
 							nestedTranslatedContentTr["body"] = bodyTranslatedContentTrBody
@@ -1553,8 +1623,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentVi := map[string]any{}
-						if bodyTranslatedContentViAuthorId != "" {
-							nestedTranslatedContentVi["author_id"] = bodyTranslatedContentViAuthorId
+						if cmd.Flags().Changed("translated-content-vi-author-id") || bodyTranslatedContentViAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentVi, "author_id", "translated-content-vi-author-id", "int", bodyTranslatedContentViAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentViBody != "" {
 							nestedTranslatedContentVi["body"] = bodyTranslatedContentViBody
@@ -1586,8 +1658,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentZhCN := map[string]any{}
-						if bodyTranslatedContentZhCNAuthorId != "" {
-							nestedTranslatedContentZhCN["author_id"] = bodyTranslatedContentZhCNAuthorId
+						if cmd.Flags().Changed("translated-content-zh-cn-author-id") || bodyTranslatedContentZhCNAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentZhCN, "author_id", "translated-content-zh-cn-author-id", "int", bodyTranslatedContentZhCNAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentZhCNBody != "" {
 							nestedTranslatedContentZhCN["body"] = bodyTranslatedContentZhCNBody
@@ -1619,8 +1693,10 @@ func newArticlesUpdateCmd(flags *rootFlags) *cobra.Command {
 					}
 					{
 						nestedTranslatedContentZhTW := map[string]any{}
-						if bodyTranslatedContentZhTWAuthorId != "" {
-							nestedTranslatedContentZhTW["author_id"] = bodyTranslatedContentZhTWAuthorId
+						if cmd.Flags().Changed("translated-content-zh-tw-author-id") || bodyTranslatedContentZhTWAuthorId != "" {
+							if err := setJSONBodyScalar(nestedTranslatedContentZhTW, "author_id", "translated-content-zh-tw-author-id", "int", bodyTranslatedContentZhTWAuthorId); err != nil {
+								return err
+							}
 						}
 						if bodyTranslatedContentZhTWBody != "" {
 							nestedTranslatedContentZhTW["body"] = bodyTranslatedContentZhTWBody

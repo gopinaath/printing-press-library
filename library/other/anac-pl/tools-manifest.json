@@ -62,7 +62,7 @@
     },
     {
       "name": "avvisi_search",
-      "description": "Ricerca full-text di avvisi (bandi, esiti, altri avvisi) con ranking di rilevanza e filtri. Optional: query, scheda, cpv (plus 9 more). Returns array of Avviso.",
+      "description": "Ricerca full-text di avvisi (bandi, esiti, altri avvisi) con ranking di rilevanza e filtri. Optional: query, scheda, cpv (plus 8 more). Returns array of Avviso.",
       "method": "GET",
       "path": "/avvisi-full-text",
       "no_auth": true,
@@ -143,16 +143,10 @@
           "description": "Abilita la ricerca fuzzy (tolleranza errori) lato motore di ricerca"
         },
         {
-          "name": "page",
-          "type": "int",
-          "location": "query",
-          "description": "Numero di pagina (0-based)"
-        },
-        {
           "name": "size",
           "type": "int",
           "location": "query",
-          "description": "Numero di risultati per pagina"
+          "description": "Numero di risultati per pagina. Il servizio restituisce una sola pagina: non esiste un parametro di pagina, alza size per averne di più"
         }
       ]
     },

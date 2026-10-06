@@ -4,8 +4,11 @@
 package cli
 
 import (
+	"bytes"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 // Fixture index used across which-ranking tests. Covers a typical mix
@@ -94,5 +97,71 @@ func TestWhichIndex_ExistsAndIsWellFormed(t *testing.T) {
 		if strings.TrimSpace(e.Description) == "" {
 			t.Errorf("whichIndex[%d] (%s) has empty Description - template rendered bad data", i, e.Command)
 		}
+	}
+}
+
+func TestRenderWhichHonorsPlainAndQuiet(t *testing.T) {
+	matches := []whichMatch{{Entry: whichEntry{Command: "find", Description: "Find catalog items"}, Score: 5}}
+	for _, tc := range []struct {
+		name  string
+		flags rootFlags
+		want  string
+	}{
+		{name: "plain", flags: rootFlags{plain: true}, want: "find\t5\tFind catalog items\n"},
+		{name: "quiet", flags: rootFlags{quiet: true}, want: "find\n"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out bytes.Buffer
+			cmd := &cobra.Command{}
+			cmd.SetOut(&out)
+			if err := renderWhich(cmd, &tc.flags, matches); err != nil {
+				t.Fatalf("renderWhich: %v", err)
+			}
+			if got := out.String(); got != tc.want {
+				t.Fatalf("output = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRenderWhichRejectsConflictingOutputFlags(t *testing.T) {
+	matches := []whichMatch{{Entry: whichEntry{Command: "find", Description: "Find catalog items"}, Score: 5}}
+	for _, tc := range []struct {
+		name  string
+		flags rootFlags
+	}{
+		{name: "json and plain", flags: rootFlags{asJSON: true, plain: true}},
+		{name: "agent and quiet", flags: rootFlags{agent: true, asJSON: true, quiet: true}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var out bytes.Buffer
+			cmd := &cobra.Command{}
+			cmd.SetOut(&out)
+			err := renderWhich(cmd, &tc.flags, matches)
+			if err == nil || !strings.Contains(err.Error(), "cannot combine") {
+				t.Fatalf("renderWhich error = %v, want conflicting format flags", err)
+			}
+			if out.Len() != 0 {
+				t.Fatalf("conflicting flags wrote %q", out.String())
+			}
+		})
+	}
+}
+
+func TestWhichRejectsAgentQuietEvenForNoMatch(t *testing.T) {
+	for _, query := range []string{"find", "nonexistentxyz"} {
+		t.Run(query, func(t *testing.T) {
+			root := RootCmd()
+			var out bytes.Buffer
+			root.SetOut(&out)
+			root.SetArgs([]string{"--agent", "--quiet", "which", query})
+			err := root.Execute()
+			if err == nil || !strings.Contains(err.Error(), "cannot combine") {
+				t.Fatalf("which error = %v, want conflicting format flags", err)
+			}
+			if out.Len() != 0 {
+				t.Fatalf("conflicting flags wrote %q", out.String())
+			}
+		})
 	}
 }

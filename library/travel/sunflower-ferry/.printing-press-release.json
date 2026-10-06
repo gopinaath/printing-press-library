@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "sunflower-ferry",
+  "cli_name": "sunflower-ferry-pp-cli",
+  "version": "2026.10.1",
+  "released_at": "2026-10-03T08:50:22Z",
+  "source_commit": "a213ec3d69202c84ca4c42ed503fffae6fcf1e7d",
+  "printing_press_version": "4.32.5",
+  "run_id": "20261002-221558-06882353",
+  "changes": [
+    {
+      "title": "feat(sunflower-ferry): add sunflower-ferry",
+      "pr": 2239,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2239",
+      "commit": "a213ec3d69202c84ca4c42ed503fffae6fcf1e7d"
+    }
+  ]
+}

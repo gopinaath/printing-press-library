@@ -1,0 +1,25 @@
+{
+  "status": "APPROVED",
+  "same_sole_reviewer": true,
+  "all_prior_and_N4_R1_findings_closed": true,
+  "reviewer_N4R1_receipt_sha256": "5fd644e9735f644264fcbc5a8df264484868894d5c4c6f43c502c38386b42f4a",
+  "source_fingerprint": "0b6d5c6be8cf658665c6189dd7dc3a525e08433f7f11844c50470d9e135a66f2",
+  "source_files": 168,
+  "document_hashes": {
+    "README.md": "8d68c1cfe78aa0b00e50119bc3fe29aa30eea46f99ea67381d941476d07d3d9f",
+    "SKILL.md": "760792566ded330a7053c45242a52681c0b20f2f02496f7de9e446d142887774",
+    "AGENTS.md": "b10597cc53d54430e2973dcbe6b890549cd3a6ad915d4bd53c005bf260c35546",
+    "SOURCE-SELECTION.md": "5fa5c65b56a86aa752683dcf56e097a38b7471d1197b0b56d34533965139bb07",
+    "manifest.json": "dbf4fcb616872147cb1a26b245ce6622ea65a28caa3d3c6af10d0ba71e793430",
+    ".printing-press.json": "9d9b42625aa169ea45cc191fde6bfa841c97e507357bc886e4e6b12b7aafed61",
+    "tools-manifest.json": "fb28dff7391c924a000ef15635cec167421b718e782966cce5cdda3d5c14f2aa"
+  },
+  "artifact_hashes": {
+    "japan47go-pp-cli": "8a831b0b6b960316daa4309780fac4b1c62b8132f3437465fbd7c4cd2019bd93",
+    "japan47go-pp-mcp": "1fad7f3396dbaa961c3f1ebe69747013f3b2ecbe65068b8d9ced4f0b20415157",
+    "japan47go-pp-mcp-darwin-arm64.mcpb": "adff9ebd13cc65fa95ba21f2d61b15a8dd38d2b31542fc3c33bc43128e0af550"
+  },
+  "public_artifact_snapshot_sha256": "9199ee14724d613b967ea2e6e7830418ab164b81c8c4d23351908ce00ec1d0d7",
+  "Go_minimum": "1.26.6",
+  "shipping_toolchain": "1.27.1"
+}

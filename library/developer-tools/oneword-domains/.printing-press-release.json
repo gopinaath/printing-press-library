@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "oneword-domains",
+  "cli_name": "oneword-domains-pp-cli",
+  "version": "2026.9.1",
+  "released_at": "2026-09-25T08:56:46Z",
+  "source_commit": "194f50c6d6b2d767fa36b93ae76b13917ca59447",
+  "printing_press_version": "4.32.4",
+  "run_id": "20260924-061450-62059de3",
+  "changes": [
+    {
+      "title": "feat(oneword-domains): add oneword-domains",
+      "pr": 2053,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2053",
+      "commit": "194f50c6d6b2d767fa36b93ae76b13917ca59447"
+    }
+  ]
+}

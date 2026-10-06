@@ -13,12 +13,13 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"sort"
 	"sync"
 
-	"github.com/spf13/cobra"
 	"github.com/mvanhorn/printing-press-library/library/productivity/gmail/internal/client"
 	"github.com/mvanhorn/printing-press-library/library/productivity/gmail/internal/store"
+	"github.com/spf13/cobra"
 )
 
 // undoConflict is one skipped id and why.
@@ -141,6 +142,10 @@ Typed exits: 0 complete (conflicts allowed) / 2 usage / 4 refused
 // run inline — a ledger holds at most one). Conflict = skip + report.
 func undoLedgerEntries(ctx context.Context, c *client.Client, db *store.Store, ledger store.MailLedger, entries []store.MailLedgerEntry) undoResult {
 	res := undoResult{LedgerID: ledger.LedgerID, Account: ledger.Account, Total: len(entries), Conflicts: []undoConflict{}}
+	priorState := make(map[string]string, len(entries))
+	for _, entry := range entries {
+		priorState[entry.ID] = entry.Undone
+	}
 
 	type entryResult struct {
 		id       string
@@ -160,7 +165,7 @@ func undoLedgerEntries(ctx context.Context, c *client.Client, db *store.Store, l
 		go func() {
 			defer wg.Done()
 			for e := range work {
-				id, undone, conflict, err := undoOneEntry(ctx, c, e)
+				id, undone, conflict, err := undoOneEntry(ctx, c, db, e)
 				results <- entryResult{id: id, undone: undone, conflict: conflict, err: err}
 			}
 		}()
@@ -186,11 +191,24 @@ func undoLedgerEntries(ctx context.Context, c *client.Client, db *store.Store, l
 		r := perID[id]
 		switch {
 		case r.undone:
-			res.Undone++
-			_ = db.SetMailLedgerEntryUndone(ledger.LedgerID, id, "undone")
+			if err := db.SetMailLedgerEntryUndone(ledger.LedgerID, id, "undone"); err != nil {
+				res.Failed++
+				res.FailedIDs = append(res.FailedIDs, id)
+			} else {
+				res.Undone++
+			}
 		case r.conflict != "":
-			res.Conflicts = append(res.Conflicts, undoConflict{ID: id, Reason: r.conflict})
-			_ = db.SetMailLedgerEntryUndone(ledger.LedgerID, id, "conflict")
+			if priorState[id] == "undone" || priorState[id] == "conflict" ||
+				priorState[id] == "untrash_pending" || priorState[id] == "untrash_done" {
+				res.Conflicts = append(res.Conflicts, undoConflict{ID: id, Reason: r.conflict})
+				continue
+			}
+			if err := db.SetMailLedgerEntryUndone(ledger.LedgerID, id, "conflict"); err != nil {
+				res.Failed++
+				res.FailedIDs = append(res.FailedIDs, id)
+			} else {
+				res.Conflicts = append(res.Conflicts, undoConflict{ID: id, Reason: r.conflict})
+			}
 		default:
 			res.Failed++
 			res.FailedIDs = append(res.FailedIDs, id)
@@ -200,13 +218,16 @@ func undoLedgerEntries(ctx context.Context, c *client.Client, db *store.Store, l
 }
 
 // undoOneEntry reverses one ledger entry. Returns (id, undone, conflictReason, err).
-func undoOneEntry(ctx context.Context, c *client.Client, e store.MailLedgerEntry) (string, bool, string, error) {
+func undoOneEntry(ctx context.Context, c *client.Client, db *store.Store, e store.MailLedgerEntry) (string, bool, string, error) {
 	if e.Undone == "undone" {
 		return e.ID, false, "already undone by a previous undo run", nil
 	}
+	if e.Undone == "conflict" {
+		return e.ID, false, "previous undo conflict needs review", nil
+	}
 	switch e.Kind {
 	case "trash":
-		return undoTrashEntry(ctx, c, e)
+		return undoTrashEntry(ctx, c, db, e)
 	case "label":
 		return undoLabelEntry(ctx, c, e)
 	case "label_rename":
@@ -216,7 +237,7 @@ func undoOneEntry(ctx context.Context, c *client.Client, e store.MailLedgerEntry
 	}
 }
 
-func undoTrashEntry(ctx context.Context, c *client.Client, e store.MailLedgerEntry) (string, bool, string, error) {
+func undoTrashEntry(ctx context.Context, c *client.Client, db *store.Store, e store.MailLedgerEntry) (string, bool, string, error) {
 	labels, found, err := fetchMessageLabelIDs(ctx, c, e.ID)
 	if err != nil {
 		return e.ID, false, "", err
@@ -224,14 +245,72 @@ func undoTrashEntry(ctx context.Context, c *client.Client, e store.MailLedgerEnt
 	if !found {
 		return e.ID, false, "message no longer exists (purged or deleted since the apply)", nil
 	}
-	if !hasLabel(labels, "TRASH") {
+	trashPresent := hasLabel(labels, "TRASH")
+	if e.Undone == "untrash_pending" {
+		// A crash or ambiguous response may leave the state before the
+		// post-response confirmation stamp. Neither present nor absent
+		// TRASH proves who changed it, so do not restore placement or retry.
+		return e.ID, false, "untrash result is uncertain; review before retrying", nil
+	}
+	if e.Undone == "untrash_done" {
+		laterTrash, err := db.HasLaterTrashLedgerEntry(e.LedgerID, e.ID)
+		if err != nil {
+			return e.ID, false, "", err
+		}
+		if laterTrash || trashPresent {
+			return e.ID, false, "message was trashed again after the confirmed untrash", nil
+		}
+		if !e.HasUntrashSnapshot {
+			return e.ID, false, "confirmed untrash has no label snapshot; review before restoring placement", nil
+		}
+		// The placement write may have succeeded just before a crash or a
+		// failed ledger stamp. If its exact intended labels are present,
+		// finish the ledger without sending another mutation.
+		restored := append(append([]string(nil), e.UntrashLabels...), e.PrePlacement...)
+		if slices.Equal(sortedCopy(labels), sortedCopy(uniqueLabels(restored))) {
+			return e.ID, true, "", nil
+		}
+		if !slices.Equal(sortedCopy(labels), sortedCopy(e.UntrashLabels)) {
+			return e.ID, false, "message labels changed after the confirmed untrash; review before restoring placement", nil
+		}
+	}
+	if !trashPresent && e.Undone != "untrash_done" {
 		return e.ID, false, "TRASH is no longer present — the message was already untrashed or moved since the apply", nil
 	}
-	if err := engineCall(ctx, func(cctx context.Context) error {
-		_, _, perr := c.Post(cctx, mailMetadataFetchPath+url.PathEscape(e.ID)+"/untrash", struct{}{})
-		return perr
-	}); err != nil {
-		return e.ID, false, "", err
+	if e.Undone != "untrash_done" {
+		// Stamp intent before the external mutation. If untrash succeeds but
+		// placement restoration fails (or the process crashes), the next run
+		// can distinguish our partial undo from a user's manual untrash.
+		if err := db.SetMailLedgerEntryUndone(e.LedgerID, e.ID, "untrash_pending"); err != nil {
+			return e.ID, false, "", err
+		}
+	}
+	if trashPresent {
+		callCtx, cancel := context.WithTimeout(ctx, cleanupCallTimeout)
+		data, _, err := c.Post(callCtx, mailMetadataFetchPath+url.PathEscape(e.ID)+"/untrash", struct{}{})
+		cancel()
+		if err != nil {
+			// Authentication and rate-limit responses are definite
+			// rejections. Restore the prior ledger state so a later undo can
+			// retry after the condition is fixed.
+			if status := apiStatus(err); status == 401 || status == 403 || status == 429 {
+				if resetErr := db.SetMailLedgerEntryUndone(e.LedgerID, e.ID, ""); resetErr != nil {
+					return e.ID, false, "", errors.Join(err, resetErr)
+				}
+			}
+			return e.ID, false, "", err
+		}
+		var message struct {
+			ID       string   `json:"id"`
+			LabelIDs []string `json:"labelIds"`
+		}
+		if err := json.Unmarshal(data, &message); err != nil || message.ID != e.ID || hasLabel(message.LabelIDs, "TRASH") {
+			return e.ID, false, "", fmt.Errorf("untrash response for %s was incomplete; review before retrying", e.ID)
+		}
+		if err := db.SetMailLedgerEntryUntrashDone(e.LedgerID, e.ID, message.LabelIDs); err != nil {
+			return e.ID, false, "", err
+		}
+		labels = message.LabelIDs
 	}
 	// Restore recorded pre-placement labels now missing (grill R3-C3):
 	// untrash removes TRASH but does NOT restore INBOX/CATEGORY_*.
@@ -248,15 +327,29 @@ func undoTrashEntry(ctx context.Context, c *client.Client, e store.MailLedgerEnt
 		}
 	}
 	if len(missing) > 0 {
-		if err := engineCall(ctx, func(cctx context.Context) error {
-			_, _, perr := c.Post(cctx, mailMetadataFetchPath+url.PathEscape(e.ID)+"/modify",
-				map[string]any{"addLabelIds": missing})
-			return perr
-		}); err != nil {
+		// A server error may arrive after Gmail applied the labels. Send
+		// once and let a later undo compare live labels with the snapshot.
+		callCtx, cancel := context.WithTimeout(ctx, cleanupCallTimeout)
+		_, _, err := c.Post(callCtx, mailMetadataFetchPath+url.PathEscape(e.ID)+"/modify",
+			map[string]any{"addLabelIds": missing})
+		cancel()
+		if err != nil {
 			return e.ID, false, "", fmt.Errorf("untrashed, but restoring placement labels failed: %w", err)
 		}
 	}
 	return e.ID, true, "", nil
+}
+
+func uniqueLabels(labels []string) []string {
+	seen := make(map[string]bool, len(labels))
+	out := make([]string, 0, len(labels))
+	for _, label := range labels {
+		if !seen[label] {
+			seen[label] = true
+			out = append(out, label)
+		}
+	}
+	return out
 }
 
 func undoLabelEntry(ctx context.Context, c *client.Client, e store.MailLedgerEntry) (string, bool, string, error) {

@@ -49,6 +49,8 @@ const fixtureNoteAlphaDetail = `{
   "space_membership": [],
   "summary_text": "Agreed the quarterly milestones.",
   "summary_markdown": "## Summary\n\nAgreed the quarterly milestones.",
+  "private_notes_text": "Owner follow-up: send the milestone sheet.",
+  "private_notes_markdown": "## Follow-up\n\nSend the milestone sheet.",
   "transcript": [
     {"text": "Kicking off the planning review.", "start_time": "2026-07-01T15:00:00Z", "end_time": "2026-07-01T15:00:20Z", "speaker": {"source": "microphone", "name": "Ada Placeholder"}},
     {"text": "I have the roadmap open now.", "start_time": "2026-07-01T15:00:20Z", "end_time": "2026-07-01T15:01:20Z", "speaker": {"source": "speaker", "name": "Bo Sample", "diarization_label": "SPEAKER_01"}}
@@ -163,7 +165,7 @@ func TestRunAPIHydrate_WritesDomainTablesNotResources(t *testing.T) {
 	assertQueryCount(t, db, `SELECT COUNT(*) FROM folder_memberships WHERE meeting_id='note_alpha'`, 1)
 	// The post-freeze meeting carries its summary.
 	var md string
-	if err := db.QueryRow(`SELECT notes_markdown FROM meetings WHERE id='note_alpha'`).Scan(&md); err != nil {
+	if err := db.QueryRow(`SELECT summary_markdown FROM meetings WHERE id='note_alpha'`).Scan(&md); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(md, "Agreed the quarterly milestones.") {
@@ -296,6 +298,61 @@ func TestRunAPIHydrate_AbortsOnUnauthorized(t *testing.T) {
 	assertQueryCount(t, db, `SELECT COUNT(*) FROM meetings`, 0)
 	assertQueryCount(t, db, `SELECT COUNT(*) FROM transcript_segments`, 0)
 	assertQueryCount(t, db, `SELECT COUNT(*) FROM attendees`, 0)
+}
+
+func TestRunAPIHydrate_PersistsFetchedPrefixBeforeLaterFailure(t *testing.T) {
+	flags, _ := newHydrateEnv(t, notesListHandler(t,
+		[]string{"note_alpha", "note_gamma"},
+		map[string]func(http.ResponseWriter){
+			"note_alpha": writeJSON(fixtureNoteAlphaDetail),
+			"note_gamma": writeStatus(http.StatusUnprocessableEntity, `{"error":"synthetic late failure"}`),
+		}))
+
+	res, err := runAPIHydrate(context.Background(), flags, apiHydrateOptions{})
+	if err == nil {
+		t.Fatal("expected late detail failure")
+	}
+	if res.NotesFetched != 1 {
+		t.Fatalf("notes_fetched = %d, want 1", res.NotesFetched)
+	}
+	db := openHydratedStore(t)
+	assertQueryCount(t, db, `SELECT COUNT(*) FROM meetings WHERE id='note_alpha'`, 1)
+	assertQueryCount(t, db, `SELECT COUNT(*) FROM meetings WHERE id='note_gamma'`, 0)
+}
+
+func TestRunAPIHydrate_FullSyncMarksMissingAPINotesDeleted(t *testing.T) {
+	phase := 1
+	flags, _ := newHydrateEnv(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v1/notes" {
+			if phase == 1 {
+				_, _ = w.Write([]byte(`{"notes":[{"id":"note_alpha"},{"id":"note_gamma"}],"hasMore":false,"cursor":null}`))
+			} else {
+				_, _ = w.Write([]byte(`{"notes":[{"id":"note_alpha"}],"hasMore":false,"cursor":null}`))
+			}
+			return
+		}
+		switch strings.TrimPrefix(r.URL.Path, "/v1/notes/") {
+		case "note_alpha":
+			_, _ = w.Write([]byte(fixtureNoteAlphaDetail))
+		case "note_gamma":
+			_, _ = w.Write([]byte(fixtureNoteGammaDetail))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	})
+	if _, err := runAPIHydrate(context.Background(), flags, apiHydrateOptions{}); err != nil {
+		t.Fatalf("first full sync: %v", err)
+	}
+	phase = 2
+	res, err := runAPIHydrate(context.Background(), flags, apiHydrateOptions{})
+	if err != nil {
+		t.Fatalf("second full sync: %v", err)
+	}
+	if res.Deleted != 1 {
+		t.Fatalf("deleted = %d, want 1", res.Deleted)
+	}
+	db := openHydratedStore(t)
+	assertQueryCount(t, db, `SELECT COUNT(*) FROM meetings WHERE id='note_gamma' AND COALESCE(deleted_at, '') <> ''`, 1)
 }
 
 // TestRunAPIHydrate_TalktimeSeesNonZeroSystemSeconds is the guard on the

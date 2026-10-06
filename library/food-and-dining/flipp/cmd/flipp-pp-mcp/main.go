@@ -6,8 +6,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mark3labs/mcp-go/server"
 	mcptools "github.com/mvanhorn/printing-press-library/library/food-and-dining/flipp/internal/mcp"
@@ -20,11 +24,11 @@ import (
 // guidance that production agents need a remote option.
 
 const (
-	defaultHTTPAddr = ":7777"
+	defaultHTTPAddr = "127.0.0.1:7777"
 )
 
 // version is the printed MCP server's version, overridable at build time via ldflags.
-var version = "2026.9.2"
+var version = "2026.10.2"
 
 func main() {
 	s := server.NewMCPServer(
@@ -36,7 +40,7 @@ func main() {
 	mcptools.RegisterTools(s)
 
 	transport := flag.String("transport", defaultTransport(), "MCP transport: stdio | http")
-	addr := flag.String("addr", defaultHTTPAddr, "bind address for http transport (host:port or :port)")
+	addr := flag.String("addr", defaultHTTPAddr, "loopback bind address for http transport (host:port)")
 	flag.Parse()
 
 	switch strings.ToLower(*transport) {
@@ -46,9 +50,23 @@ func main() {
 			os.Exit(1)
 		}
 	case "http":
-		httpSrv := server.NewStreamableHTTPServer(s)
-		fmt.Fprintf(os.Stderr, "flipp-pp-mcp serving MCP over streamable HTTP at %s\n", *addr)
-		if err := httpSrv.Start(*addr); err != nil {
+		if err := validateHTTPAddr(*addr); err != nil {
+			fmt.Fprintf(os.Stderr, "unsafe MCP HTTP bind: %v\n", err)
+			os.Exit(2)
+		}
+		listener, err := net.Listen("tcp", *addr)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "MCP server error: %v\n", err)
+			os.Exit(1)
+		}
+		if err := validateBoundListener(listener.Addr()); err != nil {
+			_ = listener.Close()
+			fmt.Fprintf(os.Stderr, "unsafe MCP HTTP bind: %v\n", err)
+			os.Exit(2)
+		}
+		httpSrv := &http.Server{Handler: server.NewStreamableHTTPServer(s), ReadHeaderTimeout: 5 * time.Second}
+		fmt.Fprintf(os.Stderr, "flipp-pp-mcp serving MCP over streamable HTTP at %s\n", listener.Addr())
+		if err := httpSrv.Serve(listener); err != nil {
 			fmt.Fprintf(os.Stderr, "MCP server error: %v\n", err)
 			os.Exit(1)
 		}
@@ -56,6 +74,33 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unknown --transport %q (supported: stdio, http)\n", *transport)
 		os.Exit(2)
 	}
+}
+
+func validateHTTPAddr(addr string) error {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return fmt.Errorf("invalid --addr %q: %w", addr, err)
+	}
+	portNumber, err := strconv.Atoi(port)
+	if err != nil || portNumber < 1 || portNumber > 65535 {
+		return fmt.Errorf("invalid port %q", port)
+	}
+	if strings.EqualFold(host, "localhost") {
+		return nil
+	}
+	ip := net.ParseIP(host)
+	if ip == nil || !ip.IsLoopback() {
+		return fmt.Errorf("%q is not loopback; this server has no HTTP authentication", host)
+	}
+	return nil
+}
+
+func validateBoundListener(addr net.Addr) error {
+	tcp, ok := addr.(*net.TCPAddr)
+	if !ok || !tcp.IP.IsLoopback() {
+		return fmt.Errorf("%q is not a loopback listener", addr)
+	}
+	return nil
 }
 
 // defaultTransport reads PP_MCP_TRANSPORT env when set, otherwise falls back

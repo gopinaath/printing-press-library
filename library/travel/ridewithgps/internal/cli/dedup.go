@@ -109,7 +109,7 @@ For quality issues other than duplication (stale, private) use 'audit'.`,
 				var id, name, created sql.NullString
 				var dist, fLat, fLng, lLat, lLng sql.NullFloat64
 				if err := rows.Scan(&id, &name, &dist, &fLat, &fLng, &lLat, &lLng, &created); err != nil {
-					continue
+					return fmt.Errorf("reading route row: %w", err)
 				}
 				routes = append(routes, dedupRoute{
 					ID: id.String, Name: name.String, Distance: dist.Float64,
@@ -177,19 +177,35 @@ For quality issues other than duplication (stale, private) use 'audit'.`,
 				sort.Slice(members, func(a, b int) bool {
 					return canonicalRouteLess(routes[members[a]], routes[members[b]])
 				})
-				canonical := routes[members[0]]
-				cluster := dedupClusterView{
-					Canonical:  map[string]any{"id": canonical.ID, "name": canonical.Name, "created_at": canonical.CreatedAt},
-					DistanceKM: roundN(metersToKM(canonical.Distance), 1),
-					Duplicates: make([]map[string]any, 0, len(members)-1),
+				for len(members) > 1 {
+					canonical := routes[members[0]]
+					cluster := dedupClusterView{
+						Canonical:  map[string]any{"id": canonical.ID, "name": canonical.Name, "created_at": canonical.CreatedAt},
+						DistanceKM: roundN(metersToKM(canonical.Distance), 1),
+						Duplicates: make([]map[string]any, 0, len(members)-1),
+					}
+					remaining := make([]int, 0, len(members)-1)
+					for _, m := range members[1:] {
+						r := routes[m]
+						// A connected component can contain a chain of matches.
+						// Only delete routes directly matching a retained route.
+						if !routesWithinDedupThreshold(canonical, r, threshold) {
+							remaining = append(remaining, m)
+							continue
+						}
+						cluster.Duplicates = append(cluster.Duplicates, map[string]any{"id": r.ID, "name": r.Name, "created_at": r.CreatedAt})
+						toDelete = append(toDelete, r)
+					}
+					if len(cluster.Duplicates) > 0 {
+						view.Clusters = append(view.Clusters, cluster)
+					}
+					members = remaining
 				}
-				for _, m := range members[1:] {
-					r := routes[m]
-					cluster.Duplicates = append(cluster.Duplicates, map[string]any{"id": r.ID, "name": r.Name, "created_at": r.CreatedAt})
-					toDelete = append(toDelete, r)
-				}
-				view.Clusters = append(view.Clusters, cluster)
 			}
+			sort.Slice(view.Clusters, func(i, j int) bool {
+				return view.Clusters[i].Canonical["id"].(string) < view.Clusters[j].Canonical["id"].(string)
+			})
+			sort.Slice(toDelete, func(i, j int) bool { return toDelete[i].ID < toDelete[j].ID })
 
 			if apply && len(toDelete) > 0 {
 				c, err := flags.newClient()
@@ -236,6 +252,22 @@ For quality issues other than duplication (stale, private) use 'audit'.`,
 	cmd.Flags().BoolVar(&apply, "apply", false, "Delete duplicate routes (keeps the oldest in each cluster)")
 	cmd.Flags().StringVar(&dbPath, "db", "", "Database path (default: local mirror)")
 	return cmd
+}
+
+func routesWithinDedupThreshold(a, b dedupRoute, threshold float64) bool {
+	if !a.hasCoords || !b.hasCoords || threshold <= 0 {
+		return false
+	}
+	return absFloat(a.Distance-b.Distance) <= threshold &&
+		haversineMeters(a.FirstLat, a.FirstLng, b.FirstLat, b.FirstLng) <= threshold &&
+		haversineMeters(a.LastLat, a.LastLng, b.LastLat, b.LastLng) <= threshold
+}
+
+func absFloat(v float64) float64 {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 func canonicalRouteLess(a, b dedupRoute) bool {

@@ -6,9 +6,66 @@ package cli
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+func TestDocaiBatchDocumentsSkipsSymlinkOutsideFolder(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires extra privileges on Windows")
+	}
+	dir := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside.txt")
+	if err := os.WriteFile(outside, []byte("fixture"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	inside := filepath.Join(dir, "invoice.pdf")
+	if err := os.WriteFile(inside, []byte("fixture"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, filepath.Join(dir, "linked.pdf")); err != nil {
+		t.Fatal(err)
+	}
+	docs, err := docaiBatchDocuments(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(docs) != 1 || docs[0] != inside {
+		t.Fatalf("documents=%v, want only %q", docs, inside)
+	}
+}
+
+func TestOpenDocaiBatchDocumentRejectsSwappedSymlink(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("symlink creation requires extra privileges on Windows")
+	}
+	dir := t.TempDir()
+	outside := filepath.Join(t.TempDir(), "outside.txt")
+	if err := os.WriteFile(outside, []byte("fixture"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "invoice.pdf")
+	if err := os.WriteFile(path, []byte("document"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	listed, err := docaiBatchDocuments(dir)
+	if err != nil || len(listed) != 1 {
+		t.Fatalf("enumerating original document: paths=%v err=%v", listed, err)
+	}
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, path); err != nil {
+		t.Fatal(err)
+	}
+	if file, err := openDocaiBatchDocument(listed[0]); err == nil {
+		_ = file.Close()
+		t.Fatal("swapped symlink was opened for upload")
+	}
+}
 
 // TestDocaiBatchFailureReason locks down that any status other than a
 // genuine success ("completed"/"partially_completed") is treated as a
@@ -35,6 +92,15 @@ func TestDocaiBatchFailureReason(t *testing.T) {
 				t.Fatalf("docaiBatchFailureReason(%q) = %q, want non-empty=%v", tc.status, got, tc.wantErr)
 			}
 		})
+	}
+}
+
+func TestDocaiResultFileNamePreservesSourceExtension(t *testing.T) {
+	if got, want := docaiResultFileName("/tmp/invoice.pdf"), "invoice.pdf.json"; got != want {
+		t.Fatalf("docaiResultFileName() = %q, want %q", got, want)
+	}
+	if docaiResultFileName("invoice.pdf") == docaiResultFileName("invoice.png") {
+		t.Fatal("distinct source extensions produced the same result filename")
 	}
 }
 

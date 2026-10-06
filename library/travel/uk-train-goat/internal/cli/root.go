@@ -17,7 +17,7 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/travel/uk-train-goat/internal/config"
 )
 
-var version = "2026.9.1"
+var version = "2026.10.1"
 
 type rootFlags struct {
 	asJSON        bool

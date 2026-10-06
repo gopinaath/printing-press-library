@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "hostex",
   "cli_name": "hostex-pp-cli",
-  "version": "2026.9.2",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
-  "printing_press_version": "4.26.1",
-  "run_id": "20260627-060401-7471d49d",
+  "version": "2026.10.4",
+  "released_at": "2026-10-04T08:52:41Z",
+  "source_commit": "2388bec609f8943b0fea591c9613421e61e7d2e6",
+  "printing_press_version": "4.33.0",
+  "run_id": "20261003-120106-6f48c7c7",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "feat(hostex): reprint hostex on press 4.33.0 and API 3.15.0",
+      "pr": 2262,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2262",
+      "commit": "2388bec609f8943b0fea591c9613421e61e7d2e6"
     }
   ]
 }

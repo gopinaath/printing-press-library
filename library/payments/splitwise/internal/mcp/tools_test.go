@@ -6,8 +6,11 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -18,6 +21,113 @@ import (
 	"github.com/mvanhorn/printing-press-library/library/payments/splitwise/internal/mcp/bound"
 	"github.com/mvanhorn/printing-press-library/library/payments/splitwise/internal/store"
 )
+
+func TestLocalListCursorResumesWithoutForwardingToSplitwise(t *testing.T) {
+	resetMCPPathEnv(t)
+	t.Setenv("SPLITWISE_API_KEY", "local-test-token")
+	items := make([]map[string]int, 80)
+	for i := range items {
+		items[i] = map[string]int{"id": i}
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/get_groups" || r.URL.RawQuery != "" {
+			t.Errorf("unexpected upstream request: %s", r.URL.RequestURI())
+		}
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(map[string]any{"groups": items}); err != nil {
+			t.Errorf("encode response: %v", err)
+		}
+	}))
+	defer server.Close()
+	t.Setenv("SPLITWISE_BASE_URL", server.URL)
+
+	handler := makeAPIHandler("GET", "/get_groups", true, false, nil, mcpPageConfig{CursorParam: "local", LocalOnly: true}, nil, nil)
+	var cursor string
+	for page, wantFirst := range []int{0, 50} {
+		args := map[string]any{}
+		if cursor != "" {
+			args["cursor"] = cursor
+		}
+		result, err := handler(context.Background(), mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: args}})
+		if err != nil || result == nil || result.IsError {
+			t.Fatalf("page %d failed: result=%v err=%v", page, result, err)
+		}
+		var envelope struct {
+			Groups     []map[string]int `json:"groups"`
+			NextCursor string           `json:"next_cursor"`
+		}
+		if err := json.Unmarshal([]byte(mcpTextContent(t, result)), &envelope); err != nil {
+			t.Fatalf("parse page %d: %v", page, err)
+		}
+		if len(envelope.Groups) == 0 || envelope.Groups[0]["id"] != wantFirst {
+			t.Fatalf("page %d starts at %v, want %d", page, envelope.Groups, wantFirst)
+		}
+		if page == 0 && envelope.NextCursor == "" {
+			t.Fatal("first page omitted continuation cursor")
+		}
+		if page == 1 && envelope.NextCursor != "" {
+			t.Fatalf("last page unexpectedly has continuation cursor: %s", envelope.NextCursor)
+		}
+		cursor = envelope.NextCursor
+	}
+	if cursor != "" {
+		t.Fatalf("last page cursor = %q, want empty", cursor)
+	}
+}
+
+func TestLocalListCursorRejectsDifferentExpenseAndChangedList(t *testing.T) {
+	resetMCPPathEnv(t)
+	t.Setenv("SPLITWISE_API_KEY", "local-test-token")
+	var changed atomic.Bool
+	comments := make([]map[string]int, 80)
+	for i := range comments {
+		comments[i] = map[string]int{"id": i}
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/get_comments" {
+			t.Errorf("unexpected provider path %s", r.URL.Path)
+		}
+		items := comments
+		if changed.Load() {
+			items = append([]map[string]int{{"id": -1}}, comments...)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"comments": items})
+	}))
+	defer server.Close()
+	t.Setenv("SPLITWISE_BASE_URL", server.URL)
+	handler := makeAPIHandler("GET", "/get_comments", true, false, nil, mcpPageConfig{CursorParam: "local", LocalOnly: true}, []mcpParamBinding{{PublicName: "expense_id", WireName: "expense_id", Location: "query"}}, nil)
+	call := func(expenseID int, cursor string) *mcplib.CallToolResult {
+		args := map[string]any{"expense_id": expenseID}
+		if cursor != "" {
+			args["cursor"] = cursor
+		}
+		result, err := handler(context.Background(), mcplib.CallToolRequest{Params: mcplib.CallToolParams{Arguments: args}})
+		if err != nil || result == nil {
+			t.Fatalf("comments request: result=%v err=%v", result, err)
+		}
+		return result
+	}
+	first := call(1, "")
+	if first.IsError {
+		t.Fatalf("first comments page: %s", mcpTextContent(t, first))
+	}
+	var envelope struct {
+		NextCursor string `json:"next_cursor"`
+	}
+	if err := json.Unmarshal([]byte(mcpTextContent(t, first)), &envelope); err != nil || envelope.NextCursor == "" {
+		t.Fatalf("first comments cursor: %q err=%v", envelope.NextCursor, err)
+	}
+	otherExpense := call(2, envelope.NextCursor)
+	if !otherExpense.IsError || !strings.Contains(mcpTextContent(t, otherExpense), "different list") {
+		t.Fatal("cursor from one expense was accepted for another expense")
+	}
+	changed.Store(true)
+	changedList := call(1, envelope.NextCursor)
+	if !changedList.IsError || !strings.Contains(mcpTextContent(t, changedList), "list changed") {
+		t.Fatal("changed comments list silently continued at old offset")
+	}
+}
 
 func TestMCPPathResolutionMatchesCLIResolverWithHomeEnv(t *testing.T) {
 	resetMCPPathEnv(t)

@@ -9,6 +9,12 @@
     "handle": "klubieniecki",
     "name": "klubieniecki"
   },
+  "contributors": [
+    {
+      "handle": "cathrynlavery",
+      "name": "Cathryn Lavery"
+    }
+  ],
   "owner": "klubieniecki",
   "printer": "klubieniecki",
   "printer_name": "klubieniecki",
@@ -27,6 +33,10 @@
   "auth_type": "none",
   "auth_env_vars": [
     "PRINTING_PRESS_CLIENT_PROFILE"
+  ],
+  "mcp_http_auth_type": "bearer_token",
+  "mcp_http_auth_env_vars": [
+    "PP_MCP_HTTP_TOKEN"
   ],
   "auth_env_var_specs": [
     {

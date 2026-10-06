@@ -1,0 +1,2730 @@
+name: philonet
+description: Philonet (philonet.ai) social reading network - unofficial CLI over the web app backend api.typepilot.app
+version: 0.1.0
+base_url: https://api.typepilot.app
+spec_source: sniffed
+http_transport: standard
+auth:
+  type: bearer_token
+  header: Authorization
+  format: Bearer {token}
+  env_vars:
+  - PHILONET_TOKEN
+  in: header
+config:
+  format: toml
+  path: ~/.config/philonet-pp-cli/config.toml
+resources:
+  feed:
+    description: Article and thought feeds
+    endpoints:
+      for_me:
+        method: GET
+        path: /v1/feed2/forme
+        description: Personalized "For You" / friends feed (feed2 engine). filter=forme|friends
+        params:
+        - name: filter
+          type: string
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: page
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: pageSize
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: array
+          item: FormeItem
+        pagination: null
+        response_path: items
+      unified:
+        method: GET
+        path: /v1/room/feed/unified
+        description: Unified feed. filter=discover|friends
+        params:
+        - name: filter
+          type: string
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: page
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: pageSize
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: array
+          item: UnifiedItem
+        pagination: null
+        response_path: items
+      moment:
+        method: GET
+        path: /v1/room/feed/moment
+        description: Featured "moment" card
+        params: []
+        body: []
+        response:
+          type: object
+          item: Moment
+        pagination: null
+      suggested:
+        method: GET
+        path: /v1/room/curiosity-sessions/suggested-feed
+        description: Suggested curiosity-session feed
+        params: []
+        body: []
+        response:
+          type: object
+          item: SuggestedFeed
+        pagination: null
+  thread:
+    description: Articles and thought threads
+    endpoints:
+      get:
+        method: GET
+        path: /v1/room/articles/{article_id}/comments/{comment_id}
+        description: Get one thought (comment) with article context and star quota
+        params:
+        - name: article_id
+          type: string
+          required: true
+          positional: true
+          default: null
+          description: The article_id path segment
+          fields: []
+        - name: comment_id
+          type: string
+          required: true
+          positional: true
+          default: null
+          description: The comment_id path segment
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Comment
+        pagination: null
+        example: '  philonet-pp-cli thread get 29018 26505 --agent'
+        happy_args: article_id=29018;comment_id=26505
+      replies:
+        method: POST
+        path: /v1/room/subcommentsnewthreadedv2
+        description: List replies in a thought thread (POST, read-only)
+        params: []
+        body:
+        - name: articleId
+          type: integer
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: includeParentDetails
+          type: boolean
+          required: false
+          positional: false
+          default: true
+          description: ''
+          fields: []
+        - name: jump_to_latest
+          type: boolean
+          required: false
+          positional: false
+          default: true
+          description: ''
+          fields: []
+        - name: limit
+          type: integer
+          required: false
+          positional: false
+          default: 20
+          description: ''
+          fields: []
+        - name: parentCommentId
+          type: integer
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        request_content_type: application/json
+        response:
+          type: object
+          item: Room
+        pagination: null
+        mutation: false
+        example: '  philonet-pp-cli thread replies --article-id 29018 --parent-comment-id 26505 --agent'
+        happy_args: --article-id=29018;--parent-comment-id=26505
+      article:
+        method: POST
+        path: /v1/room/article
+        description: Get article detail, members and people (POST, read-only)
+        params: []
+        body:
+        - name: articleId
+          type: integer
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        request_content_type: application/json
+        response:
+          type: array
+          item: ArticlePeople
+        pagination: null
+        response_path: people
+        mutation: false
+        example: '  philonet-pp-cli thread article --article-id 29018 --agent'
+        happy_args: --article-id=29018
+      impact:
+        method: GET
+        path: /v1/room/articles/{article_id}/impact
+        description: Reader impact stats for an article
+        params:
+        - name: article_id
+          type: string
+          required: true
+          positional: true
+          default: null
+          description: The article_id path segment
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Impact
+        pagination: null
+        example: '  philonet-pp-cli thread impact 29018 --agent'
+        happy_args: article_id=29018
+  me:
+    description: Your profile, reading stats and saved items
+    endpoints:
+      reading_stats:
+        method: GET
+        path: /v1/room/myreading/stats
+        description: 'My reading stats: last 7 days, goals, personal bests'
+        params: []
+        body: []
+        response:
+          type: object
+          item: Stat
+        pagination: null
+      standings:
+        method: GET
+        path: /v1/room/friendsstandings
+        description: Friends thinking-time leaderboard
+        params: []
+        body: []
+        response:
+          type: object
+          item: Friendsstanding
+        pagination: null
+      profile_stats:
+        method: GET
+        path: /v1/room/myprofilestats
+        description: Streak and reading totals for a user
+        params:
+        - name: userId
+          type: string
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Myprofilestat
+        pagination: null
+      badge:
+        method: GET
+        path: /v1/room/verificationbadge
+        description: Verification / top-learner badge for a user
+        params:
+        - name: userId
+          type: string
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Verificationbadge
+        pagination: null
+      metrics:
+        method: GET
+        path: /v1/room/metrics
+        description: My verified categories, stars, streak
+        params: []
+        body: []
+        response:
+          type: object
+          item: Metric
+        pagination: null
+      profile:
+        method: POST
+        path: /v1/room/mainprofilenew
+        description: Full profile for a user (POST, read-only)
+        params: []
+        body:
+        - name: userId
+          type: string
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        request_content_type: application/json
+        response:
+          type: object
+          item: Mainprofilenew
+        pagination: null
+        mutation: false
+        example: '  philonet-pp-cli me profile --agent'
+      thoughts:
+        method: GET
+        path: /v1/room/conversationsnew
+        description: A user's thoughts (paged)
+        params:
+        - name: limit
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: page
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Conversationsnew
+        pagination: null
+      bookmarks:
+        method: GET
+        path: /v1/room/mybookmarks
+        description: Bookmarked thoughts
+        params: []
+        body: []
+        response:
+          type: object
+          item: Mybookmark
+        pagination: null
+      engagements:
+        method: GET
+        path: /v1/room/myengagements
+        description: My engagements
+        params: []
+        body: []
+        response:
+          type: object
+          item: Myengagement
+        pagination: null
+      awards:
+        method: GET
+        path: /v1/room/myawards
+        description: Awards/stars received
+        params: []
+        body: []
+        response:
+          type: object
+          item: Myaward
+        pagination: null
+      spotlights:
+        method: GET
+        path: /v1/room/spotlightsnew
+        description: Spotlights
+        params: []
+        body: []
+        response:
+          type: object
+          item: Spotlightsnew
+        pagination: null
+      read_later:
+        method: GET
+        path: /v1/room/readlater
+        description: Read-later saved articles
+        params: []
+        body: []
+        response:
+          type: object
+          item: Readlater
+        pagination: null
+      onboarding:
+        method: GET
+        path: /v1/users/onboarding
+        description: Onboarding state and interests
+        params: []
+        body: []
+        response:
+          type: object
+          item: Onboarding
+        pagination: null
+  friends:
+    description: Friends, requests and activity
+    endpoints:
+      top:
+        method: GET
+        path: /v1/room/topfriends
+        description: Top friends
+        params: []
+        body: []
+        response:
+          type: object
+          item: Topfriend
+        pagination: null
+      thinking:
+        method: GET
+        path: /v1/room/friendsthinkinglist
+        description: Friends/contacts thinking list with presence
+        params: []
+        body: []
+        response:
+          type: array
+          item: FriendsthinkinglistUser
+        pagination: null
+        response_path: users
+      requests:
+        method: GET
+        path: /v1/friend/requests
+        description: Friend requests (type=received|sent|all)
+        params:
+        - name: limit
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: offset
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: type
+          type: string
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Request
+        pagination: null
+      requests_preview:
+        method: GET
+        path: /v1/friend/feed/friend-requests-preview
+        description: Friend requests preview
+        params: []
+        body: []
+        response:
+          type: object
+          item: FriendRequestsPreview
+        pagination: null
+      stories:
+        method: GET
+        path: /v1/friend/friendsasstories
+        description: Friends activity as stories
+        params:
+        - name: forme
+          type: boolean
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: unread_only
+          type: boolean
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Friendsasstory
+        pagination: null
+      send_request:
+        method: POST
+        path: /v1/friend/request
+        description: Send a friend request
+        params: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        body:
+        - name: target_user_id
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        request_content_type: application/json
+        example: '  philonet-pp-cli friends send-request --target-user-id u_sample --dry-run'
+      respond:
+        method: PUT
+        path: /v1/friend/request/{request_id}
+        description: Accept or decline a friend request (action=accept|decline)
+        params:
+        - name: request_id
+          type: string
+          required: true
+          positional: true
+          default: null
+          description: Request id (or sender user id)
+          fields: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        body:
+        - name: action
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: accept or decline
+          fields: []
+        request_content_type: application/json
+        example: '  philonet-pp-cli friends respond 123 --action accept --dry-run'
+      withdraw:
+        method: DELETE
+        path: /v1/friend/request/withdraw/{user_id}
+        description: Withdraw a sent friend request
+        params:
+        - name: user_id
+          type: string
+          required: true
+          positional: true
+          default: null
+          description: Target user id
+          fields: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        example: '  philonet-pp-cli friends withdraw u_sample --dry-run'
+  inbox:
+    description: Notifications, unread counts, discussions and DMs
+    endpoints:
+      unread:
+        method: GET
+        path: /v1/room/unread
+        description: Unread counters (notifications, invitations, total)
+        params: []
+        body: []
+        response:
+          type: object
+          item: Unread
+        pagination: null
+      unread_conversations:
+        method: GET
+        path: /v1/room/unreadconversations
+        description: Unread discussion counters
+        params: []
+        body: []
+        response:
+          type: object
+          item: Unreadconversation
+        pagination: null
+      activity:
+        method: GET
+        path: /v1/room/activity
+        description: Notifications / activity log
+        params:
+        - name: limit
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Activity
+        pagination: null
+      discussions:
+        method: POST
+        path: /v1/room/conversation/inboxnew
+        description: Discussions inbox (POST, read-only)
+        params: []
+        body:
+        - name: limit
+          type: integer
+          required: false
+          positional: false
+          default: 20
+          description: ''
+          fields: []
+        - name: muted
+          type: string
+          required: false
+          positional: false
+          default: all
+          description: ''
+          fields: []
+        - name: offset
+          type: integer
+          required: false
+          positional: false
+          default: 0
+          description: ''
+          fields: []
+        - name: sort
+          type: string
+          required: false
+          positional: false
+          default: recent
+          description: ''
+          fields: []
+        - name: unread
+          type: boolean
+          required: false
+          positional: false
+          default: false
+          description: ''
+          fields: []
+        request_content_type: application/json
+        response:
+          type: object
+          item: Inboxnew
+        pagination: null
+        mutation: false
+        example: '  philonet-pp-cli inbox discussions --agent'
+      dms:
+        method: GET
+        path: /v1/dm/conversations
+        description: Direct-message conversations
+        params:
+        - name: limit
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Conversation
+        pagination: null
+      invitations:
+        method: GET
+        path: /v1/space/invitations
+        description: Space invitations
+        params:
+        - name: page
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: per_page
+          type: integer
+          required: false
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        body: []
+        response:
+          type: object
+          item: Invitation
+        pagination: null
+  blog:
+    description: Public blog
+    endpoints:
+      list:
+        method: GET
+        path: /v1/public/blog
+        description: Philonet public blog posts (no auth needed)
+        params: []
+        body: []
+        response:
+          type: array
+          item: Blog
+        pagination: null
+        response_path: blogs
+        no_auth: true
+  find:
+    description: Live search across articles, thoughts and people
+    endpoints:
+      articles:
+        method: POST
+        path: /v1/room/search/articles
+        description: 'Search articles (POST body: query, sort_by, limit, offset)'
+        params: []
+        body:
+        - name: limit
+          type: integer
+          required: false
+          positional: false
+          default: 20
+          description: ''
+          fields: []
+        - name: offset
+          type: integer
+          required: false
+          positional: false
+          default: 0
+          description: ''
+          fields: []
+        - name: query
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: sort_by
+          type: string
+          required: false
+          positional: false
+          default: relevance
+          description: ''
+          fields: []
+        request_content_type: application/json
+        response:
+          type: object
+          item: Article3
+        pagination: null
+        mutation: false
+      thoughts:
+        method: POST
+        path: /v1/room/search/thoughts
+        description: Search thoughts/comments
+        params: []
+        body:
+        - name: limit
+          type: integer
+          required: false
+          positional: false
+          default: 20
+          description: ''
+          fields: []
+        - name: offset
+          type: integer
+          required: false
+          positional: false
+          default: 0
+          description: ''
+          fields: []
+        - name: query
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: sort_by
+          type: string
+          required: false
+          positional: false
+          default: relevance
+          description: ''
+          fields: []
+        request_content_type: application/json
+        response:
+          type: object
+          item: Thought
+        pagination: null
+        mutation: false
+        example: '  philonet-pp-cli find thoughts --query ai --limit 5 --agent'
+        happy_args: --query=ai;--limit=5
+      people:
+        method: POST
+        path: /v1/room/search/people
+        description: Search people
+        params: []
+        body:
+        - name: limit
+          type: integer
+          required: false
+          positional: false
+          default: 20
+          description: ''
+          fields: []
+        - name: offset
+          type: integer
+          required: false
+          positional: false
+          default: 0
+          description: ''
+          fields: []
+        - name: query
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        request_content_type: application/json
+        response:
+          type: object
+          item: People
+        pagination: null
+        mutation: false
+        example: '  philonet-pp-cli find people --query ai --limit 5 --agent'
+        happy_args: --query=ai;--limit=5
+  post:
+    description: Post thoughts and replies (write actions)
+    endpoints:
+      thought:
+        method: POST
+        path: /v1/room/addcommentnew
+        description: Post a thought (comment) on an article by article id
+        params: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        body:
+        - name: articleId
+          type: integer
+          required: true
+          positional: false
+          default: null
+          description: Article id
+          fields: []
+        - name: content
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: Thought text
+          fields: []
+        request_content_type: application/json
+        example: '  philonet-pp-cli post thought --article-id 29018 --content "Interesting take" --dry-run'
+      reply:
+        method: POST
+        path: /v1/room/addcommentnewreply
+        description: Reply to a thought
+        params: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        body:
+        - name: parentCommentId
+          type: integer
+          required: true
+          positional: false
+          default: null
+          description: Thought id to reply to
+          fields: []
+        - name: content
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: Reply text
+          fields: []
+        request_content_type: application/json
+        example: '  philonet-pp-cli post reply --parent-comment-id 26505 --content "Good point" --dry-run'
+      link:
+        method: POST
+        path: /v1/room/addtorooms
+        description: Add a link as an article so you can post a thought on it
+        params: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        body:
+        - name: url
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: title
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        - name: description
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        request_content_type: application/json
+        example: '  philonet-pp-cli post link --url https://example.com/article --title "A good read" --description "Why it matters" --dry-run'
+  react:
+    description: Star and bookmark thoughts (write actions)
+    endpoints:
+      star:
+        method: POST
+        path: /v1/room/starinsight
+        description: Star a thought
+        params: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        body:
+        - name: comment_id
+          type: integer
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        request_content_type: application/json
+        example: '  philonet-pp-cli react star --comment-id 26505 --dry-run'
+      bookmark:
+        method: POST
+        path: /v1/room/bookmarkconversation
+        description: Toggle bookmark on a thought
+        params: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        body:
+        - name: comment_id
+          type: integer
+          required: true
+          positional: false
+          default: null
+          description: ''
+          fields: []
+        request_content_type: application/json
+        example: '  philonet-pp-cli react bookmark --comment-id 26505 --dry-run'
+  invite:
+    description: Invite people to think about an article
+    endpoints:
+      send:
+        method: POST
+        path: /v1/room/thinking-invite
+        description: Invite a user to share thoughts on an article
+        params: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        body:
+        - name: url
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: Article URL
+          fields: []
+        - name: title
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: Article title
+          fields: []
+        - name: target_user_id
+          type: string
+          required: true
+          positional: false
+          default: null
+          description: User to invite
+          fields: []
+        request_content_type: application/json
+        example: '  philonet-pp-cli invite send --url https://example.com/article --title "A good read" --target-user-id u_sample --dry-run'
+      users:
+        method: POST
+        path: /v1/room/search-users?query={query}
+        description: Search users to invite
+        params:
+        - name: query
+          type: string
+          required: true
+          positional: true
+          default: null
+          description: Name to search for
+          fields: []
+        response:
+          type: object
+          item: Object
+        pagination: null
+        mutation: false
+        example: '  philonet-pp-cli invite users ada --agent'
+        happy_args: query=ada
+types:
+  Activity:
+    fields:
+    - name: activity
+      type: array
+    - name: has_unread
+      type: bool
+    - name: pagination
+      type: ref:Pagination11
+    - name: success
+      type: bool
+    - name: unread_count
+      type: integer
+  Article:
+    fields:
+    - name: academia
+      type: bool
+    - name: category
+      type: string
+    - name: comment_count
+      type: string
+    - name: created_at
+      type: string
+      format: date-time
+    - name: description
+      type: string
+    - name: headline
+      type: string
+    - name: id
+      type: integer
+    - name: is_member
+      type: bool
+    - name: is_seen
+      type: bool
+    - name: reading_label
+      type: string
+    - name: reading_time
+      type: object
+    - name: summary
+      type: string
+    - name: tags
+      type: array
+    - name: thumbnail_url
+      type: string
+      format: url
+    - name: title
+      type: string
+    - name: total_thoughts
+      type: integer
+    - name: url
+      type: string
+      format: url
+  Article2:
+    fields:
+    - name: academia
+      type: bool
+    - name: category
+      type: string
+    - name: comment_count
+      type: string
+    - name: core_angle
+      type: string
+    - name: created_at
+      type: string
+      format: date-time
+    - name: description
+      type: string
+    - name: headline
+      type: string
+    - name: id
+      type: integer
+    - name: is_member
+      type: bool
+    - name: is_seen
+      type: bool
+    - name: reading_label
+      type: string
+    - name: reading_time
+      type: object
+    - name: summary
+      type: string
+    - name: tags
+      type: array
+    - name: thumbnail_url
+      type: string
+      format: url
+    - name: title
+      type: string
+    - name: total_thoughts
+      type: integer
+    - name: url
+      type: string
+      format: url
+  Article3:
+    fields:
+    - name: data
+      type: ref:Data
+    - name: performance
+      type: ref:Performance
+    - name: success
+      type: bool
+  Article4:
+    fields:
+    - name: article_id
+      type: integer
+    - name: author_bio
+      type: string
+    - name: author_id
+      type: string
+    - name: author_name
+      type: string
+    - name: author_pic
+      type: string
+      format: url
+    - name: author_verifications
+      type: ref:AuthorVerifications
+    - name: category
+      type: string
+    - name: created_at
+      type: string
+      format: date-time
+    - name: description
+      type: string
+    - name: is_author_friend
+      type: bool
+    - name: is_own_article
+      type: bool
+    - name: presence
+      type: ref:Presence
+    - name: room_id
+      type: integer
+    - name: room_name
+      type: string
+    - name: thinking_time
+      type: integer
+    - name: thumbnail_url
+      type: string
+      format: url
+    - name: title
+      type: string
+    - name: url
+      type: string
+      format: url
+  ArticlePeople:
+    fields:
+    - name: display_pic
+      type: string
+      format: url
+    - name: is_guest
+      type: bool
+    - name: joined_at
+      type: string
+      format: date-time
+    - name: name
+      type: string
+    - name: stats
+      type: ref:Stats
+    - name: user_id
+      type: string
+  Author:
+    fields:
+    - name: image
+      type: string
+      format: url
+    - name: linkedin
+      type: string
+      format: url
+    - name: name
+      type: string
+    - name: role
+      type: string
+  AuthorVerifications:
+    fields:
+    - name: professional
+      type: object
+  Blog:
+    fields:
+    - name: articleId
+      type: string
+    - name: author
+      type: ref:Author
+    - name: contentUrl
+      type: string
+      format: url
+    - name: coverImage
+      type: string
+      format: url
+    - name: createdAt
+      type: string
+      format: date-time
+    - name: excerpt
+      type: string
+    - name: id
+      type: string
+    - name: isPublished
+      type: bool
+    - name: publishedAt
+      type: string
+      format: date-time
+    - name: publishedDate
+      type: string
+    - name: readTime
+      type: string
+    - name: readTimeMinutes
+      type: integer
+    - name: slug
+      type: string
+    - name: subtitle
+      type: string
+    - name: tags
+      type: array
+    - name: thoughtRoomUrl
+      type: string
+      format: url
+    - name: title
+      type: string
+    - name: updatedAt
+      type: string
+      format: date-time
+  Comment:
+    fields:
+    - name: article
+      type: ref:Article4
+    - name: comment
+      type: ref:Comment2
+    - name: user
+      type: ref:User
+  Comment2:
+    fields:
+    - name: author_bio
+      type: string
+    - name: author_reading_time_ms
+      type: integer
+    - name: author_stars_received
+      type: integer
+    - name: award_count
+      type: integer
+    - name: bookmark_count
+      type: integer
+    - name: comment_id
+      type: integer
+    - name: content
+      type: string
+    - name: created_at
+      type: string
+      format: date-time
+    - name: curiosity_image
+      type: bool
+    - name: edited
+      type: bool
+    - name: emotion_breakdown
+      type: array
+    - name: emotion_count
+      type: integer
+    - name: friend_comment
+      type: bool
+    - name: has_marked_insightful
+      type: bool
+    - name: has_reacted
+      type: bool
+    - name: has_resonated
+      type: bool
+    - name: has_starred
+      type: bool
+    - name: insightful_count
+      type: integer
+    - name: is_editorial_choice
+      type: bool
+    - name: is_friend
+      type: bool
+    - name: is_own_comment
+      type: bool
+    - name: mentioned_users
+      type: array
+    - name: minimessage
+      type: string
+    - name: original_content
+      type: string
+    - name: parent_quote
+      type: string
+    - name: parent_quote_highlights
+      type: array
+    - name: participant_reading_times
+      type: ref:ParticipantReadingTimes
+    - name: permission
+      type: integer
+    - name: private
+      type: bool
+    - name: quote
+      type: string
+    - name: quote_headline
+      type: string
+    - name: quote_highlights
+      type: array
+    - name: quotes
+      type: '[]ref:Quote'
+    - name: reaction_count
+      type: integer
+    - name: reactions
+      type: array
+    - name: reading_expertise
+      type: ref:ReadingExpertise
+    - name: resonate_count
+      type: integer
+    - name: stars
+      type: integer
+    - name: thread_insights
+      type: integer
+    - name: thread_people_count
+      type: integer
+    - name: title
+      type: string
+    - name: top_learner_badge
+      type: ref:TopLearnerBadge
+    - name: type
+      type: string
+    - name: updated_at
+      type: string
+      format: date-time
+    - name: user_has_bookmarked
+      type: bool
+    - name: user_id
+      type: string
+    - name: user_marked_insightful
+      type: bool
+    - name: user_name
+      type: string
+    - name: user_picture
+      type: string
+      format: url
+    - name: verification_badge
+      type: string
+    - name: verification_earned_at
+      type: string
+      format: date-time
+    - name: verification_percentile
+      type: number
+    - name: verifications
+      type: ref:Verifications
+  Conversation:
+    fields:
+    - name: conversations
+      type: array
+    - name: has_more
+      type: bool
+  ConversationStarter:
+    fields:
+    - name: awarded_insights
+      type: array
+    - name: bookmark_count
+      type: integer
+    - name: content
+      type: string
+    - name: created_at
+      type: string
+      format: date-time
+    - name: curiosity_image
+      type: bool
+    - name: curiosity_reply_count
+      type: integer
+    - name: discussion_star_count
+      type: integer
+    - name: id
+      type: integer
+    - name: insightful_count
+      type: integer
+    - name: insights_count
+      type: integer
+    - name: is_poll
+      type: bool
+    - name: is_quote_feature
+      type: bool
+    - name: memberCount
+      type: integer
+    - name: members
+      type: array
+    - name: original_content
+      type: string
+    - name: quote
+      type: string
+    - name: quote_headline
+      type: string
+    - name: quote_highlights
+      type: array
+    - name: quotes
+      type: array
+    - name: reaction_breakdown
+      type: array
+    - name: reply_count
+      type: integer
+    - name: resonate_count
+      type: integer
+    - name: resonated_by
+      type: array
+    - name: star_count
+      type: integer
+    - name: starter
+      type: object
+    - name: thinking_time
+      type: integer
+    - name: thread_count
+      type: integer
+    - name: title
+      type: string
+    - name: top_participant_display_pics
+      type: array
+    - name: top_quoted_replies
+      type: array
+    - name: type
+      type: string
+    - name: user_has_bookmarked
+      type: bool
+    - name: user_has_resonated
+      type: bool
+    - name: user_has_starred
+      type: bool
+    - name: user_marked_insightful
+      type: bool
+  ConversationStarter2:
+    fields:
+    - name: awarded_insights
+      type: array
+    - name: bookmark_count
+      type: integer
+    - name: content
+      type: string
+    - name: created_at
+      type: string
+      format: date-time
+    - name: curiosity_image
+      type: bool
+    - name: curiosity_reply_count
+      type: integer
+    - name: discussion_star_count
+      type: integer
+    - name: id
+      type: integer
+    - name: insightful_count
+      type: integer
+    - name: insights_count
+      type: integer
+    - name: is_poll
+      type: bool
+    - name: is_quote_feature
+      type: bool
+    - name: memberCount
+      type: integer
+    - name: members
+      type: array
+    - name: original_content
+      type: string
+    - name: quote
+      type: string
+    - name: quote_headline
+      type: string
+    - name: quote_highlights
+      type: array
+    - name: quotes
+      type: array
+    - name: reaction_breakdown
+      type: array
+    - name: reply_count
+      type: integer
+    - name: resonate_count
+      type: integer
+    - name: resonated_by
+      type: array
+    - name: star_count
+      type: integer
+    - name: starter
+      type: object
+    - name: thinking_time
+      type: integer
+    - name: thread_count
+      type: integer
+    - name: title
+      type: string
+    - name: top_participant_display_pics
+      type: array
+    - name: top_quoted_replies
+      type: array
+    - name: type
+      type: string
+    - name: user_has_bookmarked
+      type: bool
+    - name: user_has_resonated
+      type: bool
+    - name: user_has_starred
+      type: bool
+    - name: user_marked_insightful
+      type: bool
+  Conversationsnew:
+    fields:
+    - name: data
+      type: array
+    - name: meta
+      type: ref:Meta3
+    - name: pagination
+      type: ref:Pagination5
+    - name: performance
+      type: ref:Performance5
+    - name: success
+      type: bool
+  Counts:
+    fields:
+    - name: total_unread
+      type: integer
+  DailyLast7:
+    fields:
+    - name: date
+      type: string
+    - name: seconds
+      type: integer
+  Data:
+    fields:
+    - name: pagination
+      type: ref:Pagination
+    - name: results
+      type: '[]ref:Result'
+    - name: search_query
+      type: string
+    - name: sort_by
+      type: string
+  Data2:
+    fields:
+    - name: pagination
+      type: ref:Pagination2
+    - name: results
+      type: '[]ref:Result2'
+    - name: search_query
+      type: string
+    - name: sort_by
+      type: string
+  Data3:
+    fields:
+    - name: pagination
+      type: ref:Pagination3
+    - name: results
+      type: '[]ref:Result3'
+    - name: search_query
+      type: string
+    - name: sort_by
+      type: string
+  Data4:
+    fields:
+    - name: friends_today
+      type: ref:FriendsToday
+    - name: last_7_days
+      type: '[]ref:Last7Day'
+  Data5:
+    fields:
+    - name: entries
+      type: '[]ref:Entry'
+    - name: max_thinking_time_seconds
+      type: integer
+    - name: my_rank
+      type: integer
+    - name: total_participants
+      type: integer
+    - name: total_thinking_time_seconds
+      type: integer
+  Data6:
+    fields:
+    - name: daily_last_7
+      type: '[]ref:DailyLast7'
+    - name: generated_at
+      type: string
+      format: date-time
+    - name: reading
+      type: ref:Reading
+    - name: recent_reads
+      type: array
+    - name: streak
+      type: ref:Streak
+    - name: timezone
+      type: string
+    - name: user_id
+      type: string
+  Data7:
+    fields:
+    - name: active_users_count
+      type: integer
+    - name: last_calculated_at
+      type: string
+      format: date-time
+    - name: percentile
+      type: integer
+    - name: source
+      type: string
+    - name: thinking_time_seconds
+      type: integer
+  Data8:
+    fields:
+    - name: education
+      type: array
+    - name: interests
+      type: array
+    - name: meta
+      type: ref:Meta2
+    - name: mutual_friends
+      type: array
+    - name: mutual_friends_count
+      type: integer
+    - name: mutual_interests_count
+      type: integer
+    - name: summary
+      type: ref:Summary
+    - name: thinking_analytics
+      type: ref:ThinkingAnalytics
+    - name: top_thinking_domains
+      type: array
+    - name: user
+      type: ref:User2
+  Data9:
+    fields:
+    - name: pagination
+      type: ref:Pagination10
+    - name: results
+      type: array
+  Data10:
+    fields:
+    - name: entries
+      type: array
+    - name: filter
+      type: ref:Filter
+    - name: message
+      type: string
+    - name: pagination
+      type: ref:Pagination14
+  Debug:
+    fields:
+    - name: friend_count
+      type: integer
+    - name: has_selected_interests
+      type: bool
+    - name: onboarding_was_shown_previously
+      type: bool
+  Entry:
+    fields:
+    - name: is_me
+      type: bool
+    - name: is_online
+      type: bool
+    - name: name
+      type: string
+    - name: picture
+      type: string
+      format: url
+    - name: rank
+      type: integer
+    - name: thinking_time_seconds
+      type: integer
+    - name: user_id
+      type: string
+  Filter:
+    fields:
+    - name: forme
+      type: bool
+    - name: from
+      type: string
+      format: date-time
+    - name: myown
+      type: bool
+    - name: source_type
+      type: string
+    - name: time_range
+      type: string
+    - name: to
+      type: string
+      format: date-time
+    - name: unread_only
+      type: bool
+  Filters:
+    fields:
+    - name: included_muted_conversations
+      type: bool
+  FormeItem:
+    fields:
+    - name: article
+      type: ref:Article
+    - name: card_type
+      type: string
+    - name: conversation_starters
+      type: '[]ref:ConversationStarter'
+    - name: display
+      type: string
+    - name: total_conversations
+      type: integer
+    - name: total_thoughts
+      type: integer
+  FriendRequestsPreview:
+    fields:
+    - name: show
+      type: bool
+  FriendsToday:
+    fields:
+    - name: entries
+      type: array
+    - name: max_thinking_time_seconds
+      type: integer
+  Friendsasstory:
+    fields:
+    - name: data
+      type: ref:Data10
+    - name: success
+      type: bool
+    - name: timestamp
+      type: string
+      format: date-time
+  Friendsstanding:
+    fields:
+    - name: data
+      type: ref:Data5
+    - name: success
+      type: bool
+    - name: timestamp
+      type: string
+      format: date-time
+  FriendsthinkinglistUser:
+    fields:
+    - name: created_at
+      type: string
+      format: date-time
+    - name: display_pic
+      type: string
+      format: url
+    - name: email
+      type: string
+      format: email
+    - name: interaction_count
+      type: string
+    - name: is_contact
+      type: bool
+    - name: is_friend
+      type: bool
+    - name: name
+      type: string
+    - name: presence
+      type: ref:Presence2
+    - name: source_type
+      type: string
+    - name: user_id
+      type: string
+    - name: username
+      type: string
+  Impact:
+    fields:
+    - name: impact
+      type: ref:Impact2
+  Impact2:
+    fields:
+    - name: avg_thinking_minutes
+      type: integer
+    - name: credentials
+      type: array
+    - name: last_24h_readers
+      type: integer
+    - name: new_readers_since_last_shown
+      type: integer
+    - name: should_show_dialog
+      type: bool
+    - name: total_readers
+      type: integer
+    - name: total_thinking_minutes
+      type: integer
+  Inboxnew:
+    fields:
+    - name: counts
+      type: ref:Counts
+    - name: items
+      type: array
+    - name: pagination
+      type: ref:Pagination12
+    - name: success
+      type: bool
+  Invitation:
+    fields:
+    - name: invitations
+      type: array
+    - name: pagination
+      type: ref:Pagination15
+    - name: success
+      type: bool
+  Last7Day:
+    fields:
+    - name: date
+      type: string
+    - name: day_label
+      type: string
+    - name: formatted_time
+      type: string
+    - name: goal_met
+      type: bool
+    - name: thinking_time
+      type: integer
+  Mainprofilenew:
+    fields:
+    - name: data
+      type: ref:Data8
+    - name: message
+      type: string
+  Meta:
+    fields:
+    - name: exhausted
+      type: bool
+  Meta2:
+    fields:
+    - name: is_own_profile
+      type: bool
+    - name: target_user_id
+      type: string
+  Meta3:
+    fields:
+    - name: is_own_profile
+      type: bool
+    - name: target_user_id
+      type: string
+  Meta4:
+    fields:
+    - name: is_own_profile
+      type: bool
+    - name: target_user_id
+      type: string
+  Meta5:
+    fields:
+    - name: is_own_profile
+      type: bool
+    - name: target_user_id
+      type: string
+  Meta6:
+    fields:
+    - name: is_own_profile
+      type: bool
+    - name: target_user_id
+      type: string
+    - name: total_stars_received
+      type: integer
+  Meta7:
+    fields:
+    - name: is_own_profile
+      type: bool
+    - name: target_user_id
+      type: string
+  Metric:
+    fields:
+    - name: metrics
+      type: ref:Metrics
+    - name: success
+      type: bool
+    - name: timelineStatus
+      type: ref:TimelineStatus
+  Metrics:
+    fields:
+    - name: source
+      type: string
+    - name: starContributor
+      type: ref:StarContributor
+    - name: starsReceived
+      type: ref:StarsReceived
+    - name: streak
+      type: ref:Streak2
+    - name: verified
+      type: ref:Verified
+    - name: verifiedCategories
+      type: array
+  Moment:
+    fields:
+    - name: success
+      type: bool
+  Myaward:
+    fields:
+    - name: data
+      type: array
+    - name: meta
+      type: ref:Meta6
+    - name: pagination
+      type: ref:Pagination8
+    - name: performance
+      type: ref:Performance8
+    - name: success
+      type: bool
+    - name: top_awards
+      type: array
+  Mybookmark:
+    fields:
+    - name: data
+      type: array
+    - name: meta
+      type: ref:Meta4
+    - name: pagination
+      type: ref:Pagination6
+    - name: performance
+      type: ref:Performance6
+    - name: success
+      type: bool
+  Myengagement:
+    fields:
+    - name: data
+      type: array
+    - name: meta
+      type: ref:Meta5
+    - name: pagination
+      type: ref:Pagination7
+    - name: performance
+      type: ref:Performance7
+    - name: success
+      type: bool
+  Myprofilestat:
+    fields:
+    - name: data
+      type: ref:Data6
+    - name: source
+      type: ref:Source
+    - name: success
+      type: bool
+  Onboarding:
+    fields:
+    - name: _debug
+      type: ref:Debug
+    - name: has_interests
+      type: bool
+    - name: interests
+      type: array
+    - name: show_friend_suggestions
+      type: bool
+    - name: show_onboarding
+      type: bool
+  Pagination:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_more
+      type: bool
+    - name: limit
+      type: integer
+    - name: offset
+      type: integer
+    - name: total
+      type: integer
+    - name: total_pages
+      type: integer
+  Pagination2:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_more
+      type: bool
+    - name: limit
+      type: integer
+    - name: offset
+      type: integer
+    - name: total
+      type: integer
+    - name: total_pages
+      type: integer
+  Pagination3:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_more
+      type: bool
+    - name: limit
+      type: integer
+    - name: offset
+      type: integer
+    - name: total
+      type: integer
+    - name: total_pages
+      type: integer
+  Pagination4:
+    fields:
+    - name: direction
+      type: string
+    - name: has_more
+      type: bool
+    - name: has_more_after
+      type: bool
+    - name: has_more_before
+      type: bool
+  Pagination5:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_next
+      type: bool
+    - name: has_prev
+      type: bool
+    - name: per_page
+      type: integer
+    - name: total_items
+      type: integer
+    - name: total_pages
+      type: integer
+  Pagination6:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_next
+      type: bool
+    - name: has_prev
+      type: bool
+    - name: per_page
+      type: integer
+    - name: total_items
+      type: integer
+    - name: total_pages
+      type: integer
+  Pagination7:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_next
+      type: bool
+    - name: has_prev
+      type: bool
+    - name: per_page
+      type: integer
+    - name: total_items
+      type: integer
+    - name: total_pages
+      type: integer
+  Pagination8:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_next
+      type: bool
+    - name: has_prev
+      type: bool
+    - name: per_page
+      type: integer
+    - name: total_items
+      type: integer
+    - name: total_pages
+      type: integer
+  Pagination9:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_next
+      type: bool
+    - name: has_prev
+      type: bool
+    - name: per_page
+      type: integer
+    - name: total_items
+      type: integer
+    - name: total_pages
+      type: integer
+  Pagination10:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_more
+      type: bool
+    - name: limit
+      type: integer
+    - name: offset
+      type: integer
+    - name: total
+      type: integer
+    - name: total_pages
+      type: integer
+  Pagination11:
+    fields:
+    - name: has_more
+      type: bool
+  Pagination12:
+    fields:
+    - name: hasMore
+      type: bool
+    - name: limit
+      type: integer
+    - name: offset
+      type: integer
+    - name: total
+      type: integer
+  Pagination13:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_more_received
+      type: bool
+    - name: has_more_sent
+      type: bool
+    - name: next_offset
+      type: integer
+    - name: per_page
+      type: integer
+    - name: prev_offset
+      type: integer
+  Pagination14:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_more
+      type: bool
+    - name: limit
+      type: integer
+    - name: next_offset
+      type: integer
+    - name: offset
+      type: integer
+    - name: prev_offset
+      type: integer
+    - name: total
+      type: integer
+    - name: total_pages
+      type: integer
+    - name: unread_count
+      type: integer
+  Pagination15:
+    fields:
+    - name: current_page
+      type: integer
+    - name: has_next
+      type: bool
+    - name: has_prev
+      type: bool
+    - name: per_page
+      type: integer
+    - name: total_items
+      type: integer
+    - name: total_pages
+      type: integer
+  ParentCommentDetails:
+    fields:
+    - name: article_thinking_time
+      type: integer
+    - name: comment_id
+      type: integer
+    - name: content
+      type: string
+    - name: created_at
+      type: string
+      format: date-time
+    - name: curiosity_image
+      type: bool
+    - name: edited
+      type: bool
+    - name: emotion
+      type: string
+    - name: has_read_article
+      type: bool
+    - name: is_ghosted
+      type: bool
+    - name: mentioned_users
+      type: array
+    - name: mentions
+      type: array
+    - name: minimessage
+      type: string
+    - name: original_content
+      type: string
+    - name: preferred_slide_index
+      type: integer
+    - name: private
+      type: bool
+    - name: quote
+      type: string
+    - name: reactions
+      type: array
+    - name: reply_participants
+      type: array
+    - name: repost_count
+      type: integer
+    - name: star_count
+      type: integer
+    - name: title
+      type: string
+    - name: updated_at
+      type: string
+      format: date-time
+    - name: url
+      type: string
+    - name: user_has_reposted
+      type: bool
+    - name: user_id
+      type: string
+    - name: user_name
+      type: string
+    - name: user_picture
+      type: string
+      format: url
+    - name: user_reacted
+      type: bool
+    - name: user_starred
+      type: bool
+    - name: verification_badge
+      type: string
+    - name: verification_earned_at
+      type: string
+      format: date-time
+    - name: verification_percentile
+      type: number
+    - name: verifications
+      type: ref:Verifications2
+    - name: view_count
+      type: integer
+  ParticipantReadingTimes:
+    fields:
+    - name: 3Swslie7VgVamhBVks2VoLyKRSR2
+      type: integer
+  People:
+    fields:
+    - name: data
+      type: ref:Data3
+    - name: performance
+      type: ref:Performance3
+    - name: success
+      type: bool
+  Performance:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Performance2:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Performance3:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Performance4:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Performance5:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Performance6:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Performance7:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Performance8:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Performance9:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Performance10:
+    fields:
+    - name: cached
+      type: bool
+    - name: responseTime
+      type: integer
+  Presence:
+    fields:
+    - name: connectedAt
+      type: integer
+    - name: email
+      type: string
+    - name: isOnline
+      type: bool
+    - name: lastSeen
+      type: integer
+    - name: name
+      type: string
+    - name: status
+      type: string
+  Presence2:
+    fields:
+    - name: connectedAt
+      type: integer
+    - name: email
+      type: string
+    - name: isOnline
+      type: bool
+    - name: lastSeen
+      type: integer
+    - name: name
+      type: string
+    - name: status
+      type: string
+  Quote:
+    fields:
+    - name: highlights
+      type: array
+    - name: text
+      type: string
+  Reading:
+    fields:
+    - name: last_30_days_seconds
+      type: integer
+    - name: last_7_days_seconds
+      type: integer
+    - name: total_seconds
+      type: integer
+  ReadingExpertise:
+    fields:
+    - name: ms
+      type: integer
+    - name: scope
+      type: string
+    - name: text
+      type: string
+  Readlater:
+    fields:
+    - name: data
+      type: ref:Data9
+    - name: performance
+      type: ref:Performance10
+    - name: success
+      type: bool
+  Request:
+    fields:
+    - name: current_received
+      type: integer
+    - name: current_sent
+      type: integer
+    - name: include_details
+      type: bool
+    - name: pagination
+      type: ref:Pagination13
+    - name: received_requests
+      type: array
+    - name: sent_requests
+      type: array
+    - name: total_received
+      type: integer
+    - name: total_sent
+      type: integer
+    - name: user_profile
+      type: ref:UserProfile
+  Result:
+    fields:
+    - name: reads_count
+      type: integer
+    - name: summary
+      type: string
+    - name: thoughts_count
+      type: integer
+    - name: thumbnail
+      type: string
+      format: url
+    - name: timestamp
+      type: string
+      format: date-time
+    - name: title
+      type: string
+    - name: url
+      type: string
+      format: url
+  Result2:
+    fields:
+    - name: article
+      type: object
+    - name: article_id
+      type: integer
+    - name: content
+      type: string
+    - name: conversation_id
+      type: integer
+    - name: created_at
+      type: string
+      format: date-time
+    - name: edited
+      type: bool
+    - name: friend_comment
+      type: bool
+    - name: insights_count
+      type: integer
+    - name: members
+      type: array
+    - name: mentioned_users
+      type: array
+    - name: mentions
+      type: array
+    - name: minimessage
+      type: string
+    - name: original_content
+      type: string
+    - name: participant_credentials
+      type: array
+    - name: quote
+      type: string
+    - name: quote_headline
+      type: string
+    - name: quote_highlights
+      type: array
+    - name: quotes
+      type: array
+    - name: reactions
+      type: array
+    - name: reply_count
+      type: integer
+    - name: resonate_count
+      type: integer
+    - name: thinking_time
+      type: integer
+    - name: title
+      type: string
+    - name: top_participant_display_pics
+      type: array
+    - name: type
+      type: string
+    - name: updated_at
+      type: string
+      format: date-time
+    - name: user
+      type: object
+    - name: user_reacted
+      type: bool
+    - name: user_resonated
+      type: bool
+    - name: view_count
+      type: integer
+  Result3:
+    fields:
+    - name: compatibility_score
+      type: string
+    - name: display_pic
+      type: string
+      format: url
+    - name: email
+      type: string
+      format: email
+    - name: friendship_status
+      type: string
+    - name: is_friend
+      type: bool
+    - name: mutual_connections
+      type: object
+    - name: name
+      type: string
+    - name: user_id
+      type: string
+  Room:
+    fields:
+    - name: article_thinking_time
+      type: integer
+    - name: article_url
+      type: string
+      format: url
+    - name: comments
+      type: array
+    - name: has_read_article
+      type: bool
+    - name: is_member
+      type: bool
+    - name: is_private
+      type: bool
+    - name: pagination
+      type: ref:Pagination4
+    - name: parent_comment_details
+      type: ref:ParentCommentDetails
+    - name: parent_comment_id
+      type: integer
+    - name: performance
+      type: ref:Performance4
+    - name: total_comment_count
+      type: integer
+  Source:
+    fields:
+    - name: reading
+      type: string
+    - name: streak
+      type: string
+  Spotlightsnew:
+    fields:
+    - name: data
+      type: array
+    - name: meta
+      type: ref:Meta7
+    - name: pagination
+      type: ref:Pagination9
+    - name: performance
+      type: ref:Performance9
+    - name: success
+      type: bool
+  StarContributor:
+    fields:
+    - name: count
+      type: integer
+    - name: status
+      type: bool
+    - name: threshold
+      type: integer
+  StarsReceived:
+    fields:
+    - name: count
+      type: integer
+  Stat:
+    fields:
+    - name: data
+      type: ref:Data4
+    - name: success
+      type: bool
+    - name: timestamp
+      type: string
+      format: date-time
+  Stats:
+    fields:
+    - name: articles_shared
+      type: integer
+    - name: comments_count
+      type: integer
+    - name: reactions_count
+      type: integer
+  Streak:
+    fields:
+    - name: current
+      type: integer
+    - name: max
+      type: integer
+    - name: source
+      type: string
+  Streak2:
+    fields:
+    - name: current
+      type: integer
+    - name: max
+      type: integer
+  SuggestedFeed:
+    fields:
+    - name: data
+      type: array
+    - name: meta
+      type: ref:Meta
+  Summary:
+    fields:
+    - name: awards_received
+      type: integer
+    - name: friend_count
+      type: integer
+    - name: has_bio
+      type: bool
+    - name: has_education
+      type: bool
+    - name: profile_strength
+      type: string
+    - name: thought_count
+      type: integer
+  ThinkingAnalytics:
+    fields:
+    - name: formatted_time
+      type: string
+    - name: total_thinking_sessions
+      type: integer
+    - name: total_thinking_time_hours
+      type: string
+    - name: total_thinking_time_minutes
+      type: string
+    - name: total_thinking_time_seconds
+      type: integer
+    - name: total_urls_visited
+      type: integer
+  ThinkingProfile:
+    fields:
+    - name: avg_thinking_time
+      type: integer
+    - name: total_sessions
+      type: integer
+    - name: total_thinking_time
+      type: integer
+  Thought:
+    fields:
+    - name: data
+      type: ref:Data2
+    - name: performance
+      type: ref:Performance2
+    - name: success
+      type: bool
+  TimelineStatus:
+    fields:
+    - name: status
+      type: string
+  TopLearnerBadge:
+    fields:
+    - name: awarded_at
+      type: string
+      format: date-time
+    - name: expires_at
+      type: string
+      format: date-time
+  Topfriend:
+    fields:
+    - name: cached
+      type: bool
+    - name: data
+      type: array
+    - name: success
+      type: bool
+  UnifiedItem:
+    fields:
+    - name: article
+      type: ref:Article2
+      omit_empty: true
+    - name: card_type
+      type: string
+      omit_empty: true
+    - name: conversation_starters
+      type: '[]ref:ConversationStarter2'
+      omit_empty: true
+    - name: display
+      type: string
+      omit_empty: true
+    - name: total_conversations
+      type: integer
+      omit_empty: true
+    - name: total_thoughts
+      type: integer
+      omit_empty: true
+  Unread:
+    fields:
+    - name: friend_read_like_count
+      type: integer
+    - name: last_read_at
+      type: string
+      format: date-time
+    - name: pending_invitations_count
+      type: integer
+    - name: pending_invitations_unseen
+      type: integer
+    - name: success
+      type: bool
+    - name: total_unread
+      type: integer
+    - name: unread_count
+      type: integer
+    - name: unread_notif_count
+      type: integer
+  UnreadCounts:
+    fields:
+    - name: conversations
+      type: integer
+    - name: direct_messages
+      type: integer
+    - name: space_chats
+      type: integer
+    - name: total
+      type: integer
+  Unreadconversation:
+    fields:
+    - name: filters
+      type: ref:Filters
+    - name: success
+      type: bool
+    - name: timestamp
+      type: string
+      format: date-time
+    - name: unread_counts
+      type: ref:UnreadCounts
+  User:
+    fields:
+    - name: can_give_star
+      type: bool
+    - name: daily_star_limit
+      type: integer
+    - name: has_read
+      type: bool
+    - name: stars_given_today
+      type: integer
+    - name: total_stars
+      type: integer
+  User2:
+    fields:
+    - name: awards_received
+      type: integer
+    - name: created_at
+      type: string
+      format: date-time
+    - name: display_name
+      type: string
+    - name: display_pic
+      type: string
+      format: url
+    - name: email
+      type: string
+      format: email
+    - name: friend_count
+      type: integer
+    - name: is_private
+      type: bool
+    - name: name
+      type: string
+    - name: thought_count
+      type: integer
+    - name: updated_at
+      type: string
+      format: date-time
+    - name: user_id
+      type: string
+    - name: verifications
+      type: object
+  UserProfile:
+    fields:
+    - name: interests
+      type: array
+    - name: thinking_profile
+      type: ref:ThinkingProfile
+    - name: total_interests
+      type: integer
+  Verificationbadge:
+    fields:
+    - name: data
+      type: ref:Data7
+    - name: success
+      type: bool
+  Verifications:
+    fields:
+    - name: professional
+      type: object
+  Verifications2:
+    fields:
+    - name: professional
+      type: object
+  Verified:
+    fields:
+    - name: categories
+      type: array
+category: social-and-messaging

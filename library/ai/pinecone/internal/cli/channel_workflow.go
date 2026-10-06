@@ -32,11 +32,12 @@ func newWorkflowArchiveCmd(flags *rootFlags) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "archive",
-		Short: "Sync all resources to local store for offline access and search",
-		Long: `Archive fetches all syncable resources from the API and stores them in a
-local SQLite database. Supports incremental sync (only new data since last run)
-and full resync. After archiving, use 'search' for instant full-text search.`,
-		Example: `  # Archive all resources
+		Short: "Sync non-vector resources to local store for offline access and search",
+		Long: `Archive fetches syncable non-vector resources from the API and stores them
+in a local SQLite database. Vectors require an explicit index and namespace:
+run 'sync --resources vectors --vector-index NAME --vector-namespace NAME'
+separately. After archiving, use 'search' for instant full-text search.`,
+		Example: `  # Archive non-vector resources
   pinecone-pp-cli workflow archive
 
   # Full re-archive (ignore previous sync state)
@@ -57,7 +58,10 @@ and full resync. After archiving, use 'search' for instant full-text search.`,
 			}
 			defer s.Close()
 
-			resources := []string{"admin", "admin-invites", "admin-organizations", "admin-projects", "admin-role-bindings", "admin-service-accounts", "assistants", "backups", "bulk", "collections", "history", "indexes", "models", "namespaces", "restore-jobs", "vectors"}
+			// Vectors are excluded because they require an explicit index/namespace
+			// scope and a resolved data-plane host. Use `sync --resources vectors
+			// --vector-index ...` so archived rows can safely drive prune.
+			resources := []string{"admin", "admin-invites", "admin-organizations", "admin-projects", "admin-role-bindings", "admin-service-accounts", "assistants", "backups", "bulk", "collections", "history", "indexes", "models", "namespaces", "restore-jobs"}
 			archiveMaxPages := 100
 			if cliutil.IsDogfoodEnv() {
 				archiveMaxPages = 1

@@ -146,6 +146,14 @@ func runCerca(cmd *cobra.Command, flags *rootFlags, archiveSlug string, p cercaP
 		// naturale della domanda «quali leggi nell'anno X».
 		hint := hintLeggiCorte(truncated, mancanti, len(recs), len(leggi), p.LimitLeggi)
 		frHint := uniscoHintPrefissato(fraseHint(p.Params), punteggiaturaHint(arc.Slug, p.Params))
+		// L'avviso sulla latenza passa anche di qui. Questo ramo usciva prima di
+		// arrivarci, e il difetto era invisibile finché l'hint guardava solo
+		// `--data`, che su `leggi` non esiste: ora che legge anche `--anno`,
+		// saltarlo lascerebbe scoperta la risposta di default dell'archivio più
+		// indietro di tutti.
+		adessoLeggi := time.Now()
+		latHint := latenzaHint(recs, arc.Slug, p.Params, adessoLeggi, sondaLatenza(ctx, recs, *arc, p.Params, adessoLeggi))
+		frHint = uniscoHintPrefissato(frHint, latHint)
 		// Questo ramo ha un hint tutto suo e ritorna prima di warnTruncated:
 		// senza il caso esplicito, `leggi cerca --envelope` sarebbe l'unica
 		// ricerca a non avere la busta, e in silenzio. fraseHint va incluso
@@ -182,7 +190,8 @@ func runCerca(cmd *cobra.Command, flags *rootFlags, archiveSlug string, p cercaP
 	omonHint := omonimiHint(recs, arc.Slug)
 	spezzHint := spezzatoHint(spezzato)
 	sommHint := sommariHint(truncated, arc.Slug, p.Params, termini)
-	latHint := latenzaHint(recs, arc.Slug, p.Params, time.Now())
+	adesso := time.Now()
+	latHint := latenzaHint(recs, arc.Slug, p.Params, adesso, sondaLatenza(ctx, recs, *arc, p.Params, adesso))
 
 	if envelopeWanted(cmd.OutOrStdout(), flags) {
 		// L'avviso resta anche su stderr: la busta serve a chi legge il JSON,
@@ -212,51 +221,299 @@ func runCerca(cmd *cobra.Command, flags *rootFlags, archiveSlug string, p cercaP
 	return nil
 }
 
-// latenzaFonteGiorni è il ritardo massimo di pubblicazione osservato su questa
-// fonte (misurato con `sync coverage`: 9-45 giorni a seconda dell'archivio).
-// Sotto questa distanza da oggi un vuoto non prova che l'atto non esista.
-const latenzaFonteGiorni = 45
+// costoGuardiaGiorni non è un'affermazione sulla latenza della fonte: è un
+// tetto di spesa. Sotto questa distanza da oggi vale la pena spendere una
+// richiesta per misurare fin dove arriva davvero l'archivio; più indietro non
+// si sonda e non si dice niente, perché lì il vuoto è un vuoto.
+//
+// Qui prima c'era `latenzaFonteGiorni = 45`, che faceva due mestieri con un
+// numero solo: decideva se parlare E dichiarava all'utente «9-45 giorni di
+// ritardo». Misurato il 18/09/2026 su tutti e dodici gli archivi, il ritardo
+// vero andava da 2 giorni (resoconti, sommari) a 58 (risoluzioni): la banda
+// sbagliava da tutt'e due i lati, e il 45 come soglia spegneva l'hint proprio
+// su risoluzioni e odg, dove serviva di più. Ora il numero che l'utente legge
+// è misurato, e questa costante regola solo la spesa. 120 è il doppio abbondante
+// del massimo osservato quel giorno.
+const costoGuardiaGiorni = 120
 
-// latenzaHint avvisa quando una ricerca con --data che arriva a ridosso di
-// oggi non trova nulla. Il vuoto e la copertura della fonte viaggiano su due
-// comandi: chi cerca l'interrogazione di due giorni fa ottiene `[]` e non sa
-// che l'archivio si ferma a un mese prima. Non si interroga la fonte (`sync
-// coverage` costa una richiesta per archivio): si dice solo che il vuoto può
-// essere latenza, e dove si misura. Un --data che finisce mesi o anni fa
-// resta muto: lì il vuoto è un vuoto.
-func latenzaHint(recs []icaro.Record, slug string, params map[string]string, now time.Time) string {
-	if len(recs) > 0 {
-		return ""
-	}
+// latenzaMisura è fin dove arriva l'archivio, misurato adesso e con i filtri
+// strutturali della ricerca che è tornata vuota.
+type latenzaMisura struct {
+	Frontiera time.Time
+	Giorni    int
+}
+
+// filtriStrutturaliLatenza sono i parametri che la sonda si porta dietro.
+//
+// Sono quelli che scelgono una fetta dell'archivio, non un contenuto. La
+// differenza non è accademica: sondare con `testo` o `frase` misurerebbe la
+// data dell'ultimo documento che contiene quelle parole e la spaccerebbe per
+// la frontiera dell'archivio — un numero falso proprio nell'avviso che esiste
+// per non farne credere uno. `commissione` invece è il caso che ha motivato
+// tutto questo: il 16/09/2026 i sommari come archivio erano a 2 giorni di
+// ritardo, ma la QUARTA era ferma all'08/09, cioè a 10.
+var filtriStrutturaliLatenza = []string{"commissione", "codcom", "legisl"}
+
+// finestraLatenza legge il --data della ricerca e dice fin dove arriva il
+// periodo chiesto, se c'è motivo di occuparsene. Una finestra tutta nel futuro
+// non è latenza (le convocazioni annunciano sedute da tenere, e lì «la fonte è
+// in ritardo» sarebbe comunque la diagnosi sbagliata); una finestra a cavallo
+// di oggi si valuta come se finisse oggi.
+func finestraLatenza(slug string, params map[string]string, now time.Time) (time.Time, bool) {
 	v := strings.TrimSpace(params["data"])
+	if v == "" && archivioSenzaData(slug) {
+		// `leggi` è l'unico archivio misurabile senza `--data`: il suo filtro
+		// temporale è `--anno`. Ignorarlo lasciava scoperto proprio l'archivio
+		// col ritardo peggiore (45 giorni il 18/09/2026), dove `--anno 2026` su
+		// una legge di settembre risponde `[]` senza dire perché. Un anno è una
+		// finestra come un'altra: dal 1º gennaio al 31 dicembre, e la regola
+		// sulle finestre che finiscono nel futuro fa il resto.
+		//
+		// Solo lì, però. Quasi tutti gli altri archivi accettano `--anno`
+		// accanto a `--data`, e prendere l'anno anche da loro faceva uscire
+		// l'avviso su `ddl cerca --anno 2026 --numero 99999`: un anno quasi
+		// tutto pubblicato, dove il vuoto è un vuoto, con la frase che
+		// dichiarava «il periodo chiesto va oltre dove arriva la fonte» per
+		// quattro giorni su dodici mesi.
+		if a := strings.TrimSpace(params["anno"]); a != "" {
+			v = a + "-01-01:" + a + "-12-31"
+		}
+	}
 	if v == "" {
-		return ""
+		return time.Time{}, false
 	}
 	parti := strings.Split(v, ":")
 	inizio, err := time.Parse("2006-01-02", strings.TrimSpace(parti[0]))
 	if err != nil {
-		return ""
+		return time.Time{}, false
 	}
 	fine, err := time.Parse("2006-01-02", strings.TrimSpace(parti[len(parti)-1]))
 	if err != nil {
-		return ""
+		return time.Time{}, false
 	}
 	oggi := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	// Una finestra tutta nel futuro non è latenza: lì il vuoto è ovvio (le
-	// convocazioni a parte, che annunciano sedute da tenere, e per le quali
-	// «la fonte è in ritardo» sarebbe comunque la diagnosi sbagliata). Una
-	// finestra a cavallo di oggi invece copre giorni recenti: si valuta
-	// come se finisse oggi.
 	if inizio.After(oggi) {
-		return ""
+		return time.Time{}, false
 	}
 	if fine.After(oggi) {
 		fine = oggi
 	}
-	if fine.Before(oggi.AddDate(0, 0, -latenzaFonteGiorni)) {
+	if fine.Before(oggi.AddDate(0, 0, -costoGuardiaGiorni)) {
+		return time.Time{}, false
+	}
+	return fine, true
+}
+
+// paramsSonda costruisce i filtri della sonda: la finestra sull'anno in corso
+// più i soli filtri strutturali della ricerca. Ritorna nil quando l'archivio
+// non ha alcuna dimensione temporale interrogabile (`biblioteca`): lì non c'è
+// niente da misurare.
+func paramsSonda(arc icaro.Archive, params map[string]string, anno int) map[string]string {
+	finestra := finestraAnno(arc, anno)
+	if finestra == nil {
+		return nil
+	}
+	out := make(map[string]string, len(finestra)+len(filtriStrutturaliLatenza))
+	for k, v := range finestra {
+		out[k] = v
+	}
+	for _, k := range filtriStrutturaliLatenza {
+		if v := strings.TrimSpace(params[k]); v != "" {
+			out[k] = v
+		}
+	}
+	return out
+}
+
+// sondaLatenza misura fin dove arriva l'archivio, e solo quando serve: la
+// ricerca è tornata vuota e il periodo chiesto è abbastanza recente da valere
+// una richiesta. Ritorna nil quando non si è potuto misurare — l'avviso esce
+// lo stesso, senza cifra, invece di inventarne una.
+func sondaLatenza(ctx context.Context, recs []icaro.Record, arc icaro.Archive, params map[string]string, now time.Time) *latenzaMisura {
+	if len(recs) > 0 {
+		return nil
+	}
+	if _, ok := finestraLatenza(arc.Slug, params, now); !ok {
+		return nil
+	}
+	if paramsSonda(arc, params, now.Year()) == nil {
+		// Nessuna dimensione temporale interrogabile: `biblioteca`.
+		return nil
+	}
+	// Il tempo è limitato perché questo è un avviso, non il risultato: se il
+	// portale è lento, si rinuncia alla cifra e si consegna comunque la risposta.
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	// L'anno in corso, e se è vuoto quelli prima. Un archivio molto indietro a
+	// gennaio ha il suo record più recente a dicembre: fermarsi all'anno in
+	// corso vuol dire perdere la cifra proprio a cavallo d'anno, cioè quando il
+	// ritardo è più grande. Si torna indietro quanto `sync coverage`, che è il
+	// comando a cui questo avviso rimanda: se i due numeri divergessero, chi
+	// legge non saprebbe a quale credere. Le richieste in più si pagano solo
+	// quando l'anno in corso è davvero senza documenti.
+	for indietro := 0; indietro <= annoIndietroMax; indietro++ {
+		anno := now.Year() - indietro
+		max, esaurito := frontieraDellAnno(ctx, arc, params, anno)
+		if max == "" {
+			if !esaurito {
+				// L'anno c'è ma non si è potuto misurare (errore, finestra
+				// troncata su un archivio in ordine sparso): tornare indietro
+				// darebbe la frontiera dell'anno prima spacciata per l'ultima.
+				return nil
+			}
+			continue
+		}
+		frontiera, err := time.Parse("2006-01-02", max)
+		if err != nil {
+			return nil
+		}
+		oggi := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+		return &latenzaMisura{Frontiera: frontiera, Giorni: int(oggi.Sub(frontiera).Hours() / 24)}
+	}
+	return nil
+}
+
+// frontieraDellAnno misura la data più alta di un anno solo. Ritorna la data e
+// se l'anno è stato letto fino in fondo: un anno vuoto letto per intero si
+// salta e si guarda quello prima, un anno che non si è saputo leggere no.
+func frontieraDellAnno(ctx context.Context, arc icaro.Archive, params map[string]string, anno int) (string, bool) {
+	sonde := paramsSonda(arc, params, anno)
+	if sonde == nil {
+		return "", false
+	}
+	// Una sessione nuova, non il client della ricerca: `sync_coverage.go`
+	// documenta che una sessione riusata non ripete la ricerca, la continua, e
+	// qui il danno sarebbe una frontiera calcolata su righe già scorse.
+	prime, troncato, err := sondaNuova().cerca(ctx, arc, sonde, 20, 1)
+	if err != nil {
+		return "", false
+	}
+	return massimoDellaPagina(dateInOrdine(prime), troncato)
+}
+
+// massimoDellaPagina decide, dalle sole righe della prima pagina, se la
+// frontiera dell'anno è già in mano. È la parte che si prova senza rete.
+//
+// Il secondo valore distingue «anno vuoto, e lo so perché l'ho letto tutto» da
+// «non ho saputo leggerlo»: solo il primo autorizza a guardare l'anno prima,
+// perché il secondo darebbe la frontiera di un anno più vecchio spacciandola
+// per l'ultima.
+func massimoDellaPagina(date []string, troncato bool) (string, bool) {
+	if len(date) == 0 {
+		return "", !troncato
+	}
+	if decrescente(date) {
+		return date[0], true
+	}
+	// L'ordine non scende: il massimo può stare in fondo, e la prima riga non è
+	// la frontiera. Quanto costa saperlo lo dice `troncato`: se la prima pagina
+	// ha esaurito la finestra, quelle righe sono tutte le righe dell'anno e il
+	// massimo si calcola qui, senza chiedere altro — è `risoluzioni`, 3 righe
+	// nel 2026 in ordine sparso. Se invece è troncata, l'anno è grande e
+	// leggerlo tutto vorrebbe dire decine di richieste per una riga di avviso:
+	// si rinuncia alla cifra. È `leggi`, 262 righe, dove una versione
+	// precedente di questo codice spendeva 16 secondi per poi buttare via il
+	// risultato.
+	if troncato {
+		return "", false
+	}
+	return massimo(date), true
+}
+
+// latenzaHint avvisa quando una ricerca con --data che arriva a ridosso di oggi
+// non trova nulla. Il vuoto e la copertura della fonte viaggiano su due comandi:
+// chi cerca l'interrogazione di due giorni fa ottiene `[]` e non sa che
+// l'archivio si ferma a un mese prima.
+//
+// Resta senza rete e senza stato: la misura, se c'è, arriva già fatta da
+// `sondaLatenza`. Così la decisione di parlare o tacere si prova offline, che è
+// dove servono i casi limite.
+func latenzaHint(recs []icaro.Record, slug string, params map[string]string, now time.Time, m *latenzaMisura) string {
+	if len(recs) > 0 {
 		return ""
 	}
-	return fmt.Sprintf("hint: nessun risultato, ma il periodo chiesto arriva a ridosso di oggi e questa fonte pubblica con 9-45 giorni di ritardo: il vuoto può essere latenza, non assenza. `sync coverage --resources %s` dice l'ultima data che l'archivio ha davvero.", slug)
+	fine, ok := finestraLatenza(slug, params, now)
+	if !ok {
+		return ""
+	}
+	if m == nil {
+		if !archivioMisurabile(slug, now.Year()) {
+			// Su questi archivi la misura non esiste e non esisterà: rimandare a
+			// `sync coverage` vorrebbe dire mandare l'utente a leggere lo stesso
+			// «non misurabile» che abbiamo già in mano. Un avviso che non porta
+			// da nessuna parte è rumore, e si tace.
+			return ""
+		}
+		return fmt.Sprintf("hint: nessun risultato, ma il periodo chiesto arriva a ridosso di oggi e non si è potuto misurare fin dove arriva la fonte: il vuoto può essere latenza, non assenza. `sync coverage --resources %s` dice l'ultima data che l'archivio ha davvero.", slug)
+	}
+	if !fine.After(m.Frontiera) {
+		// La fonte ha documenti più recenti del periodo chiesto: la latenza da
+		// sola non spiega questo vuoto, quindi l'avviso non esce. Non si
+		// dichiara però che l'atto non esiste: la frontiera è la data più alta
+		// fra le righe lette, non una prova di completezza all'indietro.
+		return ""
+	}
+	return fmt.Sprintf("hint: nessun risultato, ma il periodo chiesto va oltre dove arriva la fonte: l'archivio %s%s si ferma al %s, %d giorni fa. Il vuoto può essere latenza, non assenza.", slug, clausolaSonda(params), m.Frontiera.Format("2006-01-02"), m.Giorni)
+}
+
+// archivioSenzaData dice se l'archivio non ha affatto un filtro per data, e
+// quindi esprime le finestre temporali solo per anno. È `leggi`.
+func archivioSenzaData(slug string) bool {
+	arc := icaro.BySlug(slug)
+	if arc == nil {
+		return false
+	}
+	_, ok := arc.FieldMap["data"]
+	return !ok
+}
+
+// archivioMisurabile dice se su questo archivio una frontiera si può misurare.
+//
+// `biblioteca` non ha colonna data, `pareri` scrive le date a parole e spesso
+// tagliate («17 luglio 2»): su tutti e due `sync coverage` risponde «non
+// misurabile», e la sonda non può fare meglio. Qui la differenza che conta non
+// è fra misura riuscita e fallita, è fra «stavolta non ci siamo riusciti», dove
+// l'avviso senza cifra serve ancora, e «qui non c'è niente da misurare», dove
+// l'avviso manderebbe soltanto a sbattere.
+func archivioMisurabile(slug string, anno int) bool {
+	arc := icaro.BySlug(slug)
+	if arc == nil {
+		return false
+	}
+	return finestraAnno(*arc, anno) != nil
+}
+
+// clausolaSonda nomina i filtri con cui la frontiera è stata misurata, e solo
+// quelli.
+//
+// Qui prima c'era «con i filtri di questa ricerca», che era falso ogni volta
+// che la ricerca ne aveva altri: `paramsSonda` lascia fuori `testo`, `frase` e
+// `firmatario`, quindi su `--testo bilancio` la frase prometteva la data
+// dell'ultima interrogazione sul bilancio e consegnava quella dell'archivio.
+// È lo stesso difetto che questa modifica è nata per togliere - un messaggio
+// che dichiara una misura diversa da quella fatta - e ricomparso nella prosa
+// invece che nel numero.
+func clausolaSonda(params map[string]string) string {
+	// I nomi dei flag non si scrivono come sono: gli altri avvisi di questa CLI
+	// sono frasi italiane, e «per legisl 18» stonerebbe in mezzo a loro.
+	etichette := map[string]string{
+		"commissione": "la commissione",
+		"codcom":      "la commissione",
+		"legisl":      "la legislatura",
+	}
+	var parti []string
+	for _, k := range filtriStrutturaliLatenza {
+		if v := strings.TrimSpace(params[k]); v != "" {
+			parti = append(parti, etichette[k]+" "+v)
+		}
+	}
+	if len(parti) == 0 {
+		return ""
+	}
+	if len(parti) == 1 {
+		return ", per " + parti[0] + ","
+	}
+	return ", per " + strings.Join(parti[:len(parti)-1], ", ") + " e " + parti[len(parti)-1] + ","
 }
 
 // spezzatoHint dichiara che la risposta è stata ricomposta da sottorange.

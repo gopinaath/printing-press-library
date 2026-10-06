@@ -1,0 +1,178 @@
+
+=== verify ===
+Runtime Verification: ~/printing-press/.runstate/oneworddomains-cli-0b6a6931/runs/20260924-061450-62059de3/working/oneword-domains-pp-cli/oneword-domains-pp-cli
+Mode: mock
+
+COMMAND                        KIND         HELP   DRY-RUN  EXEC     SCORE
+resource-path:export           static       PASS   PASS     PASS     3/3
+agent-context                  write        PASS   PASS     PASS     3/3
+api                            local        PASS   PASS     PASS     3/3
+auth                           local        PASS   PASS     PASS     3/3
+brainstorm                     read         PASS   PASS     FAIL     2/3
+check                          read         PASS   PASS     FAIL     2/3
+compare                        read         PASS   PASS     FAIL     2/3
+doctor                         local        PASS   PASS     PASS     3/3
+domains                        read         PASS   PASS     PASS     3/3
+export                         data-layer   PASS   PASS     PASS     3/3
+feedback                       write        PASS   PASS     PASS     3/3
+gpt                            read         PASS   PASS     PASS     3/3
+hacks                          read         PASS   PASS     PASS     3/3
+learnings                      read         PASS   PASS     PASS     3/3
+listings                       read         PASS   PASS     PASS     3/3
+playbook                       write        PASS   PASS     FAIL     2/3
+profile                        write        PASS   PASS     FAIL     2/3
+recall                         read         PASS   PASS     PASS     3/3
+recheck                        read         PASS   PASS     PASS     3/3
+search                         data-layer   PASS   PASS     PASS     3/3
+sync                           data-layer   PASS   PASS     PASS     3/3
+teach                          write        PASS   PASS     PASS     3/3
+teach-lookup                   write        PASS   PASS     PASS     3/3
+teach-pattern                  write        PASS   PASS     PASS     3/3
+teach-playbook                 write        PASS   PASS     PASS     3/3
+tlds                           read         PASS   PASS     PASS     3/3
+which                          read         PASS   PASS     PASS     3/3
+words                          read         PASS   PASS     PASS     3/3
+workflow                       write        PASS   PASS     FAIL     2/3
+
+Path-Param Probes (nested commands with <positional> args):
+  PASS domains check
+  PASS learnings confirm
+  PASS learnings forget
+  PASS learnings reject
+  PASS profile delete
+  PASS profile save
+  PASS profile show
+  PASS profile use
+  PASS tlds get
+  PASS words get
+
+Data Pipeline: PASS: sync completed (sql unavailable, table validation skipped)
+Pass Rate: 100% (39/39 passed, 0 critical)
+Verdict: PASS
+
+=== validate-narrative ===
+UNSUPPORTED [auth_narrative]: oneword-domains-pp-cli auth login --chrome → full-example validation skipped: command is side-effectful (auth/launch/apply)
+UNSUPPORTED [troubleshoots.fix]: oneword-domains-pp-cli auth login --chrome → full-example validation skipped: command is side-effectful (auth/launch/apply)
+DONE: 13 ok, 0 missing, 0 empty-words, 0 failed-examples, 2 unsupported
+
+=== dogfood ===
+dogfood: using spec ~/printing-press/.runstate/oneworddomains-cli-0b6a6931/runs/20260924-061450-62059de3/working/oneword-domains-pp-cli/spec.yaml (bundled)
+dogfood: caller --spec=~/printing-press/.runstate/oneworddomains-cli-0b6a6931/runs/20260924-061450-62059de3/research/oneword-domains-spec.yaml overridden by bundled ~/printing-press/.runstate/oneworddomains-cli-0b6a6931/runs/20260924-061450-62059de3/working/oneword-domains-pp-cli/spec.yaml
+dogfood: synced README.md (Troubleshooting) from research.json narrative
+Dogfood Report: oneword-domains-pp-cli
+================================
+
+Path Validity:     0/0 valid (SKIP)
+  Detail: internal-yaml spec: paths validated at parse time
+
+Auth Protocol:     MATCH
+  Generated: Uses "unknown" prefix
+  Detail: no bot/bearer/basic scheme detected
+
+OAuth Scope Cover: 0/0 endpoints covered (SKIP)
+  Detail: no OAuth-scoped endpoints in spec
+
+Dead Flags:        0 dead (PASS)
+
+Dead Functions:    4 dead (WARN)
+  - handleBinaryResponseDelivery (defined, never called)
+  - retainCLIQueryParams (defined, never called)
+  - retainExplicitQueryParams (defined, never called)
+  - successfulNoop (defined, never called)
+
+Data Pipeline:     PARTIAL
+  Sync: calls domain-specific Upsert methods (GOOD)
+  Search: uses generic Search only or direct SQL
+  Domain tables: 4
+
+Examples:          10/10 commands have examples (PASS)
+
+Novel Features:    6/6 survived (PASS)
+
+MCP Surface:       PASS (MCP surface mirrors the Cobra tree at runtime)
+
+Verdict: WARN
+  - 4 dead helper functions found
+  - config inconsistency: write fields [, token, ] vs read fields [ || c.CookieCredential() != ]
+
+=== workflow-verify ===
+Workflow Verification: oneword-domains-pp-cli
+================================
+
+Overall Verdict: workflow-pass
+  - no workflow manifest found, skipping
+
+=== apify-audit ===
+Apify Actor Audit
+=================
+
+No Apify actor references found.
+
+Verdict: pass
+  - no Apify actor references found, skipping
+
+=== verify-skill ===
+=== oneword-domains-pp-cli ===
+  ✓ All checks passed (flag-names, flag-commands, positional-args, shell-var-quotes, unknown-command)
+  ✓ canonical-sections passed
+
+=== scorecard ===
+Quality Scorecard: oneword-domains
+
+  Output Modes         10/10
+  Auth                 10/10
+  Error Handling       8/10
+  Terminal UX          9/10
+  README               10/10
+  Doctor               10/10
+  Agent Native         10/10
+  MCP Quality          10/10
+  MCP Desc Quality     10/10
+  MCP Token Efficiency 10/10
+  MCP Remote Transport 10/10
+  MCP Tool Design      N/A
+  MCP Surface Strategy N/A
+  Local Cache          10/10
+  Cache Freshness      10/10
+  Breadth              10/10
+  Vision               9/10
+  Workflows            10/10
+  Insight              7/10
+  Agent Workflow       9/10
+
+  Domain Correctness
+  Path Validity           10/10
+  Auth Protocol           2/10
+  Data Pipeline Integrity 7/10
+  Sync Correctness        10/10
+  Live API Verification   N/A
+  Type Fidelity           5/5
+  Dead Code               2/5
+
+  Total: 83/100 - Grade A
+  Note: omitted from denominator: mcp_tool_design, mcp_surface_strategy, live_api_verification
+
+Sample Output Probe (live command sample)
+  Binary refresh: fresh (staged binary is newer than Go sources)
+  Passed: 3/6  (50% pass rate, 0 skipped)
+  Failures:
+    - Brainstorm pipeline: timed out after 10s
+    - Cross-TLD intersection: exit 4: Error: GET /api/domains needs a signed-in One Word Domains session (lifetime pass): sign in at https://oneword.domains in Chrome, then run 'oneword-domains-pp-cli auth login --chrome'
+    - TLD inventory: exit 4: Error: GET /api/domains/count needs a signed-in One Word Domains session (lifetime pass): sign in at https://oneword.domains in Chrome, then run 'oneword-domains-pp-cli auth login --chrome'
+
+Gaps:
+  - auth_protocol scored 2/10 - needs improvement
+
+Shipcheck Summary
+=================
+  LEG               RESULT  EXIT      ELAPSED
+  verify            PASS    0         16.461s
+  validate-narrative  PASS    0         324ms
+  dogfood           PASS    0         3.242s
+  workflow-verify   PASS    0         16ms
+  apify-audit       PASS    0         37ms
+  verify-skill      PASS    0         5.673s
+  scorecard         PASS    0         10.579s
+
+Verdict: PASS (7/7 legs passed)
+SHIPCHECK_EXIT=0

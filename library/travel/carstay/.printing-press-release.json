@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "slug": "carstay",
+  "cli_name": "carstay-pp-cli",
+  "version": "2026.10.2",
+  "released_at": "2026-10-04T08:52:41Z",
+  "source_commit": "9717d3d7d37907a236b660eed6a1b8bd631a04d6",
+  "printing_press_version": "4.32.5",
+  "run_id": "20261003-001121-929ee489",
+  "changes": [
+    {
+      "title": "fix(carstay): preserve learning evidence and MCP boundaries",
+      "pr": 2259,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2259",
+      "commit": "9717d3d7d37907a236b660eed6a1b8bd631a04d6"
+    }
+  ]
+}

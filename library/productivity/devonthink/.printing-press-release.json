@@ -2,17 +2,17 @@
   "schema_version": 1,
   "slug": "devonthink",
   "cli_name": "devonthink-pp-cli",
-  "version": "2026.9.1",
-  "released_at": "2026-09-11T09:22:21Z",
-  "source_commit": "81f5764eda401077520268afe74913c0f21f5b7e",
+  "version": "2026.10.1",
+  "released_at": "2026-10-01T23:51:26Z",
+  "source_commit": "42d91d0b94597c93672b8c2c0b03614ebdc77d81",
   "printing_press_version": "4.27.0",
   "run_id": "20260629T175310Z-b4705e85",
   "changes": [
     {
-      "title": "fix: fail closed on ambiguous fleet write retries",
-      "pr": 1978,
-      "url": "https://github.com/mvanhorn/printing-press-library/pull/1978",
-      "commit": "81f5764eda401077520268afe74913c0f21f5b7e"
+      "title": "Harden DEVONthink local writes and Smart Group search scope",
+      "pr": 2172,
+      "url": "https://github.com/mvanhorn/printing-press-library/pull/2172",
+      "commit": "42d91d0b94597c93672b8c2c0b03614ebdc77d81"
     }
   ]
 }

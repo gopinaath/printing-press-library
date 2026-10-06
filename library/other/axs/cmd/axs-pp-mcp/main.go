@@ -4,10 +4,15 @@
 package main
 
 import (
+	"crypto/subtle"
 	"flag"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/mark3labs/mcp-go/server"
 	mcptools "github.com/mvanhorn/printing-press-library/library/other/axs/internal/mcp"
@@ -16,15 +21,15 @@ import (
 // Transport selection order: --transport flag, then PP_MCP_TRANSPORT env,
 // then the first transport declared in the spec (see MCPConfig.Transport).
 // The flag surface lets one binary serve stdio locally and streamable HTTP
-// when hosted in a container or remote sandbox, matching the Anthropic
-// guidance that production agents need a remote option.
+// when hosted behind an authenticated TLS proxy or tunnel.
 
 const (
-	defaultHTTPAddr = ":7777"
+	defaultHTTPAddr = "127.0.0.1:7777"
+	httpTokenEnv    = "PP_MCP_HTTP_TOKEN"
 )
 
 // version is the printed MCP server's version, overridable at build time via ldflags.
-var version = "2026.9.1"
+var version = "2026.10.1"
 
 func main() {
 	s := server.NewMCPServer(
@@ -36,7 +41,7 @@ func main() {
 	mcptools.RegisterTools(s)
 
 	transport := flag.String("transport", defaultTransport(), "MCP transport: stdio | http")
-	addr := flag.String("addr", defaultHTTPAddr, "bind address for http transport (host:port or :port)")
+	addr := flag.String("addr", defaultHTTPAddr, "loopback bind address for http transport (host:port)")
 	flag.Parse()
 
 	switch strings.ToLower(*transport) {
@@ -46,9 +51,18 @@ func main() {
 			os.Exit(1)
 		}
 	case "http":
-		httpSrv := server.NewStreamableHTTPServer(s)
-		fmt.Fprintf(os.Stderr, "axs-pp-mcp serving MCP over streamable HTTP at %s\n", *addr)
-		if err := httpSrv.Start(*addr); err != nil {
+		bindAddr, err := loopbackHTTPAddr(*addr)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "unsafe MCP HTTP bind: %v\n", err)
+			os.Exit(2)
+		}
+		token := os.Getenv(httpTokenEnv)
+		if token == "" {
+			fmt.Fprintf(os.Stderr, "MCP HTTP requires %s to authenticate clients\n", httpTokenEnv)
+			os.Exit(2)
+		}
+		fmt.Fprintf(os.Stderr, "axs-pp-mcp serving MCP over streamable HTTP at %s\n", bindAddr)
+		if err := serveAuthenticatedHTTP(s, bindAddr, token); err != nil {
 			fmt.Fprintf(os.Stderr, "MCP server error: %v\n", err)
 			os.Exit(1)
 		}
@@ -56,6 +70,59 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unknown --transport %q (supported: stdio, http)\n", *transport)
 		os.Exit(2)
 	}
+}
+
+func loopbackHTTPAddr(addr string) (string, error) {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "", fmt.Errorf("invalid --addr %q: %w", addr, err)
+	}
+	portNumber, err := strconv.Atoi(port)
+	if err != nil || portNumber < 1 || portNumber > 65535 {
+		return "", fmt.Errorf("invalid port %q", port)
+	}
+	if strings.EqualFold(host, "localhost") {
+		// Never pass a hostname to Listen: a modified hosts file could resolve
+		// localhost to an externally reachable interface.
+		return net.JoinHostPort("127.0.0.1", port), nil
+	}
+	ip := net.ParseIP(host)
+	if ip == nil || !ip.IsLoopback() {
+		return "", fmt.Errorf("%q is not loopback; expose this server remotely only through an authenticated TLS reverse proxy or tunnel", host)
+	}
+	return net.JoinHostPort(ip.String(), port), nil
+}
+
+func serveAuthenticatedHTTP(mcpServer *server.MCPServer, addr, token string) error {
+	_, transport := newAuthenticatedHTTPServer(mcpServer, token)
+	return transport.Start(addr)
+}
+
+func newAuthenticatedHTTPServer(mcpServer *server.MCPServer, token string) (*http.Server, *server.StreamableHTTPServer) {
+	mux := http.NewServeMux()
+	httpServer := &http.Server{
+		Handler:           mux,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	httpTransport := server.NewStreamableHTTPServer(
+		mcpServer,
+		server.WithStreamableHTTPServer(httpServer),
+	)
+	mux.Handle("/mcp", requireBearerToken(token, httpTransport))
+	return httpServer, httpTransport
+}
+
+func requireBearerToken(token string, next http.Handler) http.Handler {
+	want := []byte(token)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		parts := strings.Fields(r.Header.Get("Authorization"))
+		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || subtle.ConstantTimeCompare([]byte(parts[1]), want) != 1 {
+			w.Header().Set("WWW-Authenticate", "Bearer")
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // defaultTransport reads PP_MCP_TRANSPORT env when set, otherwise falls back

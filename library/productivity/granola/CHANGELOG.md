@@ -2,6 +2,18 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.10.1 - 2026-10-01
+
+- Harden Granola pacing and API note reconciliation (#2155).
+
+## 2026.9.3 - 2026-09-21
+
+- fix(granola): resolve sync and read-path follow-ups (#2037).
+
+## 2026.9.2 - 2026-09-20
+
+- feat(granola): add API v1.5 and webhooks (#2036).
+
 ## 2026.9.1 - 2026-09-11
 
 - fix: fail closed on ambiguous fleet write retries (#1978).

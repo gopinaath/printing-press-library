@@ -6,6 +6,8 @@ amazon-jobs turns Amazon's careers site from a page you refresh into a queryable
 
 Created by [@qazmataz](https://github.com/qazmataz) (qazmataz).
 
+Contributors: [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
+
 ## Install
 
 The recommended path installs both the `amazon-jobs-pp-cli` binary and the `pp-amazon-jobs` agent skill (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, and other agents supported by the upstream [`skills`](https://github.com/vercel-labs/skills) CLI) in one shot:
@@ -35,7 +37,7 @@ npx -y @mvanhorn/printing-press-library install amazon-jobs --agent claude-code 
 
 ### Without Node (Go fallback)
 
-If `npx` isn't available (no Node, offline), install the CLI directly via Go (requires Go 1.26.5 or newer):
+If `npx` isn't available (no Node, offline), install the CLI directly via Go (requires Go 1.26.6 or newer):
 
 ```bash
 go install github.com/mvanhorn/printing-press-library/library/productivity/amazon-jobs/cmd/amazon-jobs-pp-cli@latest
@@ -137,6 +139,9 @@ amazon-jobs-pp-cli save sde-seattle "software engineer" --city Seattle --country
 
 # Mirror listings into the local store.
 amazon-jobs-pp-cli sync engineer --max-pages 5
+
+# JSON output sets curtailed=true if the page cap leaves more jobs upstream.
+amazon-jobs-pp-cli sync engineer --max-pages 5 --json
 
 
 # Aggregate the synced store by city — counts Amazon's site never shows.

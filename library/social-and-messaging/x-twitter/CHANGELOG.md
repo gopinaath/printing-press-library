@@ -2,6 +2,18 @@
 
 This file is maintained by printing-press-library release automation. Do not hand-edit release sections in normal PRs.
 
+## 2026.10.3 - 2026-10-01
+
+- feat(x-twitter): select isolated saved profile stores (#2162).
+
+## 2026.10.2 - 2026-10-01
+
+- feat(x-twitter): rank recent posts by engagement (#2160).
+
+## 2026.10.1 - 2026-10-01
+
+- fix(x-twitter): explain unsupported article image uploads (#2159).
+
 ## 2026.9.1 - 2026-09-11
 
 - fix: fail closed on ambiguous fleet write retries (#1978).

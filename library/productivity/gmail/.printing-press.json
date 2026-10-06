@@ -9,7 +9,16 @@
     "handle": "dmarketingllm",
     "name": "Derik Parkinson"
   },
-  "contributors": [{"handle": "gopinaath", "name": "gopinaath"}],
+  "contributors": [
+    {
+      "handle": "cathrynlavery",
+      "name": "Cathryn Lavery"
+    },
+    {
+      "handle": "gopinaath",
+      "name": "gopinaath"
+    }
+  ],
   "owner": "dmarketingllm",
   "printer": "dmarketingllm",
   "printer_name": "Derik Parkinson",

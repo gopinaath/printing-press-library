@@ -1,0 +1,232 @@
+{
+  "api_name": "philonet",
+  "novelty_score": 0,
+  "alternatives": [],
+  "gaps": [],
+  "patterns": [],
+  "recommendation": "proceed",
+  "researched_at": "2026-09-30T17:54:28Z",
+  "novel_features": [
+    {
+      "name": "Today briefing",
+      "command": "today",
+      "description": "One snapshot of your streak, reading time, friends thinking now, unread counts and pending requests.",
+      "rationale": "Live join across endpoints the web app spreads over several screens.",
+      "example": "philonet-pp-cli today --agent",
+      "why_it_matters": "Reach for this first when an agent needs a morning status of the user's Philonet reading habit.",
+      "group": "Daily habit"
+    },
+    {
+      "name": "Reading rhythm",
+      "command": "rhythm",
+      "description": "Weekly and monthly reading minutes, longest streak and rank-vs-friends trend, accumulated from your own runs (history starts at the first run).",
+      "rationale": "History exists only in local snapshots; the web app shows just today.",
+      "example": "philonet-pp-cli rhythm --weeks 4 --agent",
+      "why_it_matters": "Use for recap or goal questions over time, not live status.",
+      "group": "Daily habit"
+    },
+    {
+      "name": "Friends digest",
+      "command": "digest",
+      "description": "Friends' thoughts this CLI first saw recently, grouped by friend; 'recently' is relative to when the CLI saw them.",
+      "rationale": "Joins stored feed cards (topped up from your friends and For You feeds on every run) with your friends list, grouped per friend and time-windowed.",
+      "example": "philonet-pp-cli digest --since 24h --agent",
+      "why_it_matters": "Catch up on friends' takes without scrolling the feed.",
+      "group": "Conversations"
+    },
+    {
+      "name": "Owed replies",
+      "command": "owed",
+      "description": "Threads among your recent thoughts where someone replied and you have not answered yet.",
+      "rationale": "Live join of your recent thoughts, their reply threads and the discussions inbox to find threads awaiting your answer.",
+      "example": "philonet-pp-cli owed --agent",
+      "why_it_matters": "Use to find conversations waiting on the user.",
+      "group": "Conversations"
+    },
+    {
+      "name": "Voices",
+      "command": "voices",
+      "description": "Rank people from your stored For You feed cards by thoughts on a topic, filtered by alma mater or employer badge.",
+      "rationale": "Aggregates starter profiles and verification badges across stored feed cards (topped up from your For You feed on every run) with tag and topic filters.",
+      "example": "philonet-pp-cli voices --topic ai --badge professional --agent",
+      "why_it_matters": "Find credentialed voices on a topic when the web search cannot filter by badge.",
+      "group": "Discovery"
+    },
+    {
+      "name": "Reading queue",
+      "command": "queue",
+      "description": "Read-later and bookmarks that fit your free minutes (items with unknown length are dropped unless --include-unknown), flagged when discussed.",
+      "rationale": "Joins saved items with reading time and thought counts.",
+      "example": "philonet-pp-cli queue --fits 10 --agent",
+      "why_it_matters": "Pick what to read next given available time.",
+      "group": "Discovery"
+    },
+    {
+      "name": "Resonance",
+      "command": "resonance",
+      "description": "Which of your thoughts earned stars and insightful reactions, by tag and week.",
+      "rationale": "Joins your thoughts with the awards you received to rank what landed.",
+      "example": "philonet-pp-cli resonance --by week --agent",
+      "why_it_matters": "Tell the user what kind of thoughts land with people.",
+      "group": "Conversations"
+    }
+  ],
+  "novel_features_built": [
+    {
+      "name": "Today briefing",
+      "command": "today",
+      "description": "One snapshot of your streak, reading time, friends thinking now, unread counts and pending requests.",
+      "rationale": "Live join across endpoints the web app spreads over several screens.",
+      "example": "philonet-pp-cli today --agent",
+      "why_it_matters": "Reach for this first when an agent needs a morning status of the user's Philonet reading habit.",
+      "group": "Daily habit"
+    },
+    {
+      "name": "Reading rhythm",
+      "command": "rhythm",
+      "description": "Weekly and monthly reading minutes, longest streak and rank-vs-friends trend, accumulated from your own runs (history starts at the first run).",
+      "rationale": "History exists only in local snapshots; the web app shows just today.",
+      "example": "philonet-pp-cli rhythm --weeks 4 --agent",
+      "why_it_matters": "Use for recap or goal questions over time, not live status.",
+      "group": "Daily habit"
+    },
+    {
+      "name": "Friends digest",
+      "command": "digest",
+      "description": "Friends' thoughts this CLI first saw recently, grouped by friend; 'recently' is relative to when the CLI saw them.",
+      "rationale": "Joins stored feed cards (topped up from your friends and For You feeds on every run) with your friends list, grouped per friend and time-windowed.",
+      "example": "philonet-pp-cli digest --since 24h --agent",
+      "why_it_matters": "Catch up on friends' takes without scrolling the feed.",
+      "group": "Conversations"
+    },
+    {
+      "name": "Owed replies",
+      "command": "owed",
+      "description": "Threads among your recent thoughts where someone replied and you have not answered yet.",
+      "rationale": "Live join of your recent thoughts, their reply threads and the discussions inbox to find threads awaiting your answer.",
+      "example": "philonet-pp-cli owed --agent",
+      "why_it_matters": "Use to find conversations waiting on the user.",
+      "group": "Conversations"
+    },
+    {
+      "name": "Voices",
+      "command": "voices",
+      "description": "Rank people from your stored For You feed cards by thoughts on a topic, filtered by alma mater or employer badge.",
+      "rationale": "Aggregates starter profiles and verification badges across stored feed cards (topped up from your For You feed on every run) with tag and topic filters.",
+      "example": "philonet-pp-cli voices --topic ai --badge professional --agent",
+      "why_it_matters": "Find credentialed voices on a topic when the web search cannot filter by badge.",
+      "group": "Discovery"
+    },
+    {
+      "name": "Reading queue",
+      "command": "queue",
+      "description": "Read-later and bookmarks that fit your free minutes (items with unknown length are dropped unless --include-unknown), flagged when discussed.",
+      "rationale": "Joins saved items with reading time and thought counts.",
+      "example": "philonet-pp-cli queue --fits 10 --agent",
+      "why_it_matters": "Pick what to read next given available time.",
+      "group": "Discovery"
+    },
+    {
+      "name": "Resonance",
+      "command": "resonance",
+      "description": "Which of your thoughts earned stars and insightful reactions, by tag and week.",
+      "rationale": "Joins your thoughts with the awards you received to rank what landed.",
+      "example": "philonet-pp-cli resonance --by week --agent",
+      "why_it_matters": "Tell the user what kind of thoughts land with people.",
+      "group": "Conversations"
+    }
+  ],
+  "auth": {
+    "canonical_env_var": "PHILONET_TOKEN"
+  },
+  "narrative": {
+    "display_name": "Philonet",
+    "headline": "Your Philonet reading life in the terminal: feed, threads, streaks and friends, plus a local history the web app does not keep.",
+    "value_prop": "Philonet has no public API, so this CLI replays the web app's own backend calls with your token. Run today for a morning snapshot, rhythm to build up reading history, and digest or owed to catch up on friends and unanswered replies. It can also post, react, send friend requests and invite people; every write supports --dry-run.",
+    "auth_narrative": "Philonet uses a bearer JWT held in your browser. Copy the accessToken from philonet.ai (DevTools > Application > Local Storage) and run 'philonet-pp-cli auth set-token' (or export PHILONET_TOKEN); 'auth status' shows what is configured and 'auth logout' clears it. The token lasts about six months. Philonet is an unofficial client of an undocumented API and can change without notice.",
+    "quickstart": [
+      {
+        "command": "philonet-pp-cli doctor --dry-run",
+        "comment": "Verify-safe health check without a network call"
+      },
+      {
+        "command": "philonet-pp-cli today --agent",
+        "comment": "See your streak, unread counts and friends reading now"
+      },
+      {
+        "command": "philonet-pp-cli feed for-me --agent --select article.title,article.url",
+        "comment": "Browse the For You feed compactly"
+      },
+      {
+        "command": "philonet-pp-cli find articles --query ai --agent",
+        "comment": "Search articles by topic"
+      },
+      {
+        "command": "philonet-pp-cli rhythm --weeks 4 --agent",
+        "comment": "Start recording reading history; it grows with every run"
+      }
+    ],
+    "troubleshoots": [
+      {
+        "symptom": "HTTP 401 or 403",
+        "fix": "Your token expired; copy a fresh accessToken from philonet.ai local storage and run philonet-pp-cli auth set-token"
+      },
+      {
+        "symptom": "Empty digest output",
+        "fix": "digest only lists friends' thoughts first seen within --since; widen --since, add --all, or raise --max-scan-pages"
+      },
+      {
+        "symptom": "Empty voices output",
+        "fix": "voices ranks cards stored from your For You feed; loosen --topic or --badge, or raise --max-scan-pages"
+      },
+      {
+        "symptom": "rhythm shows few days",
+        "fix": "Philonet reports only the last week, so history starts at your first rhythm run; run it regularly"
+      }
+    ],
+    "when_to_use": "Use for reading or checking a user's Philonet feed, search, threads, stats, friends and notifications, for local analysis of data this CLI has stored, and for explicitly requested actions: posting a thought or reply, reacting, sending a friend request or inviting someone. Write commands act on the user's real account, so run them with --dry-run first and send only after the user confirms. Good for morning briefings and weekly recaps.",
+    "anti_triggers": [
+      "Posting, replying, reacting, friend-requesting or inviting unless the user explicitly asked for that exact action",
+      "Other social platforms (Twitter/X, LinkedIn, Reddit)",
+      "Reading another person's private data",
+      "Anything needing an official, stable API; this is an unofficial client of an undocumented backend"
+    ],
+    "recipes": [
+      {
+        "title": "Morning briefing",
+        "command": "philonet-pp-cli today --agent",
+        "explanation": "Streak, unread and friends reading now in one record."
+      },
+      {
+        "title": "Compact feed scan",
+        "command": "philonet-pp-cli feed for-me --agent --select article.title,article.reading_time.text,conversation_starters.content",
+        "explanation": "Narrows large feed cards to titles, read time and top thought."
+      },
+      {
+        "title": "Catch up on friends",
+        "command": "philonet-pp-cli digest --since 24h --agent",
+        "explanation": "Friends' thoughts this CLI first saw in the last day; the first run treats the whole feed as new."
+      },
+      {
+        "title": "Pick something to read",
+        "command": "philonet-pp-cli queue --fits 10 --agent",
+        "explanation": "Saved items that fit ten minutes."
+      },
+      {
+        "title": "Post a thought",
+        "command": "philonet-pp-cli post thought --article-id 29018 --content \"Interesting take\" --dry-run",
+        "explanation": "Preview the request first; removing --dry-run sends a real post to the user's account, so only do it after they confirm."
+      }
+    ],
+    "trigger_phrases": [
+      "check my philonet",
+      "what are my friends reading on philonet",
+      "philonet reading streak",
+      "search philonet for",
+      "post a thought on philonet",
+      "invite a friend to think on philonet",
+      "use philonet",
+      "run philonet"
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "timestamp": "2026-10-01T16:44:39.475455Z",
+  "cli_dir": "\u003ccli-dir\u003e/philonet-pp-cli",
+  "findings": null,
+  "scorecard_before": {
+    "mcp_description_quality": 5,
+    "captured": "2026-10-01T16:17:57.34827Z"
+  }
+}

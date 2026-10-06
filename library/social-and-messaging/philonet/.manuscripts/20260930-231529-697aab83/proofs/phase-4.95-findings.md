@@ -1,0 +1,8 @@
+# Phase 4.95 local code review
+Review path: direct subagent dispatch (one reviewer covering correctness, security, maintainability) over the hand-written files in internal/cli (philonet_common.go, today/rhythm/digest/owed/voices/queue/resonance, tests). Out-of-scope packages untouched.
+
+Autofix summary: 15 findings (0 high, 5 medium, 10 low/medium-low) reviewed in 1 round; 13 fixed in place, 1 documented, 1 partly.
+- Fixed: non-JSON/error bodies treated as success (pnMap now errors); owed false negative when all thread fetches fail (now an error, note suppressed, failures surfaced); rhythm zero-fill of stored rank (NULL + COALESCE); resonance `top: null` (non-nil slice); card-key collision without thought id (skipped); stale columns and is_friend downgrade in upsert (MAX / refresh); voices substring topic noise (word-boundary match); week boundaries now local-tz in resonance; longest streak across all history; seconds summed before flooring; deterministic tiebreaks in digest/voices; queue duplicate merge; flag bounds on limit/max-scan/max-scan-pages; unparseable own-reply timestamps.
+- Fixed in a later commit (Greptile round 1): history rows are now keyed by account uid; pre-existing unscoped tables are kept as *_legacy_unscoped and never read. (Originally documented as a known limit.)
+- Template-shape retro candidates: none in-scope. Retro note (generator): sniff analyzer marked every observed body field required (limit/offset/sort_by) and mislabeled a POST path as /v1/room/{room_id}; generated README carries agentcookie/`auth-status`/`list` boilerplate and AGENTS.md lacks write-command guidance.
+Convergence: regression tests added for each fixed behavior; all pass (go test ./internal/cli).

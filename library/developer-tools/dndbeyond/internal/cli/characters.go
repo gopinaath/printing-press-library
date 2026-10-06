@@ -523,6 +523,7 @@ func boundCharacterString(value string) string {
 
 var characterSensitiveKeys = map[string]bool{
 	"account": true, "accountid": true, "account_id": true, "auth": true,
+	"apikey": true, "authorization": true,
 	"backstory": true, "cookie": true, "email": true, "login": true,
 	"notes": true, "password": true, "player": true, "playername": true,
 	"private": true, "secret": true, "session": true, "token": true,
@@ -606,11 +607,18 @@ func canonicalCharacterKey(key string) string {
 }
 
 func isSensitiveCharacterKey(key string) bool {
-	canonical := strings.ToLower(strings.ReplaceAll(canonicalCharacterKey(key), "_", ""))
+	// PDF widgets and nested JSON may separate credential words with dots,
+	// slashes, spaces, or other punctuation. Ignore those separators here.
+	canonical := strings.Map(func(r rune) rune {
+		if r >= 'a' && r <= 'z' || r >= '0' && r <= '9' {
+			return r
+		}
+		return -1
+	}, strings.ToLower(key))
 	if characterSensitiveKeys[canonical] {
 		return true
 	}
-	for _, fragment := range []string{"email", "token", "cookie", "password", "secret", "account", "username", "userid", "player", "backstory", "notes", "private", "session", "phone", "address", "ssn", "dateofbirth", "dob"} {
+	for _, fragment := range []string{"email", "token", "cookie", "password", "secret", "account", "username", "userid", "player", "backstory", "notes", "private", "session", "phone", "address", "ssn", "dateofbirth", "dob", "apikey", "authorization", "authheader", "bearer", "credential"} {
 		if strings.Contains(canonical, fragment) {
 			return true
 		}

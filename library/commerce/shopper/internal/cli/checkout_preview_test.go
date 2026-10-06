@@ -6,8 +6,12 @@ package cli
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/mvanhorn/printing-press-library/library/commerce/shopper/internal/client"
+	"github.com/spf13/cobra"
 )
 
 // TestNovelCheckoutPreviewHelpWires smoke-tests that the checkout preview command
@@ -28,5 +32,212 @@ func TestNovelCheckoutPreviewHelpWires(t *testing.T) {
 		if !strings.Contains(help, want) {
 			t.Fatalf("checkout preview --help missing %q in output:\n%s", want, help)
 		}
+	}
+}
+
+// TestUnicaIsNeitherSubscriptionNorUltraFast is the regression guard for the
+// bug this patch fixes: `checkout preview` treated "not a subscription store"
+// as "ultra fast", so `--store unica` reported is_ultra_fast=true even though
+// GET /features/stores says is_ultra_fast_delivery=false for that storefront.
+//
+// PATCH: store-cluster-truth.
+func TestUnicaIsNeitherSubscriptionNorUltraFast(t *testing.T) {
+	if isSubscriptionStore("unica") {
+		t.Error("unica has no recurring basket")
+	}
+	if isUltraFastStore("unica") {
+		t.Error("unica is not ultra-fast — only now and now-bebidas are")
+	}
+	if isUltraFastStore("pontual") {
+		t.Error("the `pontual` alias must resolve to unica, which is not ultra-fast")
+	}
+	for _, name := range []string{"now", "now-bebidas", "6", "8"} {
+		if !isUltraFastStore(name) {
+			t.Errorf("%s should be ultra-fast", name)
+		}
+		if isSubscriptionStore(name) {
+			t.Errorf("%s has no recurring basket", name)
+		}
+	}
+	for _, name := range []string{"programada", "mensal", "1", "fresh", "2", "pet", "5"} {
+		if !isSubscriptionStore(name) {
+			t.Errorf("%s should be a subscription store", name)
+		}
+		if isUltraFastStore(name) {
+			t.Errorf("%s is not ultra-fast", name)
+		}
+	}
+}
+
+// TestResolveSubdomainCoversEveryStorefront pins the subdomain mapping after it
+// was folded into the single store table.
+//
+// PATCH: store-cluster-truth.
+func TestResolveSubdomainCoversEveryStorefront(t *testing.T) {
+	cases := map[string]string{
+		"programada": "programada", "mensal": "programada", "1": "programada",
+		"fresh": "fresh", "2": "fresh",
+		"unica": "unica", "pontual": "unica", "3": "unica",
+		"pet": "pet", "5": "pet",
+		"now": "now", "6": "now",
+		"now-bebidas": "now-bebidas", "nowbebidas": "now-bebidas", "8": "now-bebidas",
+	}
+	for in, want := range cases {
+		got, err := resolveSubdomain(in)
+		if err != nil {
+			t.Errorf("resolveSubdomain(%q) error = %v", in, err)
+			continue
+		}
+		if got != want {
+			t.Errorf("resolveSubdomain(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// TestUnknownStoreDoesNotOpenProgramada rejects selectors that are not a
+// storefront. StoreFor falls back to Programada; browser URLs must not.
+func TestUnknownStoreDoesNotOpenProgramada(t *testing.T) {
+	for _, in := range []string{"99", "bogus", "not-a-store", ""} {
+		got, err := resolveSubdomain(in)
+		if err == nil {
+			t.Fatalf("resolveSubdomain(%q) = %q, nil; want an error", in, got)
+		}
+		if got != "" {
+			t.Fatalf("resolveSubdomain(%q) = %q, want no subdomain on error", in, got)
+		}
+	}
+	url, err := storefrontPageURL("99", "/shop/checkout")
+	if err == nil || url != "" {
+		t.Fatalf("storefrontPageURL(99) = %q, %v; want error and no URL", url, err)
+	}
+	if strings.Contains(url, "programada") || strings.Contains(url, "shopper.com.br") {
+		t.Fatalf("unknown store produced a storefront URL: %s", url)
+	}
+	// A blank --store is the default storefront, not an unknown selector.
+	blank, err := storefrontPageURL("", "/shop/checkout")
+	if err != nil {
+		t.Fatalf("blank store: %v", err)
+	}
+	if blank != "https://programada.shopper.com.br/shop/checkout" {
+		t.Fatalf("blank store URL = %s", blank)
+	}
+	unica, err := storefrontPageURL("unica", "/shop/checkout")
+	if err != nil || unica != "https://unica.shopper.com.br/shop/checkout" {
+		t.Fatalf("unica URL = %q, %v", unica, err)
+	}
+}
+
+// TestOpenStorefrontPageRejectsUnknownStore fails closed before any browser
+// launch. checkout open and the delivery/subscription handoffs share this path.
+func TestOpenStorefrontPageRejectsUnknownStore(t *testing.T) {
+	cmd := &cobra.Command{}
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	err := openStorefrontPage(cmd, &rootFlags{store: "99"}, "/shop/checkout")
+	if err == nil {
+		t.Fatal("openStorefrontPage(--store 99) succeeded")
+	}
+	if strings.Contains(out.String(), "programada") || strings.Contains(out.String(), "shopper.com.br") {
+		t.Fatalf("unknown store wrote a storefront URL: %s", out.String())
+	}
+}
+
+// TestCheckoutURLNeverHasEmptySubdomain pins the host label used by checkout
+// preview. An unknown numeric id must not resolve, and a known storefront
+// with an empty subdomain must not produce https://.shopper.com.br.
+func TestCheckoutURLNeverHasEmptySubdomain(t *testing.T) {
+	for _, in := range []string{"unica", "programada", "1", "now"} {
+		sub, err := resolveSubdomain(in)
+		if err != nil {
+			t.Errorf("resolveSubdomain(%q) error = %v", in, err)
+			continue
+		}
+		if sub == "" {
+			t.Errorf("resolveSubdomain(%q) is empty", in)
+		}
+		url := "https://" + sub + ".shopper.com.br/shop/checkout"
+		if strings.HasPrefix(url, "https://.") || strings.Contains(url, "://.") {
+			t.Errorf("checkout URL for %q = %s", in, url)
+		}
+	}
+	if _, err := resolveSubdomain("99"); err == nil {
+		t.Fatal("resolveSubdomain(99) succeeded")
+	}
+	fallback := knownStoreSubdomain(client.Store{StoreID: "1"})
+	url := "https://" + fallback + ".shopper.com.br/shop/checkout"
+	if fallback == "" || strings.Contains(url, "://.") {
+		t.Fatalf("empty-subdomain fallback URL = %s", url)
+	}
+	if knownStoreSubdomain(client.Store{Subdomain: "pet"}) != "pet" {
+		t.Fatal("known subdomain was replaced")
+	}
+}
+
+// TestSubscriptionDeliveryFailureDoesNotRelabelAsOneOff is the P1 guard for
+// checkout preview: a /delivery/summary failure on programada, fresh, or pet
+// must not overwrite notes with the one-off/unica label, and must not attach
+// a charge calendar.
+func TestSubscriptionDeliveryFailureDoesNotRelabelAsOneOff(t *testing.T) {
+	authNote := "cart, delivery, and payment data unavailable — authenticate first: shopper-pp-cli auth set-token --stdin"
+	next := &chargeCalendarEntry{DeliveryDate: "2026-10-01"}
+	for _, store := range []string{"programada", "fresh", "pet", "mensal", "1", "5"} {
+		view := checkoutPreviewView{Store: store, Note: authNote}
+		applyCheckoutStoreMode(&view, store, errors.New("delivery summary failed"), next)
+		if view.Note != authNote {
+			t.Errorf("%s: note = %q, want the delivery-error note left untouched", store, view.Note)
+		}
+		if strings.Contains(view.Note, "One-off") || strings.Contains(view.Note, "unica") || strings.Contains(view.Note, "Ultra-fast") {
+			t.Errorf("%s: delivery failure mislabeled the store: %q", store, view.Note)
+		}
+		if view.ChargeCalendar != nil {
+			t.Errorf("%s: charge calendar set despite delivery error", store)
+		}
+		if view.Delivery != nil {
+			t.Errorf("%s: delivery struct invented on a subscription error: %+v", store, view.Delivery)
+		}
+	}
+}
+
+// TestSubscriptionDeliverySuccessKeepsCalendar attaches the calendar only when
+// delivery summary succeeded, and does not replace an existing note.
+func TestSubscriptionDeliverySuccessKeepsCalendar(t *testing.T) {
+	next := &chargeCalendarEntry{DeliveryDate: "2026-10-01"}
+	view := checkoutPreviewView{Store: "programada", Note: "keep-me"}
+	applyCheckoutStoreMode(&view, "programada", nil, next)
+	if view.ChargeCalendar != next {
+		t.Fatalf("calendar = %+v, want the supplied next delivery", view.ChargeCalendar)
+	}
+	if view.Note != "keep-me" {
+		t.Fatalf("note = %q, want it left untouched", view.Note)
+	}
+	if view.Delivery != nil && view.Delivery.IsUltraFast {
+		t.Fatal("programada marked ultra-fast")
+	}
+}
+
+// TestNonSubscriptionCheckoutKeepsModeLabel keeps the ultra-fast and one-off
+// notes for stores that are not on a recurring cycle, including when delivery
+// summary failed.
+func TestNonSubscriptionCheckoutKeepsModeLabel(t *testing.T) {
+	unica := checkoutPreviewView{Store: "unica"}
+	applyCheckoutStoreMode(&unica, "unica", errors.New("delivery summary failed"), &chargeCalendarEntry{})
+	if unica.Delivery == nil || unica.Delivery.IsUltraFast {
+		t.Fatalf("unica delivery = %+v, want one-off and not ultra-fast", unica.Delivery)
+	}
+	if !strings.Contains(unica.Note, "One-off store (unica)") {
+		t.Fatalf("unica note = %q", unica.Note)
+	}
+	if unica.ChargeCalendar != nil {
+		t.Fatal("unica must not grow a charge calendar")
+	}
+
+	now := checkoutPreviewView{Store: "now"}
+	applyCheckoutStoreMode(&now, "now", nil, nil)
+	if now.Delivery == nil || !now.Delivery.IsUltraFast {
+		t.Fatalf("now delivery = %+v, want ultra-fast", now.Delivery)
+	}
+	if !strings.Contains(now.Note, "Ultra-fast") {
+		t.Fatalf("now note = %q", now.Note)
 	}
 }

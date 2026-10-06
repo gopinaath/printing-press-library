@@ -11,6 +11,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"math"
@@ -962,6 +963,73 @@ func (s *Store) ReplaceResourceKey(resourceType, oldID, newID string, data json.
 	return tx.Commit()
 }
 
+// DeleteLegacyCFPBEnvelopeIfCovered removes the old synthetic row only after
+// every complaint embedded in it is also stored under its own ID. This works
+// for complete scans that resumed across runs and keeps partial ranges safe.
+func (s *Store) DeleteLegacyCFPBEnvelopeIfCovered() error {
+	s.writeMu.Lock()
+	defer s.writeMu.Unlock()
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	const resource = "data-research"
+	var legacyData []byte
+	err = tx.QueryRow(`SELECT data FROM resources
+		WHERE resource_type = ? AND id = ?
+		AND CASE WHEN json_valid(data) THEN json_type(data, '$.hits.hits') = 'array' ELSE 0 END`, resource, resource).Scan(&legacyData)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	var envelope struct {
+		Hits struct {
+			Hits []json.RawMessage `json:"hits"`
+		} `json:"hits"`
+	}
+	if err := json.Unmarshal(legacyData, &envelope); err != nil {
+		return err
+	}
+	for _, hit := range envelope.Hits.Hits {
+		obj, err := DecodeJSONObject(hit)
+		if err != nil {
+			return err
+		}
+		id := ExtractResourceID(resource, obj)
+		if id == "" || id == resource {
+			return nil
+		}
+		var covered bool
+		if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM resources WHERE resource_type = ? AND id = ?)`,
+			resource, resourceStorageID(resource, id, obj)).Scan(&covered); err != nil {
+			return err
+		}
+		if !covered {
+			return nil
+		}
+	}
+	result, err := tx.Exec(`DELETE FROM resources
+		WHERE resource_type = ? AND id = ?
+		AND CASE WHEN json_valid(data) THEN json_type(data, '$.hits.hits') = 'array' ELSE 0 END`, resource, resource)
+	if err != nil {
+		return err
+	}
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if deleted > 0 {
+		if _, err := tx.Exec(`DELETE FROM resources_fts WHERE rowid = ?`, ftsRowID(resource, resource)); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 // Propagates sql.ErrNoRows on a miss so callers can distinguish absence from
 // other scan errors via errors.Is.
 func (s *Store) Get(resourceType, id string) (json.RawMessage, error) {
@@ -1259,7 +1327,9 @@ func ResourceIDString(v any) string {
 // Includes both flat resources and dependent (parent-child) resources so a
 // child path-item annotated with x-resource-id resolves the same as a flat
 // path-item.
-var resourceIDFieldOverrides = map[string]string{}
+var resourceIDFieldOverrides = map[string]string{
+	"data-research": "_id",
+}
 
 // genericIDFieldFallbacks is the runtime safety net for resources that did
 // NOT receive a templated IDField. API-specific names belong in spec

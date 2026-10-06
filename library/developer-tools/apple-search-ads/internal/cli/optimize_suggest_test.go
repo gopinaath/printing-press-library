@@ -3,8 +3,13 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"math"
+	"net/http"
+	"net/http/httptest"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -175,9 +180,8 @@ func TestBuildBidSuggestions_ROAS_Cap2x(t *testing.T) {
 	}
 }
 
-// TestFetchFailureAllCampaigns verifies the condition that triggers a non-zero exit
-// when every campaign fetch attempt fails. The closure increments fetchFailed and
-// fetchAttempted; the command returns an error when fetchFailed == fetchAttempted > 0.
+// TestFetchFailureAllCampaigns verifies that any incomplete report set triggers
+// a non-zero exit, preventing --apply from mutating against partial inputs.
 func TestFetchFailureAllCampaigns(t *testing.T) {
 	cases := []struct {
 		failed, attempted int
@@ -186,11 +190,11 @@ func TestFetchFailureAllCampaigns(t *testing.T) {
 		{3, 3, true},  // all failed → non-zero exit
 		{1, 1, true},  // single campaign failed
 		{0, 3, false}, // none failed
-		{2, 3, false}, // partial failure — some suggestions may exist
+		{2, 3, true},  // partial failure must block apply and fail the command
 		{0, 0, false}, // no attempts (empty campaign list handled earlier)
 	}
 	for _, tc := range cases {
-		got := tc.attempted > 0 && tc.failed == tc.attempted
+		got := tc.failed > 0
 		if got != tc.wantErr {
 			t.Errorf("failed=%d attempted=%d: want err=%v, got %v", tc.failed, tc.attempted, tc.wantErr, got)
 		}
@@ -218,6 +222,84 @@ func TestApplyDryRunGate(t *testing.T) {
 			t.Errorf("flagApply=%v dryRun=%v: want apply=%v, got %v",
 				tc.flagApply, tc.dryRun, tc.wantApply, got)
 		}
+	}
+}
+
+func TestOptimizeSuggestPartialApplyOutputsSuggestions(t *testing.T) {
+	var applied int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/reports/campaigns/camp1/keywords":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write(reportFixture())
+		case r.Method == http.MethodPut && strings.HasSuffix(r.URL.Path, "/targetingkeywords/111"):
+			applied++
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{}`))
+		case r.Method == http.MethodPut && strings.HasSuffix(r.URL.Path, "/targetingkeywords/222"):
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":"rejected"}`))
+		default:
+			http.Error(w, "unexpected request", http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+	t.Setenv("APPLE_SEARCH_ADS_BASE_URL", server.URL)
+	t.Setenv("APPLE_SEARCH_ADS_TOKEN", "test-token")
+	var stdout, stderr bytes.Buffer
+	cmd := newRootCmd(&rootFlags{})
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"optimize", "suggest", "--metric", "taps", "--target", "300", "--campaign-id", "camp1", "--apply", "--no-cache", "--config", filepath.Join(t.TempDir(), "missing.toml")})
+	err := cmd.Execute()
+	if err == nil || ExitCode(err) != 6 || applied != 1 {
+		t.Fatalf("partial apply: err=%v exit=%d applied=%d stderr=%q", err, ExitCode(err), applied, stderr.String())
+	}
+	var suggestions []bidSuggestion
+	if err := json.Unmarshal(stdout.Bytes(), &suggestions); err != nil || len(suggestions) != 2 {
+		t.Fatalf("suggestions output: rows=%d err=%v stdout=%q", len(suggestions), err, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "222") {
+		t.Fatalf("failed keyword missing from stderr: %q", stderr.String())
+	}
+}
+
+func TestOptimizeSuggestPartialFetchOutputsSuggestionsWithoutApplying(t *testing.T) {
+	var writes int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/campaigns":
+			_, _ = w.Write([]byte(`{"data":[{"id":"camp1"},{"id":"camp2"}]}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/reports/campaigns/camp1/keywords":
+			_, _ = w.Write(reportFixture())
+		case r.Method == http.MethodPost && r.URL.Path == "/reports/campaigns/camp2/keywords":
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":"unavailable"}`))
+		case r.Method == http.MethodPut:
+			writes++
+			w.WriteHeader(http.StatusOK)
+		default:
+			http.Error(w, "unexpected request", http.StatusNotFound)
+		}
+	}))
+	defer server.Close()
+	t.Setenv("APPLE_SEARCH_ADS_BASE_URL", server.URL)
+	t.Setenv("APPLE_SEARCH_ADS_TOKEN", "test-token")
+	var stdout, stderr bytes.Buffer
+	cmd := newRootCmd(&rootFlags{})
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"optimize", "suggest", "--metric", "cpa", "--target", "2", "--apply", "--no-cache", "--config", filepath.Join(t.TempDir(), "missing.toml")})
+	err := cmd.Execute()
+	if err == nil || ExitCode(err) != 6 || writes != 0 {
+		t.Fatalf("partial fetch: err=%v exit=%d writes=%d stderr=%q", err, ExitCode(err), writes, stderr.String())
+	}
+	var suggestions []bidSuggestion
+	if err := json.Unmarshal(stdout.Bytes(), &suggestions); err != nil || len(suggestions) != 1 || suggestions[0].CampaignID != "camp1" {
+		t.Fatalf("partial fetch suggestions: rows=%+v err=%v stdout=%q", suggestions, err, stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "camp2") {
+		t.Fatalf("failed campaign missing from stderr: %q", stderr.String())
 	}
 }
 

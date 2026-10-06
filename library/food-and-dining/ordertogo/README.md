@@ -7,7 +7,7 @@ OrderToGo.com is a multi-tenant pickup ordering platform that powers small chain
 Learn more at [OrderToGo](https://www.ordertogo.com).
 
 Created by [@mvanhorn](https://github.com/mvanhorn) (Matt Van Horn).
-Contributors: [@tmchow](https://github.com/tmchow) (Trevin Chow).
+Contributors: [@tmchow](https://github.com/tmchow) (Trevin Chow), [@cathrynlavery](https://github.com/cathrynlavery) (Cathryn Lavery).
 
 ## Install
 
@@ -257,7 +257,11 @@ Order history, detail, validation, and tracking - the core ordering data path
 - **`ordertogo-pp-cli orders track`** - HTML order tracking page (received → preparing → ready → picked up). Parsed for status by `order track`.
 - **`ordertogo-pp-cli orders validate`** - Pre-validate a cart - returns an order token plus tax computation, used by `order plan` before any payment surface opens
 - **`ordertogo-pp-cli orders plan`** - Reuse a previous order or item list, validate tax and tip, and save the active cart behind a budget gate
-- **`ordertogo-pp-cli orders place`** - Drive Chrome through checkout for the active cart after explicit confirmation and max-budget validation
+- **`ordertogo-pp-cli orders place`** - Submit the saved-card checkout after explicit confirmation and max-budget validation
+
+If checkout loses its response, inspect your recent orders. The CLI blocks further checkout, including a changed cart or payment details, because the server may not recognize an old request ID forever. Once you confirm whether an order was placed, clear the reservation named in the error and start a new checkout. On macOS and Linux, this is the `pending-place.json` file in the CLI config directory. On Windows, it is the `PendingPlace` value under `HKEY_CURRENT_USER\Software\PrintingPress\OrderToGo\Checkout`; remove that value only after checking the order outcome. A confirmed order leaves a durable receipt so a failed local history save, output, or delivery cannot silently permit another charge. To place another order, inspect recent orders and pass `--ack-last-order <order ID>`; the CLI then clears both records and creates a fresh reservation. On macOS and Linux, the receipt is `confirmed-place.json`; on Windows, it is the `ConfirmedPlace` value in the same registry key. If the CLI cannot save, flush, or lock a reservation or receipt, it refuses another checkout.
+
+`orders place --dry-run` prints a redacted preview without refreshing a payment token, saving a reservation, or contacting OrderToGo.
 
 ### payment
 
