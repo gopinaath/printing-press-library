@@ -63,6 +63,34 @@ uncertain, inspect Sent before manually trying again. The local mock tests prove
 request behavior; only a separate disposable Gmail account can verify real OAuth
 and delivery end to end without using your primary mailbox.
 
+## Sending alternatives: API, browser, and SMTP
+
+| Method | Authentication/setup | Available in this fork? |
+|---|---|---|
+| Gmail API | Desktop OAuth client, consent, and a named account profile | Yes: `send`, plus existing read/sync and cleanup commands |
+| Gmail website through browser automation | An authenticated Gmail session in a browser the automation can control | Not implemented; a separate browser workflow, not a CLI flag |
+| Gmail SMTP | OAuth or an app password where the account permits it | Not implemented |
+
+Browser sending is tracked in [fork issue #1](https://github.com/gopinaath/printing-press-library/issues/1).
+
+A logged-in Gmail tab is enough to use the website's Compose/Send interface;
+browser automation does not require your own Google Cloud project. It does
+require access to that specific browser session. This CLI does not import browser
+cookies or drive Gmail's web interface. The browser opened by `accounts auth`
+is for OAuth consent, not for composing mail.
+
+Browser automation can send a message without exercising this CLI. Testing it
+therefore does not validate the API sending implementation. Gmail may autosave a
+draft while composing in the browser; that is already a mailbox change, unlike
+the CLI's fully offline preview. Use a separate test account for either live path
+when your personal mailbox must remain unaffected.
+
+For SMTP, app passwords require two-step verification and may be unavailable
+because of account or organization restrictions. Google recommends Google sign-in
+where supported. See Google's [Gmail web sending guide](https://support.google.com/a/users/answer/9259846?hl=en),
+[SMTP setup](https://support.google.com/a/answer/176600?hl=en), and
+[app-password requirements](https://support.google.com/accounts/answer/185833?hl=en).
+
 ## Upstream installation (without this fork's sending feature)
 
 The recommended path installs both the `gmail-pp-cli` binary and the `pp-gmail` agent skill (Claude Code, Codex, Cursor, Gemini CLI, GitHub Copilot, and other agents supported by the upstream [`skills`](https://github.com/vercel-labs/skills) CLI) in one shot:
@@ -173,6 +201,107 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 ## Authentication
 
 Installed-app OAuth with named multi-account profiles (per-profile token store, consented-account verification). The requested gmail.modify scope already permits sending, so this fork adds no OAuth scopes. Live sends require a named profile and a matching verified primary sender address. Drafts and settings remain unavailable; permanent deletion remains outside this scope.
+
+### Existing read/sync authentication
+
+The original upstream mailbox read/sync implementation already uses a Desktop-app
+OAuth client. `sync` resolves a profile, obtains an OAuth access token, verifies
+the Google account, and fetches message metadata through the Gmail API. It does
+not read the Gmail webpage. Local reports may use previously synced SQLite data
+without a fresh API request.
+
+The sending fork reuses the same `client.json`, profiles, token refresh, and
+`gmail.modify` permission. An existing authorized profile can be reused; sending
+does not require a second OAuth client or a broader grant. A `role` value such as
+`readonly` does not narrow permissions: every profile currently requests
+`gmail.modify`. Generic API commands also support a supplied OAuth bearer token
+through `GMAIL_OAUTH2C`, but live `send` requires the named-profile setup below;
+that environment variable alone is insufficient.
+
+### First-time OAuth setup for a test account
+
+Offline preview and `make test-send` need no Google credentials. For a real
+delivery test, use a separate Gmail account and a recipient address you control.
+Build the fork as shown above, then run the following from
+`library/productivity/gmail/`.
+
+1. Select or create a Google Cloud project and enable the **Gmail API**.
+2. Configure **Google Auth platform** branding and audience. For a personal Gmail
+   account, use **External** and, while the app is in **Testing**, add the test
+   Gmail address under test users. **Internal** is only appropriate for an
+   eligible Workspace organization. Configure Data Access for
+   `https://www.googleapis.com/auth/gmail.modify`.
+3. Under **Clients**, create an OAuth client of type **Desktop app** and download
+   its JSON configuration. This CLI expects that file to be named `client.json`.
+
+See Google's [Gmail API setup](https://developers.google.com/workspace/gmail/api/quickstart/go)
+and [OAuth consent configuration](https://developers.google.com/workspace/guides/configure-oauth-consent).
+The CLI's filenames and commands below differ from Google's sample application.
+
+Use a dedicated test auth directory so existing profiles remain separate:
+
+```bash
+mkdir -p "$HOME/.config/gmail-pp-cli/gauth-test"
+chmod 700 "$HOME/.config/gmail-pp-cli/gauth-test"
+```
+
+Copy the downloaded JSON into that directory as `client.json`. Create
+`profiles.yaml` beside it with the following content, replacing the example email
+with the test account's actual primary Gmail address:
+
+```yaml
+accounts:
+  - name: test-account
+    email: your-test-account@gmail.com
+    role: modify
+```
+
+Protect the files and authorize that account:
+
+```bash
+chmod 600 "$HOME/.config/gmail-pp-cli/gauth-test/client.json" "$HOME/.config/gmail-pp-cli/gauth-test/profiles.yaml"
+./bin/gmail-pp-cli accounts auth --account test-account \
+  --auth-dir "$HOME/.config/gmail-pp-cli/gauth-test" --no-learn
+./bin/gmail-pp-cli accounts --json \
+  --auth-dir "$HOME/.config/gmail-pp-cli/gauth-test" --no-learn
+```
+
+Run authorization on the machine with the browser: the CLI listens on a temporary
+localhost callback port. Select the matching test account and review Google's
+consent prompt. A mismatched account is rejected. Successful authorization saves
+`tokens/test-account.json`; listing accounts only reports stored token status,
+not proof of successful email delivery. No mailbox sync is required before send.
+
+After reviewing an offline preview, explicitly send one test message (replace
+both example addresses with addresses you control):
+
+```bash
+./bin/gmail-pp-cli send --account test-account \
+  --auth-dir "$HOME/.config/gmail-pp-cli/gauth-test" \
+  --from your-test-account@gmail.com --to your-recipient@example.com \
+  --subject "Delivery test" --body "Testing the Gmail sending fork." \
+  --send-now --no-learn
+```
+
+Check the test account's Sent folder and the recipient's inbox/spam folder. If the
+command times out or reports an uncertain outcome, inspect Sent before retrying.
+This is the real delivery step; it changes the test mailbox and sends a message.
+
+Without an override, auth files live in `~/.config/gmail-pp-cli/gauth/`.
+`GMAIL_CONFIG_DIR` changes that default; `--auth-dir` takes precedence. Use the
+same directory for authorization and subsequent commands. Tokens are stored as
+local JSON files with owner-only permissions, not in macOS Keychain. Keep client
+and token files out of Git and logs. Tokens refresh automatically when possible;
+revoked or expired authorization requires rerunning `accounts auth`. External
+apps in Testing normally receive refresh tokens that expire after seven days for
+Gmail access; see Google's [token expiration guidance](https://developers.google.com/identity/protocols/oauth2#expiration).
+
+### Validation status
+
+The fork's automated suite uses temporary profiles, dummy tokens, and local fake
+Gmail servers. Build, vet, skill verification, and the full Gmail tests passed
+after the October 6, 2026 upstream refresh. Real OAuth authorization and email
+delivery have not been tested in this project. Browser sending is not implemented.
 
 ## Quick Start
 
@@ -467,7 +596,7 @@ If you use agentcookie to sync secrets across machines, this CLI auto-adopts age
 ## Troubleshooting
 **Authentication errors (exit code 4)**
 - Run `gmail-pp-cli doctor` to check credentials
-- Verify the environment variable is set: `echo $GMAIL_OAUTH2C`
+- For generic bearer-token commands, check that `GMAIL_OAUTH2C` is configured without printing its value. Live sending uses the named OAuth profile described above.
 **Not found errors (exit code 3)**
 - Check the resource ID is correct
 - Run the `list` command to see available items
@@ -476,7 +605,7 @@ If you use agentcookie to sync secrets across machines, this CLI auto-adopts age
 - **401 Unauthorized on any command** — Re-run gmail-pp-cli accounts auth --account <name> — the refresh token was revoked (password changes revoke Gmail tokens)
 - **sync reports an expired history cursor (HTTP 404)** — Run gmail-pp-cli sync --account <name> --full — Gmail expires historyId cursors after long gaps; a full resync rebuilds cleanly
 - **cleanup apply refuses without a plan token** — Run cleanup plan first and pass its printed token to apply — applies never run unplanned
-- **unsub run skips a sender** — Two common cases. (1) The sender only offers mailto: unsubscribe — it appears in unsub audit --mailto-only for manual handling; this tool never sends email. (2) The one-click URL host lives outside the sender's registrable domain (ESP-hosted): unsub plan lists these under third_party_hosts, and unsub run skips them unless invoked with --allow-third-party
+- **unsub run skips a sender** — Two common cases. (1) The sender only offers mailto: unsubscribe — it appears in unsub audit --mailto-only for manual handling; `unsub run` never sends email. (2) The one-click URL host lives outside the sender's registrable domain (ESP-hosted): unsub plan lists these under third_party_hosts, and unsub run skips them unless invoked with --allow-third-party
 
 ## Sources & Inspiration
 

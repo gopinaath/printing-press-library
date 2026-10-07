@@ -39,6 +39,13 @@ Do NOT use this CLI for:
 
 ## Sending in this fork
 
+Live read/sync and send use the existing Gmail API OAuth setup, not a logged-in
+Gmail webpage. See [first-time OAuth setup](README.md#first-time-oauth-setup-for-a-test-account)
+for the Desktop client, `client.json`, `profiles.yaml`, and account authorization.
+Existing authorized profiles can be reused; sending adds no OAuth scope.
+Browser automation and SMTP are separate alternatives and are not implemented
+in this fork; see [sending alternatives](README.md#sending-alternatives-api-browser-and-smtp).
+
 `send` defaults to an offline JSON preview and requires no credentials. Only
 `--send-now` enables delivery; `--dry-run` always prevents it. Neither `--agent`
 nor `--yes` enables sending.
